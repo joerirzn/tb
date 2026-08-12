@@ -1,117 +1,198 @@
 # Toolbox Style Guide
 
-Shared visual language for all tools linked from the Toolbox (Social Banner
-Creator, Cover Converter, Sessions Asset Generator, Thumbnail Maker, and
-Toolbox itself). Paste this file into a new chat, opened in the tool's own
-folder, and ask Claude to restyle that tool's `index.html` to match it.
+Shared visual language for every tool in this folder (Toolbox launcher,
+Banner Generator, Cover Converter, Sessions Radio Maker, Thumbnail Maker).
 
-## Why this look
-Single dark workspace theme, on purpose — every tool here is a black-canvas
-export tool for red-accented label brands (Spinnin' and friends), so a dark
-UI that echoes the assets it produces reads as intentional, not lazy. No
-light-mode variant is needed; commit fully to dark.
+## What this is
+An adaptation of **xAI's marketing design system** — near-black canvas,
+white-translucent outline pills as the entire interactive vocabulary, one
+proprietary geometric sans (Universal Sans → Inter) at weight 400 only, and
+uppercase GeistMono for every label and number. It's dark-canvas natively,
+so nothing needed "translating" — `{colors.canvas}` (`#0a0a0a`) already
+matches what these tools were built on.
+
+The brand is deliberately monochrome: no accent hue, no gradients, no
+shadows — hairline borders and a rare filled-white pill carry all the
+emphasis. Two scoped exceptions, both practical necessities a marketing site
+doesn't have to solve:
+1. **The image work-surface** (drop-zone, live preview canvas) stays pure
+   black (`#000`) — it mirrors the actual exported artwork, same as
+   Photoshop/Lightroom keep a dark canvas regardless of app chrome.
+2. **Status feedback** (queue item active/done, upload progress) needs a
+   signal a pure white/black hierarchy can't give cleanly — see "Functional
+   status color" below. Used only for that, nowhere else.
 
 ## Color tokens
 ```css
 :root{
-  --bg: #0b0b0c;            /* page background */
-  --surface: #17171a;       /* card / input background */
-  --surface-hover: #1e1f22; /* card hover, input focus */
-  --border: #2c2c31;        /* default border */
-  --border-hover: #3d3d43;  /* hover border */
-  --text: #f2f1ee;          /* primary text, warm off-white */
-  --text-muted: #9a9a9e;    /* secondary text */
-  --text-faint: #616166;    /* tertiary / hints / footers */
-  --accent: #ff4948;        /* the one accent — red, sampled from Spinnin' brand assets */
+  --bg: #0a0a0a;                 /* canvas */
+  --surface: #191919;            /* canvas-card */
+  --surface-soft: #1a1c20;       /* canvas-soft — hovered rows, tooltips */
+  --surface-mid: #363a3f;        /* canvas-mid — nested surfaces */
+  --border: #212327;             /* hairline */
+  --border-outline: rgba(255, 255, 255, 0.25); /* the pill-button border */
+  --border-outline-hover: rgba(255, 255, 255, 0.5);
+  --text: #ffffff;               /* ink */
+  --text-muted: #dadbdf;         /* body */
+  --text-faint: #7d8187;         /* body-mid / mute */
+  --on-primary: #0a0a0a;         /* text on the rare filled-white pill */
+
+  /* Functional status only — never decorative, never a button/badge color */
+  --success: #05b169;
+  --danger-hover: #e55;          /* destructive hover only, no resting color */
 }
 ```
-Use `--accent` sparingly: primary buttons, active/hover states, small
-eyebrows/labels, focus rings. Never introduce a second accent hue — if a tool
-needs semantic color (error/success), keep it separate from `--accent` and
-desaturate it so it doesn't compete.
+No accent hue exists otherwise. White *is* the brand's color — used as
+outline-pill borders, the rare filled-primary pill, and focus rings.
 
 ## Typography
-System stack everywhere — no webfont loading, and it matches the Helvetica
-Bold text these tools draw onto exported assets:
+Universal Sans is proprietary; substitutes:
 ```css
-font-family: -apple-system, "Helvetica Neue", Helvetica, Arial, sans-serif;
+--font-display: 'Inter', -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+--font-mono:    'Geist Mono', 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 ```
-- Page/tool title: `font-weight: 800`, `letter-spacing: -0.02em`, `text-wrap: balance`
-- Card/section titles: `font-weight: 700–800`, size ~18px
-- Body/description text: `font-weight: 400–500`, `color: var(--text-muted)`, ~13.5–15px, line-height ~1.55–1.6
-- Small labels/eyebrows/tags: `font-weight: 700`, `font-size: 10.5–11px`, `letter-spacing: 0.08–0.14em`, `text-transform: uppercase`, `color: var(--accent)` or `var(--text-faint)` depending on emphasis
-- Numeric fields (episode numbers, dimensions, counters): `font-variant-numeric: tabular-nums`
+Load Inter + Geist Mono (or JetBrains Mono) from Google Fonts in `<head>`.
 
-## Layout conventions
-- Generous page padding (~28px mobile, up to 64px top on marketing-style pages)
-- Tool UIs with inputs + output: a sticky left rail (~320–340px) for
-  controls, scrollable main area on the right for previews/grid — see
-  Sessions Asset Generator
-- Launcher/index pages: centered content column (max-width ~960px), grid of
-  cards — see Toolbox itself
-- Use flex/grid `gap`, never stacked margins
-- Border-radius: 8px on inputs/buttons/tags, 12–14px on cards
-- Card border: `1px solid var(--border)`, background `var(--surface)`
+- **Weight 400 everywhere. Never bold.** The brand never bolds — negative
+  tracking and size hierarchy do the emphasis work instead. This applies to
+  headlines, labels, and button text alike.
+- Tight **negative** letter-spacing on display sizes only (roughly
+  `-0.02em` to `-0.04em` at the largest sizes); body stays at 0 tracking.
+- Tool/page title: 32–48px, weight 400, letter-spacing ~-0.02em
+- Body / descriptions: 14–16px, weight 400, `color: var(--text-muted)`,
+  line-height 1.4–1.5
+- **Eyebrows, small labels, and every number** (dimensions, counts, episode
+  numbers, zoom %, prices) render in `--font-mono`, uppercase where it's a
+  label, positive letter-spacing ~0.08–0.1em — "reads like a code comment,"
+  per the brand's own description
+- Button label: 14px, weight 400 (not 600 — stays consistent with the
+  no-bold rule)
+
+## Shape scale
+```
+sm    8px    ALL cards / panels / inputs — the brand's one card radius
+pill  9999px ALL buttons — the entire interactive shape
+full  9999px icon circles / avatar / swatch circles
+```
+No intermediate radius steps (no 12/16/24px tier) — the brand's shape system
+is deliberately just these three. Sharp corners only on full-bleed bands
+(page background itself), never on a component.
+
+## Spacing
+Base unit 4px: 4 · 8 · 12 · 16 · 24 · 32 · 48 · 64.
+Card interior padding: 24px. Dense tool sidebars/rails can go tighter
+(12–16px) where a working tool needs more density than a marketing card —
+just keep the same radius/border/type rules.
 
 ## Components
 
-**Primary button**
+**Outline pill button** — the default, used for ~every action
 ```css
-background: var(--accent);
-color: #fff;
-font-weight: 700;
-font-size: 13.5px;
-padding: 13px 16px;
-border-radius: 8px;
-transition: transform .1s ease, background .15s ease;
-/* hover: lighten to #ff5f5e; active: scale(0.98); disabled: opacity .45 */
+background: transparent;
+color: var(--text);
+border: 1px solid var(--border-outline);
+border-radius: 9999px;
+font: 400 14px var(--font-display);
+padding: 10px 20px;              /* tighter 8px 14px acceptable in sidebars */
+transition: border-color 0.15s ease, background 0.15s ease;
+/* hover: border-color var(--border-outline-hover); background rgba(255,255,255,0.04) */
 ```
 
-**Card (clickable / launcher tile)**
+**Filled primary pill** — rare, reserve for the single most important action
+per tool (the one export/download button)
+```css
+background: #ffffff;
+color: var(--on-primary);
+border: 1px solid #ffffff;
+border-radius: 9999px;
+font: 400 14px var(--font-display);
+padding: 10px 20px;
+/* hover: background #fafaf7 (ink-hover) */
+/* disabled: background var(--surface-mid); color var(--text-faint); border-color var(--border); cursor not-allowed */
+```
+Everything that isn't this one action stays an outline pill — don't let two
+filled buttons compete on the same screen.
+
+**Card / panel**
 ```css
 background: var(--surface);
 border: 1px solid var(--border);
-border-radius: 14px;
-/* hover: background var(--surface-hover), border var(--border-hover),
-   transform: translateY(-2px) */
+border-radius: 8px;
+padding: 24px;               /* 12-16px in dense sidebars */
+/* no shadow, ever */
 ```
-Give clickable cards a small circular arrow affordance top-right that fills
-with `--accent` and turns its stroke white on hover — see Toolbox cards.
 
-**Input fields**
+**Eyebrow / label / tag** (GeistMono)
 ```css
-background: var(--surface-2, var(--surface-hover));
+font-family: var(--font-mono);
+font-size: 11-12px;
+font-weight: 400;
+letter-spacing: 0.08em;
+text-transform: uppercase;
+color: var(--text-faint);
+```
+Tags that need a visible chip (not just inline text) get a hairline pill:
+`border: 1px solid var(--border); border-radius: 9999px; padding: 4px 12px;`
+background stays transparent or `var(--surface)`.
+
+**Text input**
+```css
+background: var(--surface-soft);
 border: 1px solid var(--border);
 color: var(--text);
 border-radius: 8px;
-padding: 12px 14px;
-font-weight: 600;
-/* focus: border-color var(--accent), background one step lighter */
+padding: 12px 16px;
+font: 400 15px var(--font-display);
+/* focus: border-color rgba(255,255,255,0.5) — no color shift, brand stays monochrome */
 ```
 
-**Tags / meta chips**
+**Image work-surface (drop-zone / live canvas)** — the one deliberately
+literal-black exception
 ```css
-font-size: 10.5px;
-font-weight: 700;
-color: var(--text-faint);
 background: #000;
-border: 1px solid var(--border);
-border-radius: 5px;
-padding: 4px 8px;
+border: 1.5px dashed var(--border-outline);
+border-radius: 8px;
+/* hover/drag-over: border-color var(--border-outline-hover); background rgba(255,255,255,0.03) */
 ```
+
+**Icon circle**
+```css
+width: 32-40px; height: 32-40px;
+border-radius: 9999px;
+background: var(--surface-soft);
+border: 1px solid var(--border);
+```
+
+**Functional status color** (queues, upload progress — not present in a
+marketing-site spec, but necessary in a tool)
+```css
+/* waiting:  color: var(--text-faint) */
+/* active:   color: var(--text) — plain white, no accent hue needed */
+/* done:     color: var(--success) — the one functional exception, text-only, never a fill */
+```
+
+## Elevation
+Flat by default — no shadow, hairline border only, ever. On hover/lift,
+brighten the border (`var(--border-outline-hover)` or `var(--border)` →
+lighter) and optionally a 1–2px `translateY` — never add a shadow tier.
 
 ## Interaction details
-- All hover transitions: 120–150ms ease, on `transform`, `background`,
-  `border-color` only — never animate layout properties
-- Focus-visible state required on every interactive element: `outline: 2px
-  solid var(--accent); outline-offset: 3px`
-- Respect `prefers-reduced-motion` if any non-trivial motion is added
+- Hover/press transitions: 120–150ms ease, on `border-color`, `background`,
+  `transform` only
+- The filled-white pill darkens text-on-white contrast automatically; it
+  never changes hue
+- Focus-visible required everywhere: `outline: 2px solid rgba(255,255,255,0.6);
+  outline-offset: 3px`
 
-## When restyling an existing tool
-1. Keep the tool's actual functionality and copy untouched — this guide only
-   governs visual layer (color, type, spacing, component chrome)
-2. Swap hardcoded colors for the tokens above
-3. Re-check contrast on `--text-muted` / `--text-faint` against `--surface`
-   and `--bg` after the swap
-4. Screenshot before/after (headless Chrome works well) to confirm nothing
-   broke
+## When restyling a tool
+1. Keep functionality and copy untouched — this only governs the visual
+   layer
+2. The image work-surface (drop-zone/canvas) stays black; everything else
+   repoints to the tokens above
+3. If a tool draws brand-specific color onto its *exported output* (canvas
+   fill/stroke, not UI chrome), leave that literal alone — e.g. Sessions
+   Radio Maker draws real Spinnin'-red `#FF4948` text onto exported assets
+   via a hardcoded JS constant; that's product output, not UI theme
+4. Every button becomes an outline pill except the one primary action per
+   screen; cards get 8px radius and a hairline border, never a shadow;
+   labels and numbers move to GeistMono

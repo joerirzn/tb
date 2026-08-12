@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cover Converter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0a0a0a;
+    --surface: #191919;
+    --surface-soft: #1a1c20;
+    --surface-mid: #363a3f;
+    --border: #212327;
+    --border-hover: #2e3238;
+    --border-outline: rgba(255, 255, 255, 0.25);
+    --border-outline-hover: rgba(255, 255, 255, 0.5);
+    --text: #ffffff;
+    --muted: #7d8187;
+    --success: #05b169;
+    --success-glow: rgba(5, 177, 105, 0.10);
+    --font-display: 'Inter', -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  html { height: 100%; }
+
+  html {
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-display);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 32px 40px 40px;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: 1px solid var(--border-outline);
+    color: var(--text);
+    text-decoration: none;
+    border-radius: 9999px;
+    padding: 7px 14px 7px 10px;
+    font-size: 12px;
+    font-weight: 400;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .back-link:hover { border-color: var(--border-outline-hover); background: rgba(255,255,255,0.04); }
+  .back-link svg { width: 14px; height: 14px; stroke: currentColor; flex-shrink: 0; }
+
+  h1 {
+    font-size: 26px;
+    font-weight: 400;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+  }
+
+  .specs {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .spec-tag {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: transparent;
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    border-radius: 9999px;
+  }
+
+  /* Main layout */
+  .main {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 20px;
+    flex: 1;
+    min-height: 0;
+    align-items: stretch;
+  }
+
+  /* Drop zone */
+  .drop-zone {
+    width: 100%;
+    height: 100%;
+    min-height: 320px;
+    border: 1.5px dashed var(--border-outline);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    background: #000;
+    position: relative;
+    overflow: hidden;
+    padding: 40px;
+  }
+
+  .drop-zone:hover,
+  .drop-zone.drag-over {
+    border-color: var(--border-outline-hover);
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  .drop-zone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+  }
+
+  .drop-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    pointer-events: none;
+    gap: 0;
+  }
+
+  .drop-icon {
+    width: 40px;
+    height: 40px;
+    margin-bottom: 14px;
+    opacity: 0.25;
+  }
+
+  .drop-label {
+    font-size: 16px;
+    font-weight: 400;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .drop-sub {
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  /* Sidebar */
+  .sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  /* Folder picker */
+  .folder-picker {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+  }
+
+  .folder-picker-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 400;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .folder-picker-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .folder-path {
+    flex: 1;
+    font-size: 12px;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    min-width: 0;
+  }
+
+  .folder-path.selected {
+    color: var(--text);
+  }
+
+  .btn-folder {
+    flex-shrink: 0;
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border-outline);
+    border-radius: 9999px;
+    padding: 8px 14px;
+    font-size: 12px;
+    font-weight: 400;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    white-space: nowrap;
+  }
+
+  .btn-folder:hover { border-color: var(--border-outline-hover); background: rgba(255,255,255,0.04); }
+
+  .folder-note {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 8px;
+    line-height: 1.5;
+  }
+
+  /* Info cards */
+  .info-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .info-card {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .info-card-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 400;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .info-card-value {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text);
+  }
+
+  /* Queue */
+  .queue-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    display: none;
+    flex: 1;
+    min-height: 0;
+    flex-direction: column;
+  }
+
+  .queue-wrap.visible {
+    display: flex;
+  }
+
+
+  .queue-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .queue-title {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 400;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .queue-count {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .btn-clear {
+    background: none;
+    border: 1px solid var(--border-outline);
+    color: var(--muted);
+    border-radius: 9999px;
+    padding: 3px 10px;
+    font-size: 11px;
+    font-weight: 400;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+  }
+
+  .btn-clear:hover {
+    border-color: #e55;
+    color: #e55;
+  }
+
+  .queue-list {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+  }
+
+  .queue-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .queue-item:last-child { border-bottom: none; }
+
+  .queue-item-thumb {
+    width: 34px;
+    height: 34px;
+    border-radius: 6px;
+    object-fit: cover;
+    background: var(--border);
+    flex-shrink: 0;
+  }
+
+  .queue-item-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .queue-item-name {
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 5px;
+  }
+
+  .progress-bar-track {
+    height: 2px;
+    background: var(--border-hover);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 2px;
+    background: #ffffff;
+    transition: width 0.25s ease;
+  }
+
+  .queue-item-status {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 400;
+    flex-shrink: 0;
+    color: var(--muted);
+    min-width: 52px;
+    text-align: right;
+  }
+
+  .queue-item-status.active { color: var(--text); }
+  .queue-item-status.done { color: var(--success); }
+
+  /* Summary */
+  .summary {
+    display: none;
+    background: var(--success-glow);
+    border: 1px solid rgba(5, 177, 105, 0.2);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--success);
+    text-align: center;
+  }
+
+  .summary.visible { display: block; }
+
+
+  .queue-list::-webkit-scrollbar { width: 4px; }
+  .queue-list::-webkit-scrollbar-track { background: transparent; }
+  .queue-list::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 2px; }
+  .queue-list::-webkit-scrollbar-thumb:hover { background: #3a3a3a; }
+
+  canvas { display: none; }
+
+  @media (max-width: 800px) {
+    html, body { height: 100%; }
+
+  body { padding: 24px 20px 48px; }
+    .main { grid-template-columns: 1fr; }
+    header { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <a class="back-link" href="../index.html"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 19l-7-7 7-7"/></svg>Toolbox</a>
+    <div>
+      <h1>Cover Converter</h1>
+    </div>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- Drop zone -->
+  <div class="drop-zone" id="dropZone">
+    <input type="file" id="fileInput" accept="image/*" multiple>
+    <div class="drop-placeholder">
+      <svg class="drop-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="6" y="6" width="36" height="36" rx="6" stroke="white" stroke-width="2"/>
+        <path d="M24 16v16M16 24l8-8 8 8" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <div class="drop-label">Drop your artwork here</div>
+      <div class="drop-sub">or click to choose files — multiple supported</div>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+
+    <!-- Folder picker -->
+    <div class="folder-picker">
+      <div class="folder-picker-label">Export folder</div>
+      <div class="folder-picker-row">
+        <div class="folder-path" id="folderPath">Downloads folder</div>
+        <button class="btn-folder" id="btnFolder">Choose</button>
+      </div>
+      <div class="folder-note" id="folderNote">No folder selected — exports go to your Downloads folder automatically.</div>
+    </div>
+
+    <!-- Info cards -->
+    <div class="info-row">
+      <div class="info-card">
+        <span class="info-card-label">Output</span>
+        <span class="info-card-value">2000×2000</span>
+      </div>
+      <div class="info-card">
+        <span class="info-card-label">DPI</span>
+        <span class="info-card-value">72</span>
+      </div>
+      <div class="info-card">
+        <span class="info-card-label">Quality</span>
+        <span class="info-card-value">100%</span>
+      </div>
+    </div>
+
+    <!-- Queue -->
+    <div class="queue-wrap" id="queueWrap">
+      <div class="queue-header">
+        <span class="queue-title">Files</span>
+        <span class="queue-count" id="queueCount"></span>
+        <button class="btn-clear" id="btnClear">Clear</button>
+      </div>
+      <div class="queue-list" id="queueList"></div>
+    </div>
+
+    <!-- Summary -->
+    <div class="summary" id="summary"></div>
+
+  </div>
+</div>
+
+<canvas id="canvas" width="2000" height="2000"></canvas>
+
+<script>
+  const dropZone = document.getElementById('dropZone');
+  const fileInput = document.getElementById('fileInput');
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  const queueWrap = document.getElementById('queueWrap');
+  const queueList = document.getElementById('queueList');
+  const queueCount = document.getElementById('queueCount');
+  const summaryEl = document.getElementById('summary');
+  const btnFolder = document.getElementById('btnFolder');
+  const folderPathEl = document.getElementById('folderPath');
+  const folderNoteEl = document.getElementById('folderNote');
+  const btnClear = document.getElementById('btnClear');
+
+  let dirHandle = null;
+  let isProcessing = false;
+
+  // Clear queue
+  btnClear.addEventListener('click', () => {
+    if (isProcessing) return;
+    queueList.innerHTML = '';
+    queueWrap.classList.remove('visible');
+    summaryEl.classList.remove('visible');
+    queueCount.textContent = '';
+  });
+
+  // Folder picker
+  const folderPickerSupported = 'showDirectoryPicker' in window;
+
+  if (!folderPickerSupported) {
+    folderNoteEl.textContent = 'Folder picker not supported in this browser — files will download to your Downloads folder.';
+    btnFolder.style.display = 'none';
+  }
+
+  btnFolder.addEventListener('click', async () => {
+    try {
+      dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+      folderPathEl.textContent = dirHandle.name;
+      folderPathEl.classList.add('selected');
+      folderNoteEl.textContent = `All exports go to "${dirHandle.name}" automatically.`;
+    } catch (e) {
+      // User cancelled
+    }
+  });
+
+  // Drag & drop
+  dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    const files = [...e.dataTransfer.files].filter(f => f.type.startsWith('image/'));
+    if (files.length) handleFiles(files);
+  });
+
+  fileInput.addEventListener('change', () => {
+    const files = [...fileInput.files].filter(f => f.type.startsWith('image/'));
+    if (files.length) handleFiles(files);
+    fileInput.value = '';
+  });
+
+  function handleFiles(files) {
+    summaryEl.classList.remove('visible');
+    queueList.innerHTML = '';
+    queueWrap.classList.add('visible');
+    queueCount.textContent = `${files.length} file${files.length > 1 ? 's' : ''}`;
+
+    const items = files.map(file => buildQueueItem(file));
+    items.forEach(item => queueList.appendChild(item.el));
+
+    if (!isProcessing) processAll(items);
+  }
+
+  function buildQueueItem(file) {
+    const el = document.createElement('div');
+    el.className = 'queue-item';
+
+    const thumb = document.createElement('img');
+    thumb.className = 'queue-item-thumb';
+    thumb.src = URL.createObjectURL(file);
+
+    const info = document.createElement('div');
+    info.className = 'queue-item-info';
+
+    const name = document.createElement('div');
+    name.className = 'queue-item-name';
+    const baseName = file.name.replace(/\.[^/.]+$/, '');
+    name.textContent = baseName + '.jpg';
+
+    const track = document.createElement('div');
+    track.className = 'progress-bar-track';
+    const fill = document.createElement('div');
+    fill.className = 'progress-bar-fill';
+    track.appendChild(fill);
+
+    info.appendChild(name);
+    info.appendChild(track);
+
+    const status = document.createElement('div');
+    status.className = 'queue-item-status';
+    status.textContent = 'Waiting';
+
+    el.appendChild(thumb);
+    el.appendChild(info);
+    el.appendChild(status);
+
+    return { el, fill, status, file, baseName };
+  }
+
+  async function processAll(items) {
+    isProcessing = true;
+    for (const item of items) {
+      await processItem(item);
+    }
+    isProcessing = false;
+    const n = items.length;
+    summaryEl.textContent = `✓ ${n} cover${n > 1 ? 's' : ''} exported as 2000×2000 JPG`;
+    summaryEl.classList.add('visible');
+  }
+
+  function loadImage(file) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function processItem(item) {
+    item.status.textContent = 'Converting';
+    item.status.classList.add('active');
+    item.fill.style.width = '20%';
+
+    const img = await loadImage(item.file);
+    item.fill.style.width = '50%';
+
+    // Draw to canvas
+    ctx.clearRect(0, 0, 2000, 2000);
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, 2000, 2000);
+    const scale = Math.max(2000 / img.width, 2000 / img.height);
+    const w = img.width * scale;
+    const h = img.height * scale;
+    ctx.drawImage(img, (2000 - w) / 2, (2000 - h) / 2, w, h);
+
+    item.fill.style.width = '80%';
+
+    const fileName = item.baseName + '.jpg';
+
+    if (dirHandle) {
+      // Write directly to chosen folder
+      try {
+        const fileHandle = await dirHandle.getFileHandle(fileName, { create: true });
+        const writable = await fileHandle.createWritable();
+        const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 1.0));
+        await writable.write(blob);
+        await writable.close();
+      } catch (e) {
+        console.error(e);
+      }
+    } else {
+      // Fallback: regular download
+      const dataURL = canvas.toDataURL('image/jpeg', 1.0);
+      const link = document.createElement('a');
+      link.href = dataURL;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      // Delay between downloads to avoid browser blocking
+      await new Promise(r => setTimeout(r, 600));
+    }
+
+    item.fill.style.width = '100%';
+    item.fill.style.background = 'var(--success)';
+    item.status.textContent = '✓ Done';
+    item.status.classList.remove('active');
+    item.status.classList.add('done');
+
+    await new Promise(r => setTimeout(r, 100));
+  }
+</script>
+</body>
+</html>
