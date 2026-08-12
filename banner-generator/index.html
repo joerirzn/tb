@@ -6,26 +6,22 @@
 <title>Social Banner Creator</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg:           #0a0a0a;
-  --surface:      #191919;
-  --surface-soft: #1a1c20;
-  --surface-mid:  #363a3f;
-  --border:       #212327;
-  --border-hover: #2e3238;
-  --border-outline: rgba(255, 255, 255, 0.25);
-  --border-outline-hover: rgba(255, 255, 255, 0.5);
+  --bg:           #000000;
+  --surface:      #272729;
+  --surface-2:    #2a2a2c;
+  --border:       rgba(255, 255, 255, 0.08);
+  --border-hover: rgba(255, 255, 255, 0.16);
   --text:         #ffffff;
-  --muted:        #7d8187;
-  --accent:       #ffffff;
-  --accent-glow:  rgba(255, 255, 255, 0.06);
+  --muted:        #86868b;
+  --accent:       #2997ff;
+  --accent-glow:  rgba(41, 151, 255, 0.08);
+  --on-accent:    #ffffff;
   --font: 'Inter', -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
   --radius-sm: 8px;
-  --radius-md: 8px;
-  --radius-lg: 8px;
+  --radius-lg: 18px;
   --radius-pill: 9999px;
 }
 
@@ -60,8 +56,8 @@ body {
 }
 .app-header h1 {
   font-size: 26px;
-  font-weight: 400;
-  letter-spacing: -0.03em;
+  font-weight: 600;
+  letter-spacing: -0.02em;
   line-height: 1.1;
 }
 
@@ -70,7 +66,7 @@ body {
   align-items: center;
   gap: 6px;
   background: transparent;
-  border: 1px solid var(--border-outline);
+  border: 1px solid var(--border);
   color: var(--text);
   text-decoration: none;
   border-radius: var(--radius-pill);
@@ -79,7 +75,7 @@ body {
   font-weight: 400;
   transition: border-color 0.15s ease, background 0.15s ease;
 }
-.back-link:hover { border-color: var(--border-outline-hover); background: rgba(255,255,255,0.04); }
+.back-link:hover { border-color: var(--border-hover); background: rgba(255,255,255,0.04); }
 .back-link svg { width: 14px; height: 14px; stroke: currentColor; flex-shrink: 0; }
 
 /* Layout */
@@ -100,15 +96,12 @@ body {
   gap: 12px;
 }
 
-.sb-section { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+.sb-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; }
 
 .section-label {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 400;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
   margin-bottom: 10px;
 }
 
@@ -124,16 +117,17 @@ body {
 /* Inputs */
 input[type="text"], select {
   width: 100%;
-  font-size: 12px;
+  font-size: 13px;
   font-family: var(--font);
   color: var(--text);
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 8px 10px;
+  padding: 9px 14px;
   outline: none;
   transition: border-color 0.15s, color 0.15s;
 }
+input[type="text"] { border-radius: var(--radius-pill); }
+select { border-radius: var(--radius-sm); }
 input[type="text"]:focus, select:focus { border-color: var(--accent); }
 input[type="text"]::placeholder { color: var(--muted); }
 select { cursor: pointer; }
@@ -156,8 +150,8 @@ select { cursor: pointer; }
 
 /* Upload zone */
 .upload-zone {
-  border: 1.5px dashed var(--border-outline);
-  border-radius: var(--radius-md);
+  border: 1.5px dashed var(--border-hover);
+  border-radius: var(--radius-lg);
   padding: 16px;
   text-align: center;
   cursor: pointer;
@@ -166,7 +160,7 @@ select { cursor: pointer; }
   background: #000;
   transition: border-color 0.2s, background 0.2s;
 }
-.upload-zone:hover { border-color: var(--border-outline-hover); background: rgba(255,255,255,0.03); }
+.upload-zone:hover { border-color: var(--accent); background: var(--accent-glow); }
 .upload-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
 .upload-zone .uz-icon { font-size: 20px; color: #333; margin-bottom: 4px; }
 .upload-zone .uz-text { font-size: 12px; color: var(--muted); }
@@ -177,18 +171,18 @@ select { cursor: pointer; }
 /* Buttons */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  background: #ffffff; color: #0a0a0a; border: 1px solid #ffffff;
-  border-radius: var(--radius-pill); padding: 8px 14px;
-  font-size: 12px; font-weight: 400; font-family: var(--font);
-  cursor: pointer; transition: background 0.15s; width: 100%;
+  background: var(--accent); color: var(--on-accent); border: none;
+  border-radius: var(--radius-pill); padding: 10px 14px;
+  font-size: 14px; font-weight: 400; font-family: var(--font);
+  cursor: pointer; transition: transform 0.1s ease; width: 100%;
 }
-.btn:hover { background: #fafaf7; }
-.btn:disabled { background: var(--surface-mid); color: var(--muted); border-color: var(--border); cursor: default; }
+.btn:active { transform: scale(0.97); }
+.btn:disabled { background: var(--surface-2); color: var(--muted); transform: none; cursor: default; }
 
 .btn-ghost {
-  background: none; border: 1px solid var(--border-outline); color: var(--muted);
-  border-radius: var(--radius-pill); padding: 5px 12px;
-  font-size: 11px; font-weight: 400; font-family: var(--font);
+  background: none; border: 1px solid var(--border-hover); color: var(--muted);
+  border-radius: var(--radius-pill); padding: 6px 14px;
+  font-size: 12px; font-weight: 400; font-family: var(--font);
   cursor: pointer; transition: border-color 0.15s, color 0.15s;
 }
 .btn-ghost:hover { border-color: var(--text); color: var(--text); }
@@ -208,8 +202,8 @@ select { cursor: pointer; }
 
 .banner-block { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .banner-meta { display: flex; align-items: baseline; gap: 8px; }
-.banner-name { font-family: var(--font-mono); font-size: 10px; font-weight: 400; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
-.banner-dims { font-family: var(--font-mono); font-size: 9px; color: var(--muted); }
+.banner-name { font-size: 12px; font-weight: 600; color: var(--text); }
+.banner-dims { font-size: 11px; color: var(--muted); }
 .canvas-wrap { width: 100%; border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border); background: #000; }
 .canvas-wrap canvas { display: block; width: 100%; height: auto; }
 </style>
@@ -235,24 +229,24 @@ select { cursor: pointer; }
     <div class="sb-section">
       <div style="display:flex;flex-direction:column;gap:8px;">
         <div style="display:flex;align-items:center;gap:10px;">
-          <div style="width:20px;height:20px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:10px;font-weight:400;color:#0a0a0a;flex-shrink:0;">1</div>
+          <div style="width:20px;height:20px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--on-accent);flex-shrink:0;">1</div>
           <div>
-            <div style="font-size:11px;font-weight:400;color:var(--text);">Select label</div>
-            <div style="font-size:10px;color:var(--muted);margin-top:1px;">Pick your label preset</div>
+            <div style="font-size:12px;font-weight:600;color:var(--text);">Select label</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:1px;">Pick your label preset</div>
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:10px;">
-          <div style="width:20px;height:20px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:10px;font-weight:400;color:#0a0a0a;flex-shrink:0;">2</div>
+          <div style="width:20px;height:20px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--on-accent);flex-shrink:0;">2</div>
           <div>
-            <div style="font-size:11px;font-weight:400;color:var(--text);">Drop artwork</div>
-            <div style="font-size:10px;color:var(--muted);margin-top:1px;">System scans text for artist / title</div>
+            <div style="font-size:12px;font-weight:600;color:var(--text);">Drop artwork</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:1px;">System scans text for artist / title</div>
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:10px;">
-          <div style="width:20px;height:20px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:10px;font-weight:400;color:#0a0a0a;flex-shrink:0;">3</div>
+          <div style="width:20px;height:20px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--on-accent);flex-shrink:0;">3</div>
           <div>
-            <div style="font-size:11px;font-weight:400;color:var(--text);">Adjust &amp; export</div>
-            <div style="font-size:10px;color:var(--muted);margin-top:1px;">Tweak colors, download all</div>
+            <div style="font-size:12px;font-weight:600;color:var(--text);">Adjust &amp; export</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:1px;">Tweak colors, download all</div>
           </div>
         </div>
       </div>
