@@ -64,10 +64,9 @@
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 18px;
-    padding: 24px;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
-    gap: 18px;
     transition: border-color .15s ease, transform .12s ease;
   }
   .card:hover{
@@ -80,23 +79,30 @@
     outline-offset: 3px;
   }
 
+  .card-image{
+    aspect-ratio: 1 / 1;
+    background: #000;
+    border-bottom: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .card-image img{
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top;
+    display: block;
+  }
+
+  .card-content{
+    padding: 16px 20px;
+  }
+
   .card-top{
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
     gap: 12px;
   }
-  .icon{
-    width: 40px; height: 40px;
-    border-radius: 9999px;
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex: none;
-  }
-  .icon svg{ width: 19px; height: 19px; stroke: var(--text); }
 
   .arrow{
     width: 28px; height: 28px;
@@ -115,33 +121,11 @@
   }
   .card:hover .arrow svg{ stroke: var(--on-accent); }
 
-  .card-body{ flex: 1; }
   .card-title{
     font-size: 18px;
     font-weight: 600;
     letter-spacing: -0.01em;
-    margin: 0 0 6px;
-  }
-  .card-desc{
-    font-size: 14px;
-    line-height: 1.5;
-    color: var(--text-muted);
     margin: 0;
-  }
-
-  .tags{
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-  .tag{
-    font-size: 12px;
-    font-weight: 400;
-    color: var(--text-faint);
-    background: transparent;
-    border: 1px solid var(--border);
-    border-radius: 9999px;
-    padding: 4px 12px;
   }
 </style>
 
@@ -152,59 +136,43 @@
   <div class="grid">
 
     <a class="card" href="banner-generator/index.html">
-      <div class="card-top">
-        <div class="icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 15l5-5 4 4 5-6 4 5"/></svg>
+      <div class="card-image"><img src="banner-generator/preview.png" alt="Social Banner Creator preview"></div>
+      <div class="card-content">
+        <div class="card-top">
+          <p class="card-title">Social Banner Creator</p>
+          <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M8 7h9v9"/></svg></div>
         </div>
-        <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M8 7h9v9"/></svg></div>
-      </div>
-      <div class="card-body">
-        <p class="card-title">Social Banner Creator</p>
-        <p class="card-desc">Pick a label preset, drop in artwork, tweak colour and text, export banners for every platform.</p>
-      </div>
-      <div class="tags"><span class="tag">Label presets</span><span class="tag">Multi-format</span></div>
+</div>
     </a>
 
     <a class="card" href="cover-converter/index.html">
-      <div class="card-top">
-        <div class="icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 9h4V4M20 15h-4v5"/></svg>
+      <div class="card-image"><img src="cover-converter/preview.png" alt="Cover Converter preview"></div>
+      <div class="card-content">
+        <div class="card-top">
+          <p class="card-title">Cover Converter</p>
+          <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M8 7h9v9"/></svg></div>
         </div>
-        <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M8 7h9v9"/></svg></div>
-      </div>
-      <div class="card-body">
-        <p class="card-title">Cover Converter</p>
-        <p class="card-desc">Drop artwork in, get it back standardised. Drop. Convert. Done.</p>
-      </div>
-      <div class="tags"><span class="tag">2000×2000</span><span class="tag">72 DPI</span></div>
+</div>
     </a>
 
     <a class="card" href="sessions-radio-maker/index.html">
-      <div class="card-top">
-        <div class="icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2.5"/><path d="M7.5 8.5a6 6 0 0 0 0 7M16.5 8.5a6 6 0 0 1 0 7M4.5 5.5a10.5 10.5 0 0 0 0 13M19.5 5.5a10.5 10.5 0 0 1 0 13"/></svg>
+      <div class="card-image"><img src="sessions-radio-maker/preview.png" alt="Sessions Asset Generator preview"></div>
+      <div class="card-content">
+        <div class="card-top">
+          <p class="card-title">Sessions Asset Generator</p>
+          <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M8 7h9v9"/></svg></div>
         </div>
-        <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M8 7h9v9"/></svg></div>
-      </div>
-      <div class="card-body">
-        <p class="card-title">Sessions Asset Generator</p>
-        <p class="card-desc">Enter an artist and episode number, get all 9 Spinnin' Sessions Radio social assets at once.</p>
-      </div>
-      <div class="tags"><span class="tag">9 formats</span><span class="tag">Artist + Episode</span></div>
+</div>
     </a>
 
     <a class="card" href="thumbnail-maker/index.html">
-      <div class="card-top">
-        <div class="icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10.5 9.5l4.5 2.5-4.5 2.5v-5z"/></svg>
+      <div class="card-image"><img src="thumbnail-maker/preview.png" alt="Thumbnail Maker preview"></div>
+      <div class="card-content">
+        <div class="card-top">
+          <p class="card-title">Thumbnail Maker</p>
+          <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M8 7h9v9"/></svg></div>
         </div>
-        <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M8 7h9v9"/></svg></div>
-      </div>
-      <div class="card-body">
-        <p class="card-title">Thumbnail Maker</p>
-        <p class="card-desc">Upload backgrounds, add overlays and gradients, position and zoom. Drop. Overlay. Done.</p>
-      </div>
-      <div class="tags"><span class="tag">1920×1080</span><span class="tag">PNG</span></div>
+</div>
     </a>
 
   </div>
