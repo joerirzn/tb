@@ -97,7 +97,10 @@
   }
 
   .card-content{
-    padding: 16px 20px;
+    padding: 16px 20px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
   }
 
   .card-top{
@@ -130,6 +133,12 @@
     letter-spacing: -0.01em;
     margin: 0;
   }
+  .card-desc{
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: var(--text-muted);
+    margin: 0;
+  }
 </style>
 
 <div class="wrap">
@@ -145,7 +154,8 @@
           <p class="card-title">Social Banner Creator</p>
           <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M8 7h9v9"/></svg></div>
         </div>
-</div>
+        <p class="card-desc">Turns one piece of key art into banners for every platform. Label logo and colours applied automatically.</p>
+      </div>
     </a>
 
     <a class="card" href="cover-converter/index.html">
@@ -155,7 +165,8 @@
           <p class="card-title">Cover Converter</p>
           <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M8 7h9v9"/></svg></div>
         </div>
-</div>
+        <p class="card-desc">Standardises any cover to a 2000×2000 JPG at 72 DPI. Centered on a black canvas.</p>
+      </div>
     </a>
 
     <a class="card" href="sessions-radio-maker/index.html">
@@ -165,7 +176,8 @@
           <p class="card-title">Sessions Asset Generator</p>
           <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M8 7h9v9"/></svg></div>
         </div>
-</div>
+        <p class="card-desc">Fills in artist and episode number for Spinnin' Sessions Radio. Draws them onto all 9 official templates.</p>
+      </div>
     </a>
 
     <a class="card" href="thumbnail-maker/index.html">
@@ -175,7 +187,8 @@
           <p class="card-title">Thumbnail Maker</p>
           <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M8 7h9v9"/></svg></div>
         </div>
-</div>
+        <p class="card-desc">Combines a background, label overlay and gradient. Exports as a 1920×1080 PNG.</p>
+      </div>
     </a>
 
   </div>
