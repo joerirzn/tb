@@ -8,6 +8,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
+@view-transition{ navigation: auto; }
+
 :root {
   --bg:           #000000;
   --surface:      #272729;
@@ -18,6 +20,7 @@
   --muted:        #86868b;
   --accent:       #2997ff;
   --accent-glow:  rgba(41, 151, 255, 0.08);
+  --accent-focus: #0071e3;
   --on-accent:    #ffffff;
   --font: 'Inter', -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --radius-sm: 8px;
@@ -207,6 +210,15 @@ select { cursor: pointer; }
 .banner-dims { font-size: 11px; color: var(--muted); }
 .canvas-wrap { width: 100%; border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border); background: #000; }
 .canvas-wrap canvas { display: block; width: 100%; height: auto; }
+
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible {
+  outline: 2px solid var(--accent-focus);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce){
+  *{ animation-duration: .001s !important; transition-duration: .001s !important; }
+}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>

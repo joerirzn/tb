@@ -8,6 +8,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
+  @view-transition{ navigation: auto; }
+
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   :root {
@@ -423,6 +425,15 @@
   body { padding: 24px 20px 48px; }
     .main { grid-template-columns: 1fr; }
     header { flex-direction: column; align-items: flex-start; }
+  }
+
+  a:focus-visible, button:focus-visible, input:focus-visible {
+    outline: 2px solid var(--accent-focus);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration: .001s !important; transition-duration: .001s !important; }
   }
 </style>
 </head>

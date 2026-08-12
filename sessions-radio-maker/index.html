@@ -3,6 +3,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
+  @view-transition{ navigation: auto; }
+
   :root{
     --bg: #000000;
     --surface: #272729;
@@ -284,6 +286,15 @@
     color: var(--text-faint);
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
+  }
+
+  a:focus-visible, button:focus-visible, input:focus-visible {
+    outline: 2px solid var(--accent-focus);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration: .001s !important; transition-duration: .001s !important; }
   }
 </style>
 
