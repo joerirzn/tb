@@ -212,6 +212,16 @@
     text-align: center;
   }
 
+  .folder-warning{
+    font-size: 11px;
+    color: var(--text-faint);
+    line-height: 1.5;
+    text-align: center;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+
   /* ---------- Grid ---------- */
   .main{
     flex: 1 1 640px;
@@ -346,6 +356,7 @@
       </button>
       <p class="export-note" id="exportNote"></p>
       <span class="status" id="status"></span>
+      <p class="folder-warning">Can't pick Desktop, Downloads or Documents directly — choose a subfolder inside them instead.</p>
     </div>
   </aside>
 </div>
@@ -576,7 +587,7 @@ function updateExportNote(){
   const root = rootFolderName();
   if(SUPPORTS_FS_ACCESS){
     exportBtnLabel.textContent = "Choose Folder & Export";
-    exportNote.textContent = `Saves into a ${root}/ folder (matching the episode number) with Facebook/, Instagram/, Soundcloud/, Spotify/, Square/ and YouTube/ subfolders inside the folder you pick. Tip: Desktop, Downloads and Documents themselves can't be picked directly — choose a subfolder inside them instead.`;
+    exportNote.textContent = `Saves into a ${root}/ folder (matching the episode number) with Facebook/, Instagram/, Soundcloud/, Spotify/, Square/ and YouTube/ subfolders inside the folder you pick.`;
   } else {
     exportBtnLabel.textContent = "Download All 9 (.zip)";
     exportNote.textContent = `Your browser can't write directly to a folder, so ${root}.zip downloads instead, with the same folder structure inside.`;

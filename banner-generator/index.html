@@ -199,6 +199,15 @@ select { cursor: pointer; }
 .progress-bar-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.2s; border-radius: 2px; }
 .progress-label { font-size: 10px; color: var(--muted); margin-top: 5px; text-align: center; }
 
+.folder-warning {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
 /* Main grid */
 .main {
   flex: 1 1 640px; min-width: 0;
@@ -317,6 +326,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
         <div class="progress-bar-track"><div class="progress-bar-fill" id="progressFill"></div></div>
         <div class="progress-label" id="progressLabel">Processing...</div>
       </div>
+      <div class="folder-warning">Can't pick Desktop, Downloads or Documents directly — choose a subfolder inside them instead.</div>
     </div>
 
   </aside>

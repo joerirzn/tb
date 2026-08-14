@@ -246,6 +246,15 @@
     line-height: 1.5;
   }
 
+  .folder-warning {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+    line-height: 1.5;
+  }
+
   /* Info cards */
   .info-row {
     display: flex;
@@ -461,7 +470,8 @@
         <div class="folder-path" id="folderPath">Downloads folder</div>
         <button class="btn-folder" id="btnFolder">Choose</button>
       </div>
-      <div class="folder-note" id="folderNote">No folder selected — exports go to your Downloads folder automatically. Tip: Desktop, Downloads and Documents themselves can't be picked directly — choose a subfolder inside them instead.</div>
+      <div class="folder-note" id="folderNote">No folder selected — exports go to your Downloads folder automatically.</div>
+      <div class="folder-warning">Can't pick Desktop, Downloads or Documents directly — choose a subfolder inside them instead.</div>
     </div>
 
     <!-- Info cards -->
