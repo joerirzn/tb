@@ -576,7 +576,7 @@ function updateExportNote(){
   const root = rootFolderName();
   if(SUPPORTS_FS_ACCESS){
     exportBtnLabel.textContent = "Choose Folder & Export";
-    exportNote.textContent = `Saves into a ${root}/ folder (matching the episode number) with Facebook/, Instagram/, Soundcloud/, Spotify/, Square/ and YouTube/ subfolders inside the folder you pick.`;
+    exportNote.textContent = `Saves into a ${root}/ folder (matching the episode number) with Facebook/, Instagram/, Soundcloud/, Spotify/, Square/ and YouTube/ subfolders inside the folder you pick. Tip: Desktop, Downloads and Documents themselves can't be picked directly — choose a subfolder inside them instead.`;
   } else {
     exportBtnLabel.textContent = "Download All 9 (.zip)";
     exportNote.textContent = `Your browser can't write directly to a folder, so ${root}.zip downloads instead, with the same folder structure inside.`;
