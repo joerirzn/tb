@@ -336,7 +336,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 const SIZES = [
   { id: 'facebook',   name: 'Facebook Cover',   w: 1640, h: 624  },
   { id: 'soundcloud', name: 'SoundCloud',        w: 2480, h: 520  },
-  { id: 'youtube',    name: 'YouTube / Twitter', w: 2560, h: 1440, safeX: 507, safeY: 509, safeW: 1546, safeH: 423 },
+  { id: 'youtube',    name: 'YouTube / Twitter', w: 2560, h: 1440, safeX: 507, safeY: 509, safeW: 1546, safeH: 423, maxBytes: 6000000 },
   { id: 'website',    name: 'Website Banner',    w: 1920, h: 302  },
   { id: 'tiktok',     name: 'TikTok',            w: 686,  h: 180  },
   { id: 'instagram',  name: 'Instagram',         w: 1030, h: 216  },
@@ -747,12 +747,22 @@ function renderAll() {
 }
 
 // Export
-function renderToBlob(size) {
-  return new Promise(resolve => {
-    const c = document.createElement('canvas');
-    drawBanner(c, size, 1, true);
-    c.toBlob(blob => resolve(blob), 'image/png');
-  });
+function canvasToBlob(c, type, quality) {
+  return new Promise(resolve => c.toBlob(resolve, type, quality));
+}
+
+// PNG by default; sizes with a maxBytes limit fall back to the best JPG quality that fits
+async function renderToBlob(size) {
+  const c = document.createElement('canvas');
+  drawBanner(c, size, 1, true);
+  const png = await canvasToBlob(c, 'image/png');
+  if (!size.maxBytes || png.size <= size.maxBytes) return { blob: png, ext: 'png' };
+  let jpg;
+  for (let q = 0.95; q >= 0.5; q -= 0.05) {
+    jpg = await canvasToBlob(c, 'image/jpeg', q);
+    if (jpg.size <= size.maxBytes) break;
+  }
+  return { blob: jpg, ext: 'jpg' };
 }
 
 document.getElementById('btnExportAll').addEventListener('click', async () => {
@@ -773,10 +783,10 @@ document.getElementById('btnExportAll').addEventListener('click', async () => {
       const size = sizes[i];
       lbl.textContent  = `${sizeName(size)} (${i + 1}/${sizes.length})`;
       fill.style.width = ((i / sizes.length) * 100) + '%';
-      const blob = await renderToBlob(size);
+      const { blob, ext } = await renderToBlob(size);
       const folderName = sizeName(size).replace(/[/\\:*?<>|]/g, '-').trim();
       const subDir = await bannersDir.getDirectoryHandle(folderName, { create: true });
-      const fh = await subDir.getFileHandle(`${folderName}.png`, { create: true });
+      const fh = await subDir.getFileHandle(`${folderName}.${ext}`, { create: true });
       const wr = await fh.createWritable();
       await wr.write(blob); await wr.close();
       await new Promise(r => setTimeout(r, 30));
@@ -788,9 +798,9 @@ document.getElementById('btnExportAll').addEventListener('click', async () => {
       const size = sizes[i];
       lbl.textContent  = `${sizeName(size)} (${i + 1}/${sizes.length})`;
       fill.style.width = ((i / sizes.length) * 100) + '%';
-      const blob = await renderToBlob(size);
+      const { blob, ext } = await renderToBlob(size);
       const folderName = sizeName(size).replace(/[/\\:*?<>|]/g, '-').trim();
-      bannersFolder.folder(folderName).file(`${folderName}.png`, blob);
+      bannersFolder.folder(folderName).file(`${folderName}.${ext}`, blob);
       await new Promise(r => setTimeout(r, 30));
     }
     fill.style.width = '90%'; lbl.textContent = 'Zipping...';
