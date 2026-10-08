@@ -21,6 +21,8 @@
     --border-hover: rgba(255, 255, 255, 0.16);
     --text: #ffffff;
     --muted: #86868b;
+    --warning: #ffd60a;
+    --error: #ff453a;
     --accent: #2997ff;
     --accent-focus: #0071e3;
     --on-accent: #ffffff;
@@ -405,6 +407,16 @@
 
   .queue-item-status.active { color: var(--accent); }
   .queue-item-status.done { color: var(--success); }
+  .queue-item-status.warn { color: var(--warning); }
+  .queue-item-status.error { color: var(--error); }
+
+  .queue-item-note {
+    font-size: 11px;
+    line-height: 1.4;
+    color: var(--warning);
+    margin-top: 5px;
+  }
+  .queue-item-note.error { color: var(--error); }
 
   /* Summary */
   .summary {
@@ -507,14 +519,14 @@
 
   <!-- Drop zone -->
   <div class="drop-zone" id="dropZone">
-    <input type="file" id="fileInput" accept="image/*" multiple>
+    <input type="file" id="fileInput" accept="image/*,.psd,.tif,.tiff" multiple>
     <div class="drop-placeholder">
       <svg class="drop-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
         <rect x="6" y="6" width="36" height="36" rx="6" stroke="white" stroke-width="2"/>
         <path d="M24 16v16M16 24l8-8 8 8" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
       <div class="drop-label">Drop your artwork here</div>
-      <div class="drop-sub">or click to choose files — multiple supported</div>
+      <div class="drop-sub">or click to choose files — JPG, PNG, PSD, TIFF, multiple supported</div>
     </div>
   </div>
 </div>
@@ -572,15 +584,27 @@
   dropZone.addEventListener('drop', (e) => {
     e.preventDefault();
     dropZone.classList.remove('drag-over');
-    const files = [...e.dataTransfer.files].filter(f => f.type.startsWith('image/'));
+    const files = [...e.dataTransfer.files].filter(isSupported);
     if (files.length) handleFiles(files);
   });
 
   fileInput.addEventListener('change', () => {
-    const files = [...fileInput.files].filter(f => f.type.startsWith('image/'));
+    const files = [...fileInput.files].filter(isSupported);
     if (files.length) handleFiles(files);
     fileInput.value = '';
   });
+
+  // PSD and TIFF aren't decoded by Chrome, so they go through their own readers
+  function fileKind(file) {
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (ext === 'psd') return 'psd';
+    if (ext === 'tif' || ext === 'tiff') return 'tiff';
+    return 'image';
+  }
+
+  function isSupported(file) {
+    return fileKind(file) !== 'image' || file.type.startsWith('image/');
+  }
 
   function handleFiles(files) {
     summaryEl.classList.remove('visible');
@@ -600,7 +624,7 @@
 
     const thumb = document.createElement('img');
     thumb.className = 'queue-item-thumb';
-    thumb.src = URL.createObjectURL(file);
+    if (fileKind(file) === 'image') thumb.src = URL.createObjectURL(file);
 
     const info = document.createElement('div');
     info.className = 'queue-item-info';
@@ -616,8 +640,13 @@
     fill.className = 'progress-bar-fill';
     track.appendChild(fill);
 
+    const note = document.createElement('div');
+    note.className = 'queue-item-note';
+    note.hidden = true;
+
     info.appendChild(name);
     info.appendChild(track);
+    info.appendChild(note);
 
     const status = document.createElement('div');
     status.className = 'queue-item-status';
@@ -627,18 +656,193 @@
     el.appendChild(info);
     el.appendChild(status);
 
-    return { el, fill, status, file, baseName };
+    return { el, thumb, fill, status, note, file, baseName };
   }
 
   async function processAll(items) {
     isProcessing = true;
+    let n = 0, failed = 0;
     for (const item of items) {
-      await processItem(item);
+      if (await processItem(item)) n++; else failed++;
     }
     isProcessing = false;
-    const n = items.length;
-    summaryEl.textContent = `✓ ${n} cover${n > 1 ? 's' : ''} exported as 2000×2000 JPG`;
+    summaryEl.textContent = `✓ ${n} cover${n !== 1 ? 's' : ''} exported as 2000×2000 JPG`
+      + (failed ? ` · ${failed} failed` : '');
     summaryEl.classList.add('visible');
+  }
+
+  // ---- PSD / TIFF decoding ----
+
+  const scriptCache = {};
+  function loadScript(src) {
+    if (!scriptCache[src]) {
+      scriptCache[src] = new Promise((resolve, reject) => {
+        const el = document.createElement('script');
+        el.src = src; el.onload = resolve;
+        el.onerror = () => reject(new Error('Could not load ' + src));
+        document.head.appendChild(el);
+      });
+    }
+    return scriptCache[src];
+  }
+
+  // Reads the PSD image resources the decoder skips: the ICC profile (1039)
+  // and whether a real merged composite was saved (1057, "Maximize Compatibility")
+  function readPsdResources(buf) {
+    const v = new DataView(buf);
+    let o = 26;
+    o += 4 + v.getUint32(o);                 // color mode data
+    const end = o + 4 + v.getUint32(o); o += 4;
+    const res = { icc: null, hasRealMergedData: null };
+    while (o + 12 <= end) {
+      const id = v.getUint16(o + 4);
+      const nameLen = v.getUint8(o + 6);
+      o += 6 + ((nameLen + 2) & ~1);         // padded pascal string
+      const size = v.getUint32(o); o += 4;
+      if (id === 1039) res.icc = new Uint8Array(buf, o, size);
+      if (id === 1057 && size >= 5) res.hasRealMergedData = v.getUint8(o + 4) === 1;
+      o += (size + 1) & ~1;
+    }
+    return res;
+  }
+
+  async function decodePsd(buf) {
+    await loadScript('https://cdn.jsdelivr.net/npm/ag-psd@31.0.3/dist/bundle.js');
+    const res = readPsdResources(buf);
+    if (res.hasRealMergedData === false) {
+      throw new Error('Saved without "Maximize Compatibility". Re-save the PSD with it on, or export from Photoshop.');
+    }
+    const psd = agPsd.readPsd(buf, { skipLayerImageData: true, skipThumbnail: true });
+    if (!psd.canvas) throw new Error('No merged image found in this PSD.');
+    const imageData = psd.canvas.getContext('2d').getImageData(0, 0, psd.width, psd.height);
+    return { imageData, icc: res.icc, cmyk: psd.colorMode === 4 };
+  }
+
+  async function decodeTiff(buf) {
+    await loadScript('https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js');
+    await loadScript('https://cdn.jsdelivr.net/npm/utif@3.1.0/UTIF.js');
+    const ifds = UTIF.decode(buf).filter(ifd => ifd.t256 && ifd.t257);
+    if (!ifds.length) throw new Error('No image found in this TIFF.');
+    // Largest page is the artwork; smaller ones are previews
+    const ifd = ifds.reduce((a, b) => (b.t256[0] * b.t257[0] > a.t256[0] * a.t257[0] ? b : a));
+    UTIF.decodeImage(buf, ifd);
+    const rgba = UTIF.toRGBA8(ifd);
+    const imageData = new ImageData(new Uint8ClampedArray(rgba.buffer), ifd.width, ifd.height);
+    return { imageData, icc: ifd.t34675 || null, cmyk: ifd.t262 && ifd.t262[0] === 5 };
+  }
+
+  // ---- ICC: convert matrix/TRC RGB profiles (Adobe RGB, Display P3, ...) to sRGB ----
+
+  function parseIcc(bytes) {
+    const v = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    const sig = o => String.fromCharCode(bytes[o], bytes[o + 1], bytes[o + 2], bytes[o + 3]);
+    const fixed = o => v.getInt32(o) / 65536;
+    const tags = {};
+    const count = v.getUint32(128);
+    for (let i = 0; i < count; i++) {
+      const o = 132 + i * 12;
+      tags[sig(o)] = v.getUint32(o + 4);
+    }
+
+    let name = '';
+    if (tags.desc !== undefined) {
+      const o = tags.desc;
+      if (sig(o) === 'desc') {
+        const n = v.getUint32(o + 8);
+        for (let i = 0; i < n - 1; i++) name += String.fromCharCode(bytes[o + 12 + i]);
+      } else if (sig(o) === 'mluc') {
+        const len = v.getUint32(o + 20), off = v.getUint32(o + 24);
+        for (let i = 0; i < len; i += 2) name += String.fromCharCode(v.getUint16(o + off + i));
+      }
+    }
+
+    const info = { name: name.trim(), colorSpace: sig(16), matrix: null, trc: null };
+    if (info.colorSpace !== 'RGB ' || ['rXYZ', 'gXYZ', 'bXYZ', 'rTRC', 'gTRC', 'bTRC'].some(t => tags[t] === undefined)) {
+      return info;
+    }
+    const xyz = t => [fixed(tags[t] + 8), fixed(tags[t] + 12), fixed(tags[t] + 16)];
+    const r = xyz('rXYZ'), g = xyz('gXYZ'), b = xyz('bXYZ');
+    info.matrix = [r[0], g[0], b[0], r[1], g[1], b[1], r[2], g[2], b[2]];
+
+    const curve = o => {
+      if (sig(o) === 'curv') {
+        const n = v.getUint32(o + 8);
+        if (n === 0) return x => x;
+        if (n === 1) { const gamma = v.getUint16(o + 12) / 256; return x => Math.pow(x, gamma); }
+        const table = [];
+        for (let i = 0; i < n; i++) table.push(v.getUint16(o + 12 + i * 2) / 65535);
+        return x => {
+          const p = x * (n - 1), i = Math.min(Math.floor(p), n - 2);
+          return table[i] + (table[i + 1] - table[i]) * (p - i);
+        };
+      }
+      if (sig(o) === 'para') {
+        const type = v.getUint16(o + 8);
+        const [G, a, bb, c, d, e, f] = [0, 1, 2, 3, 4, 5, 6].map(i => fixed(o + 12 + i * 4));
+        if (type === 0) return x => Math.pow(x, G);
+        if (type === 1) return x => (x >= -bb / a ? Math.pow(a * x + bb, G) : 0);
+        if (type === 2) return x => (x >= -bb / a ? Math.pow(a * x + bb, G) + c : c);
+        if (type === 3) return x => (x >= d ? Math.pow(a * x + bb, G) : c * x);
+        if (type === 4) return x => (x >= d ? Math.pow(a * x + bb, G) + e : c * x + f);
+      }
+      return null;
+    };
+    const trc = ['rTRC', 'gTRC', 'bTRC'].map(t => curve(tags[t]));
+    if (trc.every(Boolean)) info.trc = trc;
+    return info;
+  }
+
+  // XYZ (D50, Bradford-adapted) -> linear sRGB
+  const XYZ_TO_SRGB = [
+     3.1338561, -1.6168667, -0.4906146,
+    -0.9787684,  1.9161415,  0.0334540,
+     0.0719453, -0.2289914,  1.4052427,
+  ];
+
+  function convertToSrgb(imageData, icc) {
+    const m = [];
+    for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) {
+      m.push(XYZ_TO_SRGB[r * 3] * icc.matrix[c] + XYZ_TO_SRGB[r * 3 + 1] * icc.matrix[3 + c] + XYZ_TO_SRGB[r * 3 + 2] * icc.matrix[6 + c]);
+    }
+    const lin = icc.trc.map(f => Float32Array.from({ length: 256 }, (_, i) => f(i / 255)));
+    const ENC = 4096;
+    const enc = Uint8ClampedArray.from({ length: ENC + 1 }, (_, i) => {
+      const x = i / ENC;
+      return Math.round(255 * (x <= 0.0031308 ? 12.92 * x : 1.055 * Math.pow(x, 1 / 2.4) - 0.055));
+    });
+    const d = imageData.data;
+    const clamp = x => (x <= 0 ? 0 : x >= 1 ? ENC : Math.round(x * ENC));
+    for (let i = 0; i < d.length; i += 4) {
+      const r = lin[0][d[i]], g = lin[1][d[i + 1]], b = lin[2][d[i + 2]];
+      d[i]     = enc[clamp(m[0] * r + m[1] * g + m[2] * b)];
+      d[i + 1] = enc[clamp(m[3] * r + m[4] * g + m[5] * b)];
+      d[i + 2] = enc[clamp(m[6] * r + m[7] * g + m[8] * b)];
+    }
+  }
+
+  // Returns something drawImage accepts, plus any warnings for the queue
+  async function decodeFile(file) {
+    const kind = fileKind(file);
+    if (kind === 'image') return { source: await loadImage(file), warnings: [] };
+
+    const buf = await file.arrayBuffer();
+    const { imageData, icc, cmyk } = kind === 'psd' ? await decodePsd(buf) : await decodeTiff(buf);
+    const warnings = [];
+    if (cmyk) {
+      warnings.push('CMYK file — colours are approximated. Export from Photoshop for exact colours.');
+    } else if (icc) {
+      const profile = parseIcc(icc);
+      if (profile.matrix && profile.trc) {
+        convertToSrgb(imageData, profile);
+      } else if (!/srgb/i.test(profile.name)) {
+        warnings.push(`Colour profile "${profile.name || 'unknown'}" not converted — colours may shift.`);
+      }
+    }
+
+    const c = document.createElement('canvas');
+    c.width = imageData.width; c.height = imageData.height;
+    c.getContext('2d').putImageData(imageData, 0, 0);
+    return { source: c, warnings };
   }
 
   function loadImage(file) {
@@ -658,7 +862,22 @@
     item.status.classList.add('active');
     item.fill.style.width = '20%';
 
-    const img = await loadImage(item.file);
+    let img, warnings;
+    try {
+      ({ source: img, warnings } = await decodeFile(item.file));
+    } catch (e) {
+      console.error(e);
+      item.fill.style.width = '100%';
+      item.fill.style.background = 'var(--error)';
+      item.status.textContent = 'Failed';
+      item.status.classList.remove('active');
+      item.status.classList.add('error');
+      item.note.textContent = e.message;
+      item.note.classList.add('error');
+      item.note.hidden = false;
+      return false;
+    }
+    if (img instanceof HTMLCanvasElement) item.thumb.src = img.toDataURL('image/jpeg', 0.6);
     item.fill.style.width = '50%';
 
     // Draw to canvas
@@ -668,6 +887,7 @@
     const scale = Math.max(2000 / img.width, 2000 / img.height);
     const w = img.width * scale;
     const h = img.height * scale;
+    ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(img, (2000 - w) / 2, (2000 - h) / 2, w, h);
 
     item.fill.style.width = '80%';
@@ -702,9 +922,14 @@
     item.fill.style.background = 'var(--success)';
     item.status.textContent = '✓ Done';
     item.status.classList.remove('active');
-    item.status.classList.add('done');
+    item.status.classList.add(warnings.length ? 'warn' : 'done');
+    if (warnings.length) {
+      item.note.textContent = warnings.join(' ');
+      item.note.hidden = false;
+    }
 
     await new Promise(r => setTimeout(r, 100));
+    return true;
   }
 </script>
 </body>
