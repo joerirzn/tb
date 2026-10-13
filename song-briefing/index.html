@@ -269,12 +269,13 @@
     <div class="card">
       <p class="card-label">Saved briefings</p>
       <div class="lib" id="lib"><p class="lib-empty">Loading…</p></div>
-      <p class="note">Saved in this browser under the artist name. Use Download file to send a briefing to someone else.</p>
+      <p class="note">Saved in this browser under the artist name.</p>
       <div class="row">
-        <button class="btn-utility" id="downloadFile" type="button">Download file</button>
-        <button class="btn-utility" id="importFile" type="button">Import file</button>
+        <button class="btn-utility" id="downloadFile" type="button">Download editable file</button>
+        <button class="btn-utility" id="importFile" type="button">Open editable file</button>
         <input type="file" id="briefFile" accept=".json,application/json" hidden>
       </div>
+      <p class="note">An editable file (.json) only opens in this tool, e.g. for a colleague who needs to change the briefing. To send the finished briefing, use Export PDF.</p>
     </div>
 
     <div class="card">
@@ -806,7 +807,7 @@
     const lib = $('lib');
     let list;
     try { list = await store.all(); }
-    catch (e) { lib.innerHTML = '<p class="lib-empty">Saving in the browser is not available here (private window?). Use Download file instead.</p>'; return; }
+    catch (e) { lib.innerHTML = '<p class="lib-empty">Saving in the browser is not available here (private window?). Use Download editable file instead.</p>'; return; }
     list.sort((a, b) => b.savedAt - a.savedAt);
     if (!list.length) { lib.innerHTML = '<p class="lib-empty">No saved briefings yet. Fill in an artist name and click Save briefing.</p>'; return; }
     lib.innerHTML = list.map(r =>
@@ -843,7 +844,7 @@
       state.currentId = id;
       status('Saved as "' + name + '".');
       refreshLib();
-    } catch (e) { status('Could not save in the browser. Use Download file instead.'); }
+    } catch (e) { status('Could not save in the browser. Use Download editable file instead.'); }
   });
   $('newBrief').addEventListener('click', async () => {
     if (!confirm('Start a new, empty briefing? Unsaved changes to the current one are lost.')) return;
@@ -852,15 +853,15 @@
     status('New briefing.');
   });
   $('downloadFile').addEventListener('click', () => {
-    download(new Blob([JSON.stringify(snapshot(true))], { type: 'application/json' }), fileBase() + '.json');
-    status('Briefing downloaded. Import it again with Import file.');
+    download(new Blob([JSON.stringify(snapshot(true))], { type: 'application/json' }), fileBase() + ' (editable).json');
+    status('Editable file downloaded. It opens in this tool only: to send the briefing, use Export PDF.');
   });
   $('importFile').addEventListener('click', () => $('briefFile').click());
   $('briefFile').addEventListener('change', async e => {
     const f = e.target.files[0]; e.target.value = '';
     if (!f) return;
-    try { await restore(JSON.parse(await f.text())); state.currentId = null; refreshLib(); status('Imported ' + f.name + '. Click Save briefing to keep it in the list.'); }
-    catch (err) { status('That file is not a saved song briefing.'); }
+    try { await restore(JSON.parse(await f.text())); state.currentId = null; refreshLib(); status('Opened ' + f.name + '. Click Save briefing to keep it in the list.'); }
+    catch (err) { status('That is not an editable song briefing file (.json).'); }
   });
 
   // the form in progress survives a reload (per browser)
