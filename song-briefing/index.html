@@ -401,7 +401,7 @@
   // ---------- artwork spec (matches Song Briefing Template.psd, 1920x1080) ----------
   const W = 1920, H = 1080, M = 64;
   const COL = { bg: '#000000', white: '#ffffff', soft: '#b8b8b8', grey: '#808080', line: '#383838',
-                green: '#1ed760', photo: '#1c1c1c', hint: '#4d4d4d' };
+                photo: '#1c1c1c', hint: '#4d4d4d' };
   const LX1 = 704, A = 768, B = 1332, CW = 524, RW = 1088;
   const Y1 = 64, Y2 = 384, Y3 = 770, RULE = 30, BODY = 56;
   const PHOTO = { x: M, y: Y2, w: LX1 - M, h: H - M - Y2 };
@@ -504,7 +504,7 @@
       },
       spotify(x, y, size) {
         ctx.save(); ctx.translate(x, y); ctx.scale(size / 24, size / 24);
-        ctx.fillStyle = COL.green; ctx.fill(new Path2D(SPOTIFY_PATH), 'evenodd');
+        ctx.fillStyle = COL.white; ctx.fill(new Path2D(SPOTIFY_PATH), 'evenodd');
         ctx.restore();
       }
     };
@@ -531,10 +531,10 @@
         cx.drawImage(p.img, sx, sy, sw, sh, 0, 0, c.width, c.height);
         pdf.addImage(c.toDataURL('image/jpeg', 0.92), 'JPEG', PHOTO.x * k, PHOTO.y * k, PHOTO.w * k, PHOTO.h * k, undefined, 'FAST');
       },
-      // vector icon: green circle with the three bars cut out (drawn in the background colour)
+      // vector icon: white circle with the three bars cut out (drawn in the background colour)
       spotify(x, y, size) {
         const s = size / 24;
-        pdf.setFillColor(COL.green); pdf.circle((x + 12 * s) * k, (y + 12 * s) * k, 12 * s * k, 'F');
+        pdf.setFillColor(COL.white); pdf.circle((x + 12 * s) * k, (y + 12 * s) * k, 12 * s * k, 'F');
         pdf.setFillColor(COL.bg);
         SPOTIFY_SUBS.slice(1).forEach(sp => {
           let px = sp.start[0], py = sp.start[1];
