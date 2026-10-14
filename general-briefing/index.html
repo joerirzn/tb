@@ -11,6 +11,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="fonts.js"></script>
 <script src="logo.js"></script>
+<script src="labels.js"></script>
 <style>
   @view-transition{ navigation: auto; }
 
@@ -433,17 +434,26 @@
   let uid = 1;
   const newId = () => 'p' + Date.now().toString(36) + (uid++);
 
-  // ---------- starting content: the current Spinnin' Records briefing ----------
+  // ---------- pages: only the genre pages are edited here; the rest is fixed ----------
   function tr(artist, title) { return { link: '', artist, title, art: null }; }
   function genre(title, tracks) { return { id: newId(), type: 'genre', title, desc: '', playlist: '', tracks }; }
-  function labelsOf(names) { return names.map(n => ({ name: n, logo: null, lw: 0, lh: 0 })); }
-  function defaultBriefing() {
-    return {
-      app: 'general-briefing', version: 1, date: defaultDate(),
-      pages: [
-        { id: newId(), type: 'cover', intro: 'GENRES, TRENDS & LABELS' },
-        { id: newId(), type: 'labels', title: 'In-house labels', items: labelsOf(['Spinnin’ Records', 'Spinnin’ Deep', 'PonyPlay', 'Innerjoin', 'ZWVRT']) },
-        { id: newId(), type: 'labels', title: 'Artist labels', items: labelsOf(['Musical Freedom', 'AFTR:HRS', 'Dharma', 'Controversia', 'Sinphony', 'Future Rave', 'One Hundred', 'Liquid:Lab', 'OZ Records', 'Maxximize']) },
+  // logos come from labels.js (built from ~/Documents/Claude/General Briefing/logos/)
+  const LABELS = window.BRIEF_LABELS || { inhouse: [], artist: [] };
+  const labelItems = list => list.map(l => ({ name: l.name, logo: l.logo || null, lw: l.w || 0, lh: l.h || 0 }));
+  const EASY_TEXT = 'We would greatly appreciate it if you could send over a list with easy to clear copyrights from your catalogue. Our artists are always looking for samples to work on and incorporate in their releases.\n\nSo please send over any easy to clear catalogue you have.\n\nThank you!';
+  function fixedPages(genres) {
+    return [
+      { id: 'cover', type: 'cover', intro: 'GENRES, TRENDS & LABELS' },
+      { id: 'inhouse', type: 'labels', title: 'In-house labels', items: labelItems(LABELS.inhouse) },
+      { id: 'artist', type: 'labels', title: 'Artist labels', items: labelItems(LABELS.artist) },
+      ...genres,
+      { id: 'easy', type: 'text', title: 'Easy to clear lists', text: EASY_TEXT },
+      { id: 'end', type: 'end' }
+    ];
+  }
+  // starting genres: the current Spinnin' Records briefing
+  function defaultGenres() {
+    return [
         genre('Commercial / Crossover', [tr('ANOTR', 'Talk To You (feat. 54 Ultra)'), tr('Sonny Fodera', 'Think About Us'), tr('Gordo & Reinier Zonneveld', 'Loco Loco'),
           tr('Armand van Helden, Raphi & George Reid', 'This Ain’t Love'), tr('James Hype', 'Be Mine')]),
         genre('Interpolations / Samples', [tr('Juste & Jaxstyle & Jon', 'Turn The Lights Off'), tr('Bebe Rexha & Faithless', 'New Religion'),
@@ -457,13 +467,10 @@
         genre('PonyPlay', [tr('KI/KI & Marlon Hoffstadt', 'Losing Control'), tr('ANDATA, 2HOT2PLAY', 'Never Gonna Stop'), tr('PETERBLUE', 'BICHO AL CALLAO'),
           tr('Luvstruck', 'What’s A Girl To Do'), tr('KETTAMA', 'Man With a Second Face')]),
         genre('Innerjoin', [tr('PAULY!', 'House Is Gettin’ Raw'), tr('Ben van Kuringen', 'All This Love'), tr('Milion', 'BADBOYZ'), tr('Interplanetary Criminal', 'Slow Burner'),
-          tr('Dean Turnley', 'Actin Tough'), tr('Julian Fijma', 'Get Stupid'), tr('Silva Bumpa', 'Doin’ It')]),
-        { id: newId(), type: 'text', title: 'Easy to clear lists',
-          text: 'We would greatly appreciate it if you could send over a list with easy to clear copyrights from your catalogue. Our artists are always looking for samples to work on and incorporate in their releases.\n\nSo please send over any easy to clear catalogue you have.\n\nThank you!' },
-        { id: newId(), type: 'end' }
-      ]
-    };
+          tr('Dean Turnley', 'Actin Tough'), tr('Julian Fijma', 'Get Stupid'), tr('Silva Bumpa', 'Doin’ It')])
+    ];
   }
+  function defaultBriefing() { return { app: 'general-briefing', version: 2, date: defaultDate(), pages: fixedPages(defaultGenres()) }; }
   let B = defaultBriefing(), cur = 0;
   const state = { currentId: null };
 
@@ -775,7 +782,7 @@
   }
 
   // ---------- page list ----------
-  const KIND = { cover: 'Cover', labels: 'Logos', genre: 'Genre', text: 'Text', end: 'End' };
+  const KIND = { cover: 'Fixed', labels: 'Fixed', genre: 'Genre', text: 'Fixed', end: 'Fixed' };
   function pageName(p) {
     if (p.type === 'cover') return 'Cover';
     if (p.type === 'end') return 'The end';
@@ -829,7 +836,7 @@
   }
   $('addGenre').addEventListener('click', () => {
     let at = -1; B.pages.forEach((p, i) => { if (p.type === 'genre') at = i; });
-    if (at < 0) at = B.pages.findIndex(p => p.type === 'labels' || p.type === 'cover');
+    if (at < 0) at = B.pages.findIndex(p => p.id === 'artist');   // no genres left: right after the label pages
     const g = genre('', []); B.pages.splice(at + 1, 0, g);
     select(at + 1);
     const t = document.querySelector('#form input[data-k="title"]'); if (t) t.focus();
@@ -858,20 +865,10 @@
   }
   function renderForm() {
     const f = $('form'), p = B.pages[cur]; f.innerHTML = '';
-    if (p.type === 'cover') {
-      f.appendChild(el('p', { class: 'card-label', text: 'Cover' }));
-      f.appendChild(inputField('Line above the title', p.intro, v => p.intro = v, { note: 'Leave empty to hide it. The date comes from the Date field above.' }));
-    } else if (p.type === 'end') {
-      f.appendChild(el('p', { class: 'card-label', text: 'The end' }));
-      f.appendChild(el('p', { class: 'note', text: 'This page has no fields. It shows the date from the Date field above.' }));
-    } else if (p.type === 'text') {
-      f.appendChild(el('p', { class: 'card-label', text: 'Text page' }));
-      f.appendChild(inputField('Title', p.title, v => p.title = v, { relist: true, fit: 'title' }));
-      f.appendChild(inputField('Text', p.text, v => p.text = v, { area: true, tall: true, fit: 'text' }));
-    } else if (p.type === 'labels') {
-      renderLabelsForm(f, p);
-    } else {
-      renderGenreForm(f, p);
+    if (p.type === 'genre') renderGenreForm(f, p);
+    else {
+      f.appendChild(el('p', { class: 'card-label', text: pageName(p) }));
+      f.appendChild(el('p', { class: 'note', text: 'This page is fixed and cannot be edited here. Only the genre pages can be changed.' + (p.type === 'cover' || p.type === 'end' ? ' The date comes from the Date field above.' : '') }));
     }
     updateFitNotes();
   }
@@ -886,51 +883,6 @@
         st === 'over' ? 'Too long: the end is cut off. Shorten this text.' : 'Set smaller to fit.';
       n.style.display = st === 'ok' ? 'none' : '';
     });
-  }
-
-  // logos: upload (several at once), name, order, remove; every logo becomes white
-  function renderLabelsForm(f, p) {
-    f.appendChild(el('p', { class: 'card-label', text: 'Logo page' }));
-    f.appendChild(inputField('Title', p.title, v => p.title = v, { relist: true, fit: 'title' }));
-    const drop = el('div', { class: 'drop', tabIndex: 0, role: 'button' }, [document.createTextNode('Drop logos or click to choose'), el('small', { text: 'PNG or SVG with a transparent background works best. Every logo is made white.' })]);
-    const file = el('input', { type: 'file', accept: 'image/*,.svg', multiple: true, hidden: true });
-    drop.addEventListener('click', () => file.click());
-    drop.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); file.click(); } });
-    ['dragenter', 'dragover'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add('drag'); }));
-    ['dragleave', 'drop'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove('drag'); }));
-    const addFiles = async files => {
-      for (const fl of Array.from(files)) {
-        if (!fl.type.startsWith('image/') && !/\.svg$/i.test(fl.name)) continue;
-        try { const w = await whiteLogo(fl); p.items.push({ name: fl.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' '), logo: w.data, lw: w.w, lh: w.h }); }
-        catch (e) { status('Could not read ' + fl.name + '.'); }
-      }
-      renderForm(); schedule();
-    };
-    drop.addEventListener('drop', e => addFiles(e.dataTransfer.files));
-    file.addEventListener('change', () => { addFiles(file.files); file.value = ''; });
-    f.appendChild(drop); f.appendChild(file);
-    p.items.forEach((it, i) => {
-      const thumb = el('div', { class: 'logo-thumb' });
-      if (it.logo) thumb.style.backgroundImage = 'url("' + it.logo + '")'; else thumb.textContent = 'no logo';
-      const name = el('input', { type: 'text', value: it.name || '', placeholder: 'Label name', autocomplete: 'off' });
-      name.addEventListener('input', () => { it.name = name.value; schedule(); });
-      const repl = el('input', { type: 'file', accept: 'image/*,.svg', hidden: true });
-      repl.addEventListener('change', async () => {
-        const fl = repl.files[0]; repl.value = ''; if (!fl) return;
-        try { const w = await whiteLogo(fl); it.logo = w.data; it.lw = w.w; it.lh = w.h; renderForm(); schedule(); } catch (e) { status('Could not read ' + fl.name + '.'); }
-      });
-      const setBtn = el('button', { type: 'button', className: 'btn-utility small', text: it.logo ? 'Replace logo' : 'Add logo' });
-      setBtn.addEventListener('click', () => repl.click());
-      const head = el('div', { class: 'sub-head' }, [el('span', { class: 't', text: String(i + 1).padStart(2, '0') }),
-        iconBtn('up', 'Move up', () => { p.items.splice(i - 1, 0, p.items.splice(i, 1)[0]); renderForm(); schedule(); }, i === 0),
-        iconBtn('down', 'Move down', () => { p.items.splice(i + 1, 0, p.items.splice(i, 1)[0]); renderForm(); schedule(); }, i === p.items.length - 1),
-        iconBtn('del', 'Remove logo', () => { p.items.splice(i, 1); renderForm(); schedule(); })]);
-      f.appendChild(el('div', { class: 'sub' }, [head, el('div', { class: 'row' }, [thumb, el('div', { style: 'flex:1;min-width:0' }, [name])]), el('div', { class: 'row' }, [setBtn]), repl]));
-    });
-    const add = el('button', { type: 'button', className: 'btn-utility', text: 'Add a label without logo' });
-    add.addEventListener('click', () => { p.items.push({ name: '', logo: null, lw: 0, lh: 0 }); renderForm(); schedule(); });
-    f.appendChild(el('div', { class: 'row' }, [add]));
-    f.appendChild(el('p', { class: 'note', text: 'Without a logo the label name is shown. 1–5 labels fill one row, up to 10 two rows, more three rows.' }));
   }
 
   // genre: title, description, playlist, tracks (Spotify link fills title + artwork, artist suggestions)
@@ -1065,43 +1017,6 @@
       i.onerror = rej; i.src = src;
     });
   }
-  // any logo -> white silhouette on transparent, trimmed. A solid background (all corners opaque) is keyed out first.
-  function whiteLogo(file) {
-    return new Promise((res, rej) => {
-      const url = URL.createObjectURL(file), i = new Image();
-      i.onload = () => {
-        try {
-          let w = i.naturalWidth || 1000, h = i.naturalHeight || 500;
-          const k = Math.min(1, 1600 / Math.max(w, h)) || 1; w = Math.round(w * k); h = Math.round(h * k);
-          if (/svg/.test(file.type) || /\.svg$/i.test(file.name)) { const s = 1600 / Math.max(w, h); w = Math.round(w * s); h = Math.round(h * s); }
-          const c = document.createElement('canvas'); c.width = w; c.height = h;
-          const x = c.getContext('2d'); x.drawImage(i, 0, 0, w, h);
-          const d = x.getImageData(0, 0, w, h), px = d.data;
-          const at = (xx, yy) => (yy * w + xx) * 4;
-          const corners = [at(0, 0), at(w - 1, 0), at(0, h - 1), at(w - 1, h - 1)];
-          const solid = corners.every(o => px[o + 3] > 250);
-          const bg = corners[0];
-          const br = px[bg], bgG = px[bg + 1], bb = px[bg + 2];
-          let minX = w, minY = h, maxX = -1, maxY = -1;
-          for (let yy = 0; yy < h; yy++) for (let xx = 0; xx < w; xx++) {
-            const o = at(xx, yy);
-            let a = px[o + 3];
-            if (solid) { const dist = Math.abs(px[o] - br) + Math.abs(px[o + 1] - bgG) + Math.abs(px[o + 2] - bb); a = Math.min(a, Math.max(0, Math.min(255, (dist - 30) * 3))); }
-            px[o] = px[o + 1] = px[o + 2] = 255; px[o + 3] = a;
-            if (a > 20) { if (xx < minX) minX = xx; if (xx > maxX) maxX = xx; if (yy < minY) minY = yy; if (yy > maxY) maxY = yy; }
-          }
-          if (maxX < 0) throw new Error('empty');
-          x.putImageData(d, 0, 0);
-          const tw = maxX - minX + 1, th = maxY - minY + 1, o = document.createElement('canvas'); o.width = tw; o.height = th;
-          o.getContext('2d').drawImage(c, minX, minY, tw, th, 0, 0, tw, th);
-          res({ data: o.toDataURL('image/png'), w: tw, h: th });
-        } catch (e) { rej(e); } finally { URL.revokeObjectURL(url); }
-      };
-      i.onerror = e => { URL.revokeObjectURL(url); rej(e); };
-      i.src = url;
-    });
-  }
-
   // ---------- export ----------
   function fileBase() { return 'Spinnin Records Song Briefing - ' + (B.date.trim() || defaultDate()).replace(/[\\/:*?"<>|]+/g, ''); }
   function buildPdf() {
@@ -1154,12 +1069,16 @@
     getMeta(k) { return this.run('meta', 'readonly', s => s.get(k)); },
     setMeta(k, v) { return this.run('meta', 'readwrite', s => s.put(v, k)); }
   };
-  const snapshot = () => JSON.parse(JSON.stringify(B));
+  const snapshot = () => JSON.parse(JSON.stringify({ app: 'general-briefing', version: 2, date: B.date, genres: B.pages.filter(p => p.type === 'genre') }));
+  // accepts version 2 (date + genres) and version 1 (all pages): only the genre pages are taken over
   function restore(d) {
-    if (!d || d.app !== 'general-briefing' || !Array.isArray(d.pages)) throw new Error('not a briefing');
-    d.pages.forEach(p => { if (!p.id) p.id = newId(); if (p.type === 'genre' && !Array.isArray(p.tracks)) p.tracks = []; if (p.type === 'labels' && !Array.isArray(p.items)) p.items = []; });
-    B = d; cur = 0;
-    $('date').value = B.date || '';
+    if (!d || d.app !== 'general-briefing') throw new Error('not a briefing');
+    const genres = (Array.isArray(d.genres) ? d.genres : (d.pages || []).filter(p => p.type === 'genre')).map(g => ({
+      id: g.id || newId(), type: 'genre', title: g.title || '', desc: g.desc || '', playlist: g.playlist || '',
+      tracks: (Array.isArray(g.tracks) ? g.tracks : []).map(x => ({ link: x.link || '', artist: x.artist || '', title: x.title || '', art: x.art || null }))
+    }));
+    B = { app: 'general-briefing', version: 2, date: d.date || defaultDate(), pages: fixedPages(genres) }; cur = 0;
+    $('date').value = B.date;
     renderPages(); renderForm(); schedule();
   }
   const idOf = name => name.trim().toLowerCase().replace(/\s+/g, ' ') || 'untitled';
