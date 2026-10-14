@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>General Briefing</title>
-<meta name="tool-version" content="2026-10-14.3">
+<meta name="tool-version" content="2026-10-14.4">
 <link rel="icon" type="image/png" href="../favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -973,7 +973,11 @@
     const artist = el('input', { type: 'text', value: t.artist || '', placeholder: 'Artist', autocomplete: 'off' });
     const title = el('input', { type: 'text', value: t.title || '', placeholder: 'Title', autocomplete: 'off' });
     // typing the artist yourself: the suggestions and the reminder go away
-    artist.addEventListener('input', () => { t.artist = artist.value; chips.innerHTML = ''; if (artist.value.trim()) { artist.classList.remove('need'); artist.placeholder = 'Artist'; } schedule(); });
+    artist.addEventListener('input', () => {
+      t.artist = artist.value; chips.innerHTML = '';
+      if (artist.value.trim()) { artist.classList.remove('need'); artist.placeholder = 'Artist'; if (msg.textContent.includes('the artist')) { msg.className = 'note'; msg.textContent = ''; } }
+      schedule();
+    });
     title.addEventListener('input', () => { t.title = title.value; schedule(); });
     const ui = {
       note(s, cls) { msg.className = cls || 'note'; msg.textContent = s || ''; },
