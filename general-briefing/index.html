@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>General Briefing</title>
-<meta name="tool-version" content="2026-10-14.6">
+<meta name="tool-version" content="2026-10-14.7">
 <link rel="icon" type="image/png" href="../favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1198,16 +1198,18 @@
     getMeta(k) { return this.run('meta', 'readonly', s => s.get(k)); },
     setMeta(k, v) { return this.run('meta', 'readwrite', s => s.put(v, k)); }
   };
-  const snapshot = () => JSON.parse(JSON.stringify({ app: 'general-briefing', version: 2, date: B.date, coverColor: B.coverColor, genres: B.pages.filter(p => p.type === 'genre') }));
+  // colours: 2 = red first. Briefings saved before that (pink first) get the red-first order when opened.
+  const COLORS = 2;
+  const snapshot = () => JSON.parse(JSON.stringify({ app: 'general-briefing', version: 2, colors: COLORS, date: B.date, coverColor: B.coverColor, genres: B.pages.filter(p => p.type === 'genre') }));
   // accepts version 2 (date + genres) and version 1 (all pages): only the genre pages are taken over
   function restore(d) {
     if (!d || d.app !== 'general-briefing') throw new Error('not a briefing');
     const genres = (Array.isArray(d.genres) ? d.genres : (d.pages || []).filter(p => p.type === 'genre')).map((g, i) => ({
       id: g.id || newId(), type: 'genre', title: g.title || '', desc: g.desc || '', playlist: g.playlist || '',
-      color: validHex(g.color) ? g.color.toLowerCase() : ACC[i % ACC.length],
+      color: d.colors === COLORS && validHex(g.color) ? g.color.toLowerCase() : ACC[i % ACC.length],
       tracks: (Array.isArray(g.tracks) ? g.tracks : []).map(x => ({ link: x.link || '', artist: x.artist || '', title: x.title || '', art: x.art || null }))
     }));
-    B = { app: 'general-briefing', version: 2, date: d.date || defaultDate(), coverColor: validHex(d.coverColor) ? d.coverColor.toLowerCase() : ACC[0], pages: fixedPages(genres) }; cur = 0;
+    B = { app: 'general-briefing', version: 2, date: d.date || defaultDate(), coverColor: d.colors === COLORS && validHex(d.coverColor) ? d.coverColor.toLowerCase() : ACC[0], pages: fixedPages(genres) }; cur = 0;
     renderPages(); renderForm(); schedule();
   }
   const idOf = name => name.trim().toLowerCase().replace(/\s+/g, ' ') || 'untitled';
