@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>General Briefing</title>
+<link rel="icon" type="image/png" href="../favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="fonts.js"></script>
+<script src="logo.js"></script>
+<style>
+  @view-transition{ navigation: auto; }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #000000;
+    --surface: #272729;
+    --surface-2: #2a2a2c;
+    --surface-3: #252527;
+    --border: rgba(255, 255, 255, 0.08);
+    --border-hover: rgba(255, 255, 255, 0.16);
+    --text: #ffffff;
+    --text-muted: #cccccc;
+    --muted: #86868b;
+    --warning: #ffd60a;
+    --error: #ff453a;
+    --accent: #2997ff;
+    --accent-focus: #0071e3;
+    --on-accent: #ffffff;
+    --font-display: 'Inter', -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  html { overflow-y: auto; scrollbar-gutter: stable; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-display);
+    min-height: 100vh;
+    padding: 32px 40px 40px;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .header-left { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    text-decoration: none;
+    border-radius: 9999px;
+    padding: 7px 14px 7px 10px;
+    font-size: 12px;
+    font-weight: 400;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .back-link:hover { border-color: var(--border-hover); background: rgba(255,255,255,0.04); }
+  .back-link svg { width: 14px; height: 14px; stroke: currentColor; flex-shrink: 0; }
+
+  h1 { font-size: 26px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.1; }
+
+  .specs { display: flex; gap: 6px; align-items: center; }
+  .spec-tag {
+    font-size: 12px;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    padding: 4px 12px;
+    border-radius: 9999px;
+  }
+
+  .main {
+    display: grid;
+    grid-template-columns: 420px 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+
+  /* ---------- sidebar ---------- */
+  .sidebar { display: flex; flex-direction: column; gap: 12px; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .card-label { font-size: 14px; font-weight: 600; color: var(--text); }
+  .card-label span { color: var(--muted); font-weight: 400; margin-right: 6px; }
+  .card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+
+  .field { display: flex; flex-direction: column; gap: 8px; }
+  .field label, .field .lbl { font-size: 13px; font-weight: 400; color: var(--text-muted); }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  input[type="text"], input[type="url"], textarea {
+    width: 100%;
+    background: var(--surface-3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font: 400 15px var(--font-display);
+    outline: none;
+    transition: border-color 0.15s ease;
+  }
+  input[type="text"], input[type="url"] { border-radius: 9999px; padding: 11px 18px; }
+  textarea { border-radius: 18px; padding: 12px 18px; resize: vertical; min-height: 84px; line-height: 1.45; }
+  textarea.tall { min-height: 150px; }
+  input::placeholder, textarea::placeholder { color: var(--muted); }
+  input:focus, textarea:focus { border-color: var(--accent); }
+
+  .note { font-size: 12px; color: var(--muted); line-height: 1.4; }
+  .warn { font-size: 12px; line-height: 1.4; color: var(--warning); }
+  .err { font-size: 12px; line-height: 1.4; color: var(--error); }
+
+  /* page list */
+  .pages { display: flex; flex-direction: column; gap: 4px; }
+  .pg {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    padding: 2px 4px 2px 0;
+    transition: border-color 0.15s ease;
+  }
+  .pg:hover { border-color: var(--border); }
+  .pg.active { border-color: var(--accent); background: rgba(41,151,255,0.08); }
+  .pg-open {
+    flex: 1;
+    min-width: 0;
+    background: none;
+    border: none;
+    color: var(--text);
+    text-align: left;
+    padding: 8px 10px;
+    font-size: 14px;
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+  }
+  .pg-open:active { transform: none; }
+  .pg-num { color: var(--muted); font-size: 12px; width: 18px; flex-shrink: 0; }
+  .pg-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pg-kind { color: var(--muted); font-size: 12px; margin-left: auto; flex-shrink: 0; }
+
+  .icon-btn {
+    width: 30px; height: 30px;
+    flex-shrink: 0;
+    border-radius: 9999px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--muted);
+    display: grid;
+    place-items: center;
+  }
+  .icon-btn:hover { color: var(--text); border-color: var(--border-hover); }
+  .icon-btn.del:hover { color: #e55; border-color: #e55; }
+  .icon-btn:disabled { opacity: 0.25; cursor: default; }
+  .icon-btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* sub cards: tracks, logos */
+  .sub {
+    background: var(--surface-3);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .sub-head { display: flex; align-items: center; gap: 8px; }
+  .sub-head .t { font-size: 13px; color: var(--muted); flex: 1; }
+  .sub input[type="text"], .sub input[type="url"] { background: var(--surface); }
+  .track-art {
+    width: 56px; height: 56px; flex-shrink: 0;
+    border-radius: 8px;
+    background: #1c1c1c center / cover no-repeat;
+    border: 1px solid var(--border);
+  }
+  .track-top { display: flex; gap: 12px; align-items: center; }
+  .track-top .field { flex: 1; min-width: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .chip {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border-hover);
+    border-radius: 9999px;
+    font-size: 12px;
+    padding: 4px 10px;
+  }
+  .chip:hover { border-color: var(--accent); }
+  .logo-thumb {
+    width: 64px; height: 40px; flex-shrink: 0;
+    border-radius: 8px;
+    background: #000 center / contain no-repeat;
+    border: 1px solid var(--border);
+    display: grid; place-items: center;
+    font-size: 10px; color: var(--muted);
+  }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+  .drop {
+    border: 1.5px dashed var(--border-hover);
+    border-radius: 18px;
+    background: #000;
+    padding: 18px;
+    text-align: center;
+    font-size: 14px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .drop:hover, .drop.drag { border-color: var(--accent); background: rgba(41,151,255,0.08); }
+  .drop small { display: block; font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  /* saved briefings */
+  .lib { display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; }
+  .lib-item {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface-3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 4px 4px 4px 14px;
+  }
+  .lib-item:hover { border-color: var(--border-hover); }
+  .lib-item.active { border-color: var(--accent); background: rgba(41,151,255,0.08); }
+  .lib-open { flex: 1; min-width: 0; background: none; border: none; color: var(--text); text-align: left; padding: 6px 0; }
+  .lib-open:active { transform: none; }
+  .lib-name { display: block; font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lib-meta { display: block; font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .lib-empty { font-size: 13px; color: var(--muted); line-height: 1.45; }
+
+  /* ---------- preview ---------- */
+  .stage { position: sticky; top: 24px; display: flex; flex-direction: column; gap: 16px; }
+  .canvas-wrap {
+    background: #000;
+    border: 1.5px solid var(--border-hover);
+    border-radius: 18px;
+    overflow: hidden;
+    line-height: 0;
+  }
+  #preview { width: 100%; height: auto; display: block; aspect-ratio: 16 / 9; }
+  .pager { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .actions .spacer { flex: 1; }
+
+  button { font-family: var(--font-display); cursor: pointer; transition: transform 0.1s ease, border-color 0.15s ease; }
+  button:active { transform: scale(0.95); }
+  button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, .drop:focus-visible { outline: 2px solid var(--accent-focus); outline-offset: 3px; }
+  .btn-primary {
+    background: var(--accent);
+    color: var(--on-accent);
+    border: 1px solid var(--accent);
+    border-radius: 9999px;
+    font-size: 14px;
+    font-weight: 400;
+    padding: 8px 15px;
+  }
+  .btn-primary:disabled { background: var(--surface-2); border-color: var(--surface-2); color: var(--muted); cursor: default; }
+  .btn-utility {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border-hover);
+    border-radius: 9999px;
+    font-size: 14px;
+    font-weight: 400;
+    padding: 8px 15px;
+  }
+  .btn-utility:hover { border-color: var(--muted); }
+  .btn-utility.danger:hover { color: #e55; border-color: #e55; }
+  .btn-utility.small { font-size: 12px; padding: 5px 12px; }
+
+  .status { font-size: 13px; color: var(--muted); min-height: 18px; }
+  .foot { margin-top: 40px; font-size: 12px; color: var(--muted); }
+
+  @media (max-width: 1000px) {
+    body { padding: 24px 16px; }
+    .main { grid-template-columns: 1fr; }
+    .stage { position: static; order: -1; }
+  }
+
+  /* ?canvas=N: one page of the artwork only, for checks */
+  body.canvas-only { padding: 0; }
+  body.canvas-only > *:not(.main) { display: none; }
+  body.canvas-only .sidebar, body.canvas-only .actions, body.canvas-only .status, body.canvas-only .pager { display: none; }
+  body.canvas-only .main { display: block; }
+  body.canvas-only .canvas-wrap { border: none; border-radius: 0; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <a class="back-link" href="../"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 19l-7-7 7-7"/></svg>Toolbox</a>
+    <h1>General Briefing</h1>
+  </div>
+  <div class="specs">
+    <span class="spec-tag">1920×1080</span>
+    <span class="spec-tag">Multi-page PDF</span>
+  </div>
+</header>
+
+<div class="main">
+
+  <div class="sidebar">
+
+    <div class="card">
+      <p class="card-label">Saved briefings</p>
+      <div class="lib" id="lib"><p class="lib-empty">Loading…</p></div>
+      <p class="note">Saved in this browser under the date.</p>
+      <div class="row">
+        <button class="btn-utility" id="downloadFile" type="button">Download editable file</button>
+        <button class="btn-utility" id="importFile" type="button">Open editable file</button>
+        <input type="file" id="briefFile" accept=".json,application/json" hidden>
+      </div>
+      <p class="note">An editable file (.json) only opens in this tool, e.g. for a colleague who needs to change the briefing. To send the finished briefing, use Export PDF.</p>
+    </div>
+
+    <div class="card">
+      <div class="field">
+        <label for="date">Date</label>
+        <input type="text" id="date" autocomplete="off">
+        <p class="note">Shown on every page. The briefing is saved under this date.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <p class="card-label">Pages</p>
+        <button class="btn-utility small" id="addGenre" type="button">Add genre page</button>
+      </div>
+      <div class="pages" id="pages"></div>
+    </div>
+
+    <div class="card" id="form"></div>
+
+  </div>
+
+  <div class="stage">
+    <div class="canvas-wrap"><canvas id="preview"></canvas></div>
+    <div class="pager">
+      <button class="icon-btn" id="prevPage" type="button" aria-label="Previous page"><svg viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"/></svg></button>
+      <span id="pagerText"></span>
+      <button class="icon-btn" id="nextPage" type="button" aria-label="Next page"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
+    </div>
+    <div class="actions">
+      <button class="btn-primary" id="exportPdf" type="button">Export PDF</button>
+      <span class="spacer"></span>
+      <button class="btn-utility" id="saveBrief" type="button">Save briefing</button>
+      <button class="btn-utility" id="newBrief" type="button">New briefing</button>
+    </div>
+    <p class="status" id="status"></p>
+  </div>
+
+</div>
+
+<footer class="foot">Internal use only — do not share this link outside the company.</footer>
+
+<script>
+(function () {
+  // ---------- artwork spec (matches the General Briefing PSDs, 1920x1080 per page) ----------
+  const W = 1920, H = 1080, M = 64, LX1 = 704, RX = 768, RULE = 30, TOP = M + RULE + 56;
+  const TS = 97, TLF = 1.04, CS = 190, TRK = -0.025;          // page titles, cover titles, title tracking (em)
+  const COL = { bg: '#000000', white: '#ffffff', soft: '#b8b8b8', grey: '#808080', line: '#383838', photo: '#1c1c1c', hint: '#4d4d4d' };
+  const SL = 14, SLT = 0.84;                                   // small-caps labels: 14 px, tracking 60/1000 em
+  const TRACK_ROWS = 8;
+  const PDF_K = 0.75;                                          // 1920x1080 px = 1440x810 pt
+  const FAMILY = 'BriefInter';
+  const SPOTIFY_PATH = 'M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z';
+
+  const $ = id => document.getElementById(id);
+  const canvas = $('preview'), pctx = canvas.getContext('2d');
+  const mctx = document.createElement('canvas').getContext('2d');
+
+  function defaultDate() { return new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' }); }
+  let uid = 1;
+  const newId = () => 'p' + Date.now().toString(36) + (uid++);
+
+  // ---------- starting content: the current Spinnin' Records briefing ----------
+  function tr(artist, title) { return { link: '', artist, title, art: null }; }
+  function genre(title, tracks) { return { id: newId(), type: 'genre', title, desc: '', playlist: '', tracks }; }
+  function labelsOf(names) { return names.map(n => ({ name: n, logo: null, lw: 0, lh: 0 })); }
+  function defaultBriefing() {
+    return {
+      app: 'general-briefing', version: 1, date: defaultDate(),
+      pages: [
+        { id: newId(), type: 'cover', intro: 'GENRES, TRENDS & LABELS' },
+        { id: newId(), type: 'labels', title: 'In-house labels', items: labelsOf(['Spinnin’ Records', 'Spinnin’ Deep', 'PonyPlay', 'Innerjoin', 'ZWVRT']) },
+        { id: newId(), type: 'labels', title: 'Artist labels', items: labelsOf(['Musical Freedom', 'AFTR:HRS', 'Dharma', 'Controversia', 'Sinphony', 'Future Rave', 'One Hundred', 'Liquid:Lab', 'OZ Records', 'Maxximize']) },
+        genre('Commercial / Crossover', [tr('ANOTR', 'Talk To You (feat. 54 Ultra)'), tr('Sonny Fodera', 'Think About Us'), tr('Gordo & Reinier Zonneveld', 'Loco Loco'),
+          tr('Armand van Helden, Raphi & George Reid', 'This Ain’t Love'), tr('James Hype', 'Be Mine')]),
+        genre('Interpolations / Samples', [tr('Juste & Jaxstyle & Jon', 'Turn The Lights Off'), tr('Bebe Rexha & Faithless', 'New Religion'),
+          tr('Mall Grab & Milky', 'Just The Way You Are'), tr('Blasterjaxx', 'Unfaithful')]),
+        genre('Deep House', [tr('Secondcity', 'I Wanna Feel'), tr('Route 94', 'My Love'), tr('Duke Dumont', 'I Got U'), tr('Redondo & Ferreck Dawn', 'Love Too Deep'),
+          tr('Duke Dumont', 'Need (100%)'), tr('Storm Queen', 'Look Right Through (MK Remix)'), tr('Hot Natured', 'Reverse Skydiving'), tr('Gorgon City', 'Ready For Your Love')]),
+        genre('Trance', [tr('Tiësto', 'Bring Me To Life'), tr('Trance Mums', 'forever'), tr('Delirium', 'Silence (Tiësto Remix)'), tr('Benwal', 'Dive'),
+          tr('Modea & Bryan Kearny', 'Ready To Fly')]),
+        genre('Spinnin’ Deep', [tr('Gudfella', 'Morning Coffee'), tr('Odd Mob', 'Coming Up (It’s Dare)'), tr('Jonas Blue, Malive', 'Edge Of Desire'),
+          tr('Blond:ish', 'Nothing Last 4ever'), tr('Joshwa', 'Out of My Mind'), tr('Sama', 'EY')]),
+        genre('PonyPlay', [tr('KI/KI & Marlon Hoffstadt', 'Losing Control'), tr('ANDATA, 2HOT2PLAY', 'Never Gonna Stop'), tr('PETERBLUE', 'BICHO AL CALLAO'),
+          tr('Luvstruck', 'What’s A Girl To Do'), tr('KETTAMA', 'Man With a Second Face')]),
+        genre('Innerjoin', [tr('PAULY!', 'House Is Gettin’ Raw'), tr('Ben van Kuringen', 'All This Love'), tr('Milion', 'BADBOYZ'), tr('Interplanetary Criminal', 'Slow Burner'),
+          tr('Dean Turnley', 'Actin Tough'), tr('Julian Fijma', 'Get Stupid'), tr('Silva Bumpa', 'Doin’ It')]),
+        { id: newId(), type: 'text', title: 'Easy to clear lists',
+          text: 'We would greatly appreciate it if you could send over a list with easy to clear copyrights from your catalogue. Our artists are always looking for samples to work on and incorporate in their releases.\n\nSo please send over any easy to clear catalogue you have.\n\nThank you!' },
+        { id: newId(), type: 'end' }
+      ]
+    };
+  }
+  let B = defaultBriefing(), cur = 0;
+  const state = { currentId: null };
+
+  // ---------- fonts ----------
+  function b64Bytes(b64) { const s = atob(b64), u = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); return u; }
+  async function loadFonts() {
+    if (!window.BRIEF_FONTS) throw new Error('fonts.js missing');
+    await Promise.all([400, 500, 600].map(async wt => {
+      const f = new FontFace(FAMILY, b64Bytes(window.BRIEF_FONTS[wt]).buffer, { weight: String(wt) });
+      await f.load(); document.fonts.add(f);
+    }));
+  }
+
+  // ---------- measuring (always on mctx, so preview and PDF share the layout) ----------
+  const font = (wt, s) => wt + ' ' + s + 'px ' + FAMILY;
+  function setM(wt, s) { mctx.font = font(wt, s); }
+  const capRatio = {};
+  function cap(wt, s) { if (!capRatio[wt]) { setM(wt, 100); capRatio[wt] = mctx.measureText('H').actualBoundingBoxAscent / 100; } return capRatio[wt] * s; }
+  function textW(wt, s, str) { setM(wt, s); return mctx.measureText(str).width; }
+  function inkLeftOf(wt, s, str) { setM(wt, s); return mctx.measureText(str).actualBoundingBoxLeft; }
+  function descOf(wt, s, str) { setM(wt, s); return mctx.measureText(str).actualBoundingBoxDescent; }
+  function trackedW(wt, s, str, t) { return textW(wt, s, str) + t * Math.max(0, Array.from(str).length - 1); }
+  function glyphXs(wt, s, str, t) {
+    setM(wt, s);
+    const chars = Array.from(str), xs = []; let pre = '';
+    chars.forEach((ch, i) => { xs.push(mctx.measureText(pre).width + i * t); pre += ch; });
+    return { chars, xs };
+  }
+  function wrap(wt, s, text, maxW, t) {
+    t = t || 0;
+    const fits = x => trackedW(wt, s, x, t) <= maxW, out = [];
+    String(text).replace(/\r/g, '').split('\n').forEach(par => {
+      let line = '';
+      par.split(/ +/).forEach(word => {
+        const test = line ? line + ' ' + word : word;
+        if (fits(test)) { line = test; return; }
+        if (line) { out.push(line); line = ''; }
+        if (fits(word)) { line = word; return; }
+        let part = '';
+        Array.from(word).forEach(ch => { if (!fits(part + ch) && part) { out.push(part); part = ''; } part += ch; });
+        line = part;
+      });
+      out.push(line);
+    });
+    return out;
+  }
+  function fitText(text, o) {
+    for (let s = o.size; s >= o.min - 0.001; s -= 0.5) {
+      const ld = o.lead * s / o.size, lines = wrap(o.wt, s, text, o.w);
+      if (o.capTop + cap(o.wt, s) + (lines.length - 1) * ld + 0.24 * s <= o.maxBottom) return { s, ld, lines, status: s < o.size ? 'shrunk' : 'ok' };
+    }
+    const s = o.min, ld = o.lead * s / o.size, lines = wrap(o.wt, s, text, o.w);
+    const room = Math.max(1, Math.floor((o.maxBottom - o.capTop - cap(o.wt, s) - 0.24 * s) / ld) + 1);
+    return { s, ld, lines: lines.slice(0, room), status: 'over' };
+  }
+  // one line: shrink to fit (down to min), then cut with an ellipsis
+  function fitLine(str, wt, size, min, maxW) {
+    let s = size;
+    while (s > min && textW(wt, s, str) > maxW) s -= 0.5;
+    if (textW(wt, s, str) <= maxW) return { str, s, status: s < size ? 'shrunk' : 'ok' };
+    let t = str;
+    while (t.length > 1 && textW(wt, s, t + '…') > maxW) t = t.slice(0, -1);
+    return { str: t.trimEnd() + '…', s, status: 'over' };
+  }
+
+  // ---------- images: decoded once, drawn by the preview, embedded by the PDF ----------
+  const imgCache = new Map();
+  function imgFor(data) {
+    if (!data) return null;
+    let e = imgCache.get(data);
+    if (!e) { e = { img: new Image(), ready: false }; e.img.onload = () => { e.ready = true; schedule(); }; e.img.src = data; imgCache.set(data, e); }
+    return e.ready ? e.img : null;
+  }
+  function allImages() {
+    const list = [window.S_LOGO];
+    B.pages.forEach(p => {
+      if (p.type === 'labels') p.items.forEach(i => i.logo && list.push(i.logo));
+      if (p.type === 'genre') p.tracks.forEach(t => t.art && list.push(t.art));
+    });
+    return list;
+  }
+  function imagesReady() {
+    return Promise.all(allImages().map(d => new Promise(res => {
+      const e = imgCache.get(d); if (e && e.ready) return res();
+      imgFor(d); const i = imgCache.get(d).img;
+      if (i.complete && i.naturalWidth) { imgCache.get(d).ready = true; res(); } else { i.addEventListener('load', res, { once: true }); i.addEventListener('error', res, { once: true }); }
+    })));
+  }
+
+  // ---------- painters: the same page layout goes to the preview canvas or to the vector PDF ----------
+  function canvasPainter(ctx) {
+    return {
+      rect(x, y, w, h, col) { ctx.fillStyle = col; ctx.fillRect(x, y, w, h); },
+      text(str, x, y, wt, s, col, t) {
+        ctx.font = font(wt, s); ctx.fillStyle = col; ctx.textBaseline = 'alphabetic';
+        if (!t) { ctx.fillText(str, x, y); return; }
+        const g = glyphXs(wt, s, str, t); g.chars.forEach((ch, i) => ctx.fillText(ch, x + g.xs[i], y));
+      },
+      image(data, x, y, w, h) { const i = imgFor(data); if (i) { ctx.imageSmoothingQuality = 'high'; ctx.drawImage(i, x, y, w, h); } },
+      spotify(x, y, size, col) {
+        ctx.save(); ctx.translate(x, y); ctx.scale(size / 24, size / 24);
+        ctx.fillStyle = col; ctx.fill(new Path2D(SPOTIFY_PATH), 'evenodd'); ctx.restore();
+      },
+      link() { }
+    };
+  }
+  function pdfPainter(pdf) {
+    const k = PDF_K, aliases = new Map();
+    return {
+      rect(x, y, w, h, col) { pdf.setFillColor(col); pdf.rect(x * k, y * k, w * k, h * k, 'F'); },
+      text(str, x, y, wt, s, col, t) {
+        pdf.setFont(FAMILY + wt, 'normal'); pdf.setFontSize(s * k); pdf.setTextColor(col);
+        if (!t) { pdf.text(str, x * k, y * k, { baseline: 'alphabetic' }); return; }
+        const g = glyphXs(wt, s, str, t);
+        g.chars.forEach((ch, i) => { if (ch !== ' ') pdf.text(ch, (x + g.xs[i]) * k, y * k, { baseline: 'alphabetic' }); });
+      },
+      image(data, x, y, w, h) {
+        if (!data) return;
+        if (!aliases.has(data)) aliases.set(data, 'img' + aliases.size);
+        const fmt = data.startsWith('data:image/png') ? 'PNG' : 'JPEG';
+        pdf.addImage(data, fmt, x * k, y * k, w * k, h * k, aliases.get(data), 'FAST');
+      },
+      spotify(x, y, size, col) {
+        const s = size / 24;
+        pdf.setFillColor(col); pdf.circle((x + 12 * s) * k, (y + 12 * s) * k, 12 * s * k, 'F');
+        pdf.setFillColor(COL.bg);
+        SPOTIFY_SUBS.slice(1).forEach(sp => {
+          let px = sp.start[0], py = sp.start[1];
+          const rel = sp.segs.map(c => { const r = [c[0] - px, c[1] - py, c[2] - px, c[3] - py, c[4] - px, c[5] - py]; px = c[4]; py = c[5]; return r; });
+          pdf.lines(rel, (x + sp.start[0] * s) * k, (y + sp.start[1] * s) * k, [s * k, s * k], 'F', true);
+        });
+      },
+      link(x, y, w, h, url) { pdf.link(x * k, y * k, w * k, h * k, { url }); }
+    };
+  }
+  function parsePath(d) {
+    const t = d.match(/[a-zA-Z]|-?\d*\.?\d+(?:e[-+]?\d+)?/g);
+    const subs = []; let i = 0, cmd = '', cur = [0, 0], start = [0, 0], lastC2 = null, sp = null;
+    const n = () => parseFloat(t[i++]);
+    while (i < t.length) {
+      if (/[a-zA-Z]/.test(t[i])) cmd = t[i++];
+      const rel = cmd === cmd.toLowerCase(), C = cmd.toUpperCase();
+      if (C === 'Z') { cur = start; lastC2 = null; sp = null; continue; }
+      if (C === 'M') {
+        let x = n(), y = n(); if (rel) { x += cur[0]; y += cur[1]; }
+        cur = start = [x, y]; sp = { start: [x, y], segs: [] }; subs.push(sp); lastC2 = null; cmd = rel ? 'l' : 'L'; continue;
+      }
+      let c1, c2, e;
+      if (C === 'C') { const v = [n(), n(), n(), n(), n(), n()]; if (rel) for (let j = 0; j < 6; j++) v[j] += cur[j % 2]; c1 = [v[0], v[1]]; c2 = [v[2], v[3]]; e = [v[4], v[5]]; }
+      else if (C === 'S') { const v = [n(), n(), n(), n()]; if (rel) for (let j = 0; j < 4; j++) v[j] += cur[j % 2]; c1 = lastC2 ? [2 * cur[0] - lastC2[0], 2 * cur[1] - lastC2[1]] : cur; c2 = [v[0], v[1]]; e = [v[2], v[3]]; }
+      else if (C === 'L') { let x = n(), y = n(); if (rel) { x += cur[0]; y += cur[1]; } c1 = cur; c2 = [x, y]; e = [x, y]; }
+      else { i++; continue; }
+      sp.segs.push([c1[0], c1[1], c2[0], c2[1], e[0], e[1]]); lastC2 = c2; cur = e;
+    }
+    return subs;
+  }
+  const SPOTIFY_SUBS = parsePath(SPOTIFY_PATH);
+
+  // ---------- page layouts ----------
+  const dateCaps = () => (B.date.trim() || defaultDate()).toUpperCase();
+  function smallCaps(P, str, x, capTop, col, right) {
+    const w = trackedW(600, SL, str, SLT);
+    P.text(str, right ? x - w : x, capTop + cap(600, SL) + 1, 600, SL, col, SLT);
+  }
+  function header(P, right, rightCol) {
+    smallCaps(P, 'SPINNIN’ RECORDS', M, M, COL.white);
+    smallCaps(P, right, W - M, M, rightCol, true);
+    P.rect(M, M + RULE, W - 2 * M, 1, COL.line);
+  }
+  const innerHeader = P => header(P, 'SONG BRIEFING  ·  ' + dateCaps(), COL.grey);
+  function titleLine(P, str, size, baseline, col) {
+    P.text(str, M + inkLeftOf(500, size, str) + 0.5, baseline, 500, size, col, TRK * size);   // +0.5: anti-aliased curves stay inside the margin
+  }
+  // big title wrapped to maxW; shrinks until it fits in maxLines
+  function titleFit(str, maxW, maxLines) {
+    let s = TS;
+    let lines = wrap(500, s, str, maxW, TRK * s);
+    while (lines.length > maxLines && s > 56) { s -= 2; lines = wrap(500, s, str, maxW, TRK * s); }
+    return { s, lines, status: s < TS ? 'shrunk' : 'ok' };
+  }
+  function sLogo(P) { const S = 132; P.image(window.S_LOGO, W - M - S, H - M - S, S, S); }
+
+  function drawCover(P, p, exp) {
+    header(P, dateCaps(), COL.white);
+    const bLast = H - M - 0.5 - descOf(500, CS, 'Song briefing'), b0 = bLast - Math.round(CS * TLF);
+    titleLine(P, 'Spinnin’ Records', CS, b0, COL.white);
+    titleLine(P, 'Song briefing', CS, bLast, COL.grey);
+    if ((p.intro || '').trim()) smallCaps(P, p.intro.trim().toUpperCase(), M, b0 - cap(500, CS) - 72, COL.grey);
+    sLogo(P);
+    return {};
+  }
+  function drawEnd(P) {
+    header(P, dateCaps(), COL.white);
+    const bLast = H - M - 0.5 - descOf(500, CS, 'Song briefing'), b0 = bLast - Math.round(CS * TLF);
+    titleLine(P, 'The end', CS, b0, COL.white);
+    titleLine(P, 'Song briefing', CS, bLast, COL.grey);
+    sLogo(P);
+    return {};
+  }
+  function gridOf(n) { let rows = 3; if (n <= 10) rows = 2; if (n <= 5) rows = 1; return { rows, cols: Math.max(1, Math.ceil(n / rows)) }; }
+  function drawLabels(P, p, exp) {
+    const fits = {};
+    innerHeader(P);
+    const tf = titleFit(p.title || '', W - 2 * M, 1); fits.title = tf.status;
+    titleLine(P, tf.lines[0] || '', tf.s, TOP + cap(500, tf.s), COL.white);
+    const items = p.items, n = items.length;
+    if (!n) { if (!exp) smallCaps(P, 'ADD LOGOS IN THE FORM', M, 400, COL.hint); return fits; }
+    const g = gridOf(n), y0 = 300, y1 = H - M - 1, cw = (W - 2 * M) / g.cols, ch = (y1 - y0) / g.rows;
+    P.rect(M, y0, W - 2 * M, 1, COL.line);
+    for (let r = 1; r < g.rows; r++) P.rect(M, Math.round(y0 + r * ch), W - 2 * M, 1, COL.line);
+    P.rect(M, y1, W - 2 * M, 1, COL.line);
+    for (let c = 1; c < g.cols; c++) P.rect(Math.round(M + c * cw), y0 + 1, 1, y1 - y0 - 1, COL.line);
+    items.forEach((it, i) => {
+      const cx0 = M + (i % g.cols) * cw, cy0 = y0 + Math.floor(i / g.cols) * ch, cx = cx0 + cw / 2, cy = cy0 + ch / 2;
+      smallCaps(P, String(i + 1).padStart(2, '0'), Math.round(cx0 + (i % g.cols ? 24 : 0)), Math.round(cy0 + 24), COL.grey);
+      if (it.logo && it.lw) {
+        const maxW = Math.min(cw * 0.7, 300), maxH = Math.min(ch * 0.4, 130), sc = Math.min(maxW / it.lw, maxH / it.lh);
+        const w = it.lw * sc, h = it.lh * sc;
+        P.image(it.logo, cx - w / 2, cy - h / 2, w, h);
+      } else {
+        const name = (it.name || '').toUpperCase(), lines = wrap(600, 34, name, cw - 64);
+        const ld = 40, top = cy - (cap(600, 34) + (lines.length - 1) * ld) / 2;
+        lines.forEach((ln, j) => P.text(ln, cx - textW(600, 34, ln) / 2, top + cap(600, 34) + j * ld, 600, 34, COL.white, 0));
+      }
+    });
+    return fits;
+  }
+  function drawGenre(P, p, exp) {
+    const fits = {};
+    innerHeader(P);
+    // left: title, description, playlist
+    const tf = titleFit(p.title || '', LX1 - M, 2); fits.title = tf.status;
+    const tb0 = TOP + cap(500, tf.s), tld = Math.round(tf.s * TLF);
+    tf.lines.forEach((ln, i) => titleLine(P, ln, tf.s, tb0 + i * tld, COL.white));
+    const descTop = tb0 + (tf.lines.length - 1) * tld + 56;
+    const url = playlistUrl(p.playlist), IS = 48, iy = H - M - IS;
+    const desc = (p.desc || '').trim();
+    if (desc || !exp) {
+      const f = fitText(desc || 'Optional: a short description of what we are looking for in this genre.',
+        { w: LX1 - M, capTop: descTop, maxBottom: url ? iy - 40 : H - M, wt: 400, size: 24, lead: 34, min: 16 });
+      if (desc) fits.desc = f.status;
+      const b0 = descTop + cap(400, f.s);
+      f.lines.forEach((ln, i) => { if (ln) P.text(ln, M, b0 + i * f.ld, 400, f.s, desc ? COL.white : COL.hint, 0); });
+    }
+    if (url) {
+      P.spotify(M, iy, IS, COL.white);
+      const tx = M + IS + 18;
+      P.text('Genre playlist', tx, iy + 21, 600, 18, COL.white, 0);
+      P.text('Listen on Spotify', tx, iy + IS - 6, 400, 14, COL.grey, 0);
+      P.link(M, iy, IS + 18 + textW(600, 18, 'Genre playlist'), IS, url);
+    }
+    // right: track rows; the artwork column only when a track on this page has artwork
+    const y0 = M + RULE, PR = (H - M - y0) / TRACK_ROWS, AW = 84, AS = 24;
+    const tracks = p.tracks.slice(0, TRACK_ROWS), withArt = tracks.some(t => t.art);
+    const tx = RX + 56 + (withArt ? AW + 28 : 0), tw = W - M - tx;
+    let worst = 'ok';
+    for (let i = 0; i < TRACK_ROWS; i++) {
+      const top = Math.round(y0 + i * PR), bot = Math.round(y0 + (i + 1) * PR), cy = (top + bot) / 2;
+      P.rect(RX, bot - 1, W - M - RX, 1, COL.line);
+      const t = tracks[i]; if (!t) continue;
+      smallCaps(P, String(i + 1).padStart(2, '0'), RX, Math.round(cy - cap(600, SL) / 2), COL.grey);
+      if (withArt) {
+        const ay = Math.round(cy - AW / 2);
+        P.rect(RX + 56, ay, AW, AW, COL.photo);
+        if (t.art) P.image(t.art, RX + 56, ay, AW, AW);
+      }
+      const a = fitLine((t.artist || '').trim() || (exp ? '' : 'Artist'), 600, AS, 18, tw);
+      const s = fitLine((t.title || '').trim() || (exp ? '' : 'Title'), 400, AS, 18, tw);
+      if (a.str) P.text(a.str, tx, Math.round(cy - 6), 600, a.s, (t.artist || '').trim() ? COL.white : COL.hint, 0);
+      if (s.str) P.text(s.str, tx, Math.round(cy + 26), 400, s.s, (t.title || '').trim() ? COL.soft : COL.hint, 0);
+      [a.status, s.status].forEach(st => { if (st === 'over' || (st === 'shrunk' && worst === 'ok')) worst = st; });
+    }
+    fits.tracks = worst;
+    return fits;
+  }
+  function drawText(P, p, exp) {
+    const fits = {};
+    innerHeader(P);
+    const f = fitText(p.text || '', { w: 900, capTop: TOP, maxBottom: H - M, wt: 400, size: 28, lead: 40, min: 18 });
+    fits.text = f.status;
+    const b0 = TOP + cap(400, f.s);
+    f.lines.forEach((ln, i) => { if (ln) P.text(ln, RX, b0 + i * f.ld, 400, f.s, COL.white, 0); });
+    const tf = titleFit(p.title || '', LX1 - M, 2); fits.title = tf.status;
+    const tld = Math.round(tf.s * TLF), last = tf.lines[tf.lines.length - 1] || '';
+    const bLast = H - M - 0.5 - descOf(500, tf.s, last), b0t = bLast - (tf.lines.length - 1) * tld;
+    tf.lines.forEach((ln, i) => titleLine(P, ln, tf.s, b0t + i * tld, COL.white));
+    return fits;
+  }
+  function renderPage(P, p, exp) {
+    P.rect(0, 0, W, H, COL.bg);
+    if (p.type === 'cover') return drawCover(P, p, exp);
+    if (p.type === 'labels') return drawLabels(P, p, exp);
+    if (p.type === 'genre') return drawGenre(P, p, exp);
+    if (p.type === 'text') return drawText(P, p, exp);
+    return drawEnd(P, p, exp);
+  }
+  function playlistUrl(raw) { const s = (raw || '').trim(); if (!s) return ''; return /^https?:\/\//i.test(s) ? s : 'https://' + s; }
+
+  // ---------- preview ----------
+  let previewScale = 1, raf = 0, lastFits = {};
+  function schedule() { if (!raf) raf = requestAnimationFrame(() => { raf = 0; draw(); saveDraft(); }); }
+  function draw() {
+    if (cur >= B.pages.length) cur = B.pages.length - 1;
+    pctx.setTransform(previewScale, 0, 0, previewScale, 0, 0);
+    lastFits = renderPage(canvasPainter(pctx), B.pages[cur], false) || {};
+    $('pagerText').textContent = 'Page ' + (cur + 1) + ' of ' + B.pages.length;
+    $('prevPage').disabled = cur === 0; $('nextPage').disabled = cur === B.pages.length - 1;
+    updateFitNotes();
+  }
+
+  // ---------- page list ----------
+  const KIND = { cover: 'Cover', labels: 'Logos', genre: 'Genre', text: 'Text', end: 'End' };
+  function pageName(p) {
+    if (p.type === 'cover') return 'Cover';
+    if (p.type === 'end') return 'The end';
+    return (p.title || '').trim() || 'Untitled genre';
+  }
+  const ICON = {
+    up: '<svg viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg>',
+    down: '<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>',
+    del: '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>'
+  };
+  function iconBtn(kind, label, onClick, disabled) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'icon-btn' + (kind === 'del' ? ' del' : ''); b.innerHTML = ICON[kind];
+    b.setAttribute('aria-label', label); b.disabled = !!disabled;
+    b.addEventListener('click', e => { e.stopPropagation(); onClick(); });
+    return b;
+  }
+  function renderPages() {
+    const box = $('pages'); box.innerHTML = '';
+    const genreIdx = B.pages.map((p, i) => p.type === 'genre' ? i : -1).filter(i => i >= 0);
+    B.pages.forEach((p, i) => {
+      const row = document.createElement('div'); row.className = 'pg' + (i === cur ? ' active' : '');
+      const open = document.createElement('button'); open.type = 'button'; open.className = 'pg-open';
+      open.innerHTML = '<span class="pg-num"></span><span class="pg-name"></span><span class="pg-kind"></span>';
+      open.querySelector('.pg-num').textContent = String(i + 1).padStart(2, '0');
+      open.querySelector('.pg-name').textContent = pageName(p);
+      open.querySelector('.pg-kind').textContent = KIND[p.type];
+      open.addEventListener('click', () => select(i));
+      row.appendChild(open);
+      if (p.type === 'genre') {
+        const gi = genreIdx.indexOf(i);
+        row.appendChild(iconBtn('up', 'Move up', () => moveGenre(i, -1), gi === 0));
+        row.appendChild(iconBtn('down', 'Move down', () => moveGenre(i, 1), gi === genreIdx.length - 1));
+        row.appendChild(iconBtn('del', 'Remove page', () => removeGenre(i)));
+      }
+      box.appendChild(row);
+    });
+  }
+  function select(i) { cur = Math.max(0, Math.min(B.pages.length - 1, i)); renderPages(); renderForm(); schedule(); }
+  function moveGenre(i, d) {
+    const j = i + d; if (!B.pages[j] || B.pages[j].type !== 'genre') return;
+    const t = B.pages[i]; B.pages[i] = B.pages[j]; B.pages[j] = t;
+    if (cur === i) cur = j; else if (cur === j) cur = i;
+    renderPages(); schedule();
+  }
+  function removeGenre(i) {
+    if (!confirm('Remove the page "' + pageName(B.pages[i]) + '"?')) return;
+    B.pages.splice(i, 1);
+    if (cur >= i && cur > 0) cur--;
+    renderPages(); renderForm(); schedule();
+  }
+  $('addGenre').addEventListener('click', () => {
+    let at = -1; B.pages.forEach((p, i) => { if (p.type === 'genre') at = i; });
+    if (at < 0) at = B.pages.findIndex(p => p.type === 'labels' || p.type === 'cover');
+    const g = genre('', []); B.pages.splice(at + 1, 0, g);
+    select(at + 1);
+    const t = document.querySelector('#form input[data-k="title"]'); if (t) t.focus();
+  });
+  $('prevPage').addEventListener('click', () => select(cur - 1));
+  $('nextPage').addEventListener('click', () => select(cur + 1));
+
+  // ---------- form for the selected page ----------
+  function el(tag, props, kids) {
+    const e = document.createElement(tag);
+    Object.entries(props || {}).forEach(([k, v]) => { if (k === 'class') e.className = v; else if (k === 'text') e.textContent = v; else if (k in e) e[k] = v; else e.setAttribute(k, v); });
+    (kids || []).forEach(c => c && e.appendChild(c));
+    return e;
+  }
+  function inputField(label, value, onInput, opts) {
+    opts = opts || {};
+    const id = 'f' + (uid++);
+    const inp = opts.area ? el('textarea', { id, className: opts.tall ? 'tall' : '', placeholder: opts.ph || '' }) : el('input', { id, type: opts.type || 'text', placeholder: opts.ph || '', autocomplete: 'off' });
+    inp.value = value || '';
+    if (opts.key) inp.dataset.k = opts.key;
+    inp.addEventListener('input', () => { onInput(inp.value); schedule(); if (opts.relist) renderPages(); });
+    const kids = [label ? el('label', { htmlFor: id, text: label }) : null, inp];
+    if (opts.fit) kids.push(el('p', { className: 'fitnote', 'data-fit': opts.fit }));
+    if (opts.note) kids.push(el('p', { className: 'note', text: opts.note }));
+    return el('div', { class: 'field' }, kids);
+  }
+  function renderForm() {
+    const f = $('form'), p = B.pages[cur]; f.innerHTML = '';
+    if (p.type === 'cover') {
+      f.appendChild(el('p', { class: 'card-label', text: 'Cover' }));
+      f.appendChild(inputField('Line above the title', p.intro, v => p.intro = v, { note: 'Leave empty to hide it. The date comes from the Date field above.' }));
+    } else if (p.type === 'end') {
+      f.appendChild(el('p', { class: 'card-label', text: 'The end' }));
+      f.appendChild(el('p', { class: 'note', text: 'This page has no fields. It shows the date from the Date field above.' }));
+    } else if (p.type === 'text') {
+      f.appendChild(el('p', { class: 'card-label', text: 'Text page' }));
+      f.appendChild(inputField('Title', p.title, v => p.title = v, { relist: true, fit: 'title' }));
+      f.appendChild(inputField('Text', p.text, v => p.text = v, { area: true, tall: true, fit: 'text' }));
+    } else if (p.type === 'labels') {
+      renderLabelsForm(f, p);
+    } else {
+      renderGenreForm(f, p);
+    }
+    updateFitNotes();
+  }
+  function updateFitNotes() {
+    document.querySelectorAll('#form [data-fit]').forEach(n => {
+      const st = lastFits[n.dataset.fit] || 'ok';
+      n.className = st === 'over' ? 'err' : st === 'shrunk' ? 'warn' : 'note';
+      const what = n.dataset.fit;
+      n.textContent = st === 'ok' ? '' :
+        what === 'tracks' ? (st === 'over' ? 'A track name is too long and is cut off (…).' : 'Long track names are set smaller to fit.') :
+        what === 'title' ? (st === 'over' ? 'Title too long.' : 'Long title: set smaller to fit.') :
+        st === 'over' ? 'Too long: the end is cut off. Shorten this text.' : 'Set smaller to fit.';
+      n.style.display = st === 'ok' ? 'none' : '';
+    });
+  }
+
+  // logos: upload (several at once), name, order, remove; every logo becomes white
+  function renderLabelsForm(f, p) {
+    f.appendChild(el('p', { class: 'card-label', text: 'Logo page' }));
+    f.appendChild(inputField('Title', p.title, v => p.title = v, { relist: true, fit: 'title' }));
+    const drop = el('div', { class: 'drop', tabIndex: 0, role: 'button' }, [document.createTextNode('Drop logos or click to choose'), el('small', { text: 'PNG or SVG with a transparent background works best. Every logo is made white.' })]);
+    const file = el('input', { type: 'file', accept: 'image/*,.svg', multiple: true, hidden: true });
+    drop.addEventListener('click', () => file.click());
+    drop.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); file.click(); } });
+    ['dragenter', 'dragover'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add('drag'); }));
+    ['dragleave', 'drop'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove('drag'); }));
+    const addFiles = async files => {
+      for (const fl of Array.from(files)) {
+        if (!fl.type.startsWith('image/') && !/\.svg$/i.test(fl.name)) continue;
+        try { const w = await whiteLogo(fl); p.items.push({ name: fl.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' '), logo: w.data, lw: w.w, lh: w.h }); }
+        catch (e) { status('Could not read ' + fl.name + '.'); }
+      }
+      renderForm(); schedule();
+    };
+    drop.addEventListener('drop', e => addFiles(e.dataTransfer.files));
+    file.addEventListener('change', () => { addFiles(file.files); file.value = ''; });
+    f.appendChild(drop); f.appendChild(file);
+    p.items.forEach((it, i) => {
+      const thumb = el('div', { class: 'logo-thumb' });
+      if (it.logo) thumb.style.backgroundImage = 'url("' + it.logo + '")'; else thumb.textContent = 'no logo';
+      const name = el('input', { type: 'text', value: it.name || '', placeholder: 'Label name', autocomplete: 'off' });
+      name.addEventListener('input', () => { it.name = name.value; schedule(); });
+      const repl = el('input', { type: 'file', accept: 'image/*,.svg', hidden: true });
+      repl.addEventListener('change', async () => {
+        const fl = repl.files[0]; repl.value = ''; if (!fl) return;
+        try { const w = await whiteLogo(fl); it.logo = w.data; it.lw = w.w; it.lh = w.h; renderForm(); schedule(); } catch (e) { status('Could not read ' + fl.name + '.'); }
+      });
+      const setBtn = el('button', { type: 'button', className: 'btn-utility small', text: it.logo ? 'Replace logo' : 'Add logo' });
+      setBtn.addEventListener('click', () => repl.click());
+      const head = el('div', { class: 'sub-head' }, [el('span', { class: 't', text: String(i + 1).padStart(2, '0') }),
+        iconBtn('up', 'Move up', () => { p.items.splice(i - 1, 0, p.items.splice(i, 1)[0]); renderForm(); schedule(); }, i === 0),
+        iconBtn('down', 'Move down', () => { p.items.splice(i + 1, 0, p.items.splice(i, 1)[0]); renderForm(); schedule(); }, i === p.items.length - 1),
+        iconBtn('del', 'Remove logo', () => { p.items.splice(i, 1); renderForm(); schedule(); })]);
+      f.appendChild(el('div', { class: 'sub' }, [head, el('div', { class: 'row' }, [thumb, el('div', { style: 'flex:1;min-width:0' }, [name])]), el('div', { class: 'row' }, [setBtn]), repl]));
+    });
+    const add = el('button', { type: 'button', className: 'btn-utility', text: 'Add a label without logo' });
+    add.addEventListener('click', () => { p.items.push({ name: '', logo: null, lw: 0, lh: 0 }); renderForm(); schedule(); });
+    f.appendChild(el('div', { class: 'row' }, [add]));
+    f.appendChild(el('p', { class: 'note', text: 'Without a logo the label name is shown. 1–5 labels fill one row, up to 10 two rows, more three rows.' }));
+  }
+
+  // genre: title, description, playlist, tracks (Spotify link fills title + artwork, artist suggestions)
+  function renderGenreForm(f, p) {
+    f.appendChild(el('p', { class: 'card-label', text: 'Genre page' }));
+    f.appendChild(inputField('Genre', p.title, v => p.title = v, { relist: true, fit: 'title', key: 'title', ph: 'e.g. Deep House' }));
+    f.appendChild(inputField('Description', p.desc, v => p.desc = v, { area: true, fit: 'desc', ph: 'Optional: a short description of what we are looking for in this genre.' }));
+    f.appendChild(inputField('Spotify playlist link', p.playlist, v => p.playlist = v, { type: 'url', ph: 'https://open.spotify.com/playlist/…', note: 'One playlist per genre, clickable in the PDF. Leave empty to hide it.' }));
+    f.appendChild(el('div', { class: 'card-head' }, [el('p', { class: 'card-label', text: 'Tracks (' + p.tracks.length + ' of ' + TRACK_ROWS + ')' })]));
+    f.appendChild(el('p', { class: 'fitnote', 'data-fit': 'tracks' }));
+    p.tracks.forEach((t, i) => f.appendChild(trackCard(p, t, i)));
+    const add = el('button', { type: 'button', className: 'btn-utility', text: 'Add track', disabled: p.tracks.length >= TRACK_ROWS });
+    add.addEventListener('click', () => {
+      p.tracks.push({ link: '', artist: '', title: '', art: null }); renderForm(); schedule();
+      const links = document.querySelectorAll('#form input[data-k="link"]'); if (links.length) links[links.length - 1].focus();
+    });
+    f.appendChild(el('div', { class: 'row' }, [add]));
+    f.appendChild(el('p', { class: 'note', text: 'Paste a Spotify track link to fill in the title and artwork. Spotify does not share artist names with other websites, so the tool suggests artists from Apple Music: click one or type it.' }));
+  }
+  function trackCard(p, t, i) {
+    const art = el('div', { class: 'track-art' });
+    if (t.art) art.style.backgroundImage = 'url("' + t.art + '")';
+    const msg = el('p', { class: 'note' }), chips = el('div', { class: 'chips' });
+    const link = el('input', { type: 'url', value: t.link || '', placeholder: 'Spotify track link', autocomplete: 'off' }); link.dataset.k = 'link';
+    const artist = el('input', { type: 'text', value: t.artist || '', placeholder: 'Artist', autocomplete: 'off' });
+    const title = el('input', { type: 'text', value: t.title || '', placeholder: 'Title', autocomplete: 'off' });
+    artist.addEventListener('input', () => { t.artist = artist.value; schedule(); });
+    title.addEventListener('input', () => { t.title = title.value; schedule(); });
+    const ui = {
+      note(s, cls) { msg.className = cls || 'note'; msg.textContent = s || ''; },
+      art() { art.style.backgroundImage = t.art ? 'url("' + t.art + '")' : ''; },
+      fields() { title.value = t.title || ''; artist.value = t.artist || ''; },
+      chips(list) {
+        chips.innerHTML = '';
+        if (!list || !list.length) return;
+        chips.appendChild(el('span', { class: 'note', text: 'Artist?' }));
+        list.forEach(name => {
+          const c = el('button', { type: 'button', className: 'chip', text: name });
+          c.addEventListener('click', () => { t.artist = name; artist.value = name; chips.innerHTML = ''; schedule(); });
+          chips.appendChild(c);
+        });
+      }
+    };
+    let timer = 0;
+    link.addEventListener('input', () => {
+      t.link = link.value; clearTimeout(timer);
+      timer = setTimeout(() => lookupTrack(t, ui), 500);
+    });
+    const artFile = el('input', { type: 'file', accept: 'image/*', hidden: true });
+    artFile.addEventListener('change', async () => {
+      const fl = artFile.files[0]; artFile.value = ''; if (!fl) return;
+      try { t.art = await squareArt(URL.createObjectURL(fl)); ui.art(); schedule(); } catch (e) { status('Could not read that image.'); }
+    });
+    const artBtn = el('button', { type: 'button', className: 'btn-utility small', text: 'Upload artwork' });
+    artBtn.addEventListener('click', () => artFile.click());
+    const noArt = el('button', { type: 'button', className: 'btn-utility small danger', text: 'Remove artwork' });
+    noArt.addEventListener('click', () => { t.art = null; ui.art(); schedule(); });
+    const head = el('div', { class: 'sub-head' }, [el('span', { class: 't', text: String(i + 1).padStart(2, '0') }),
+      iconBtn('up', 'Move up', () => { p.tracks.splice(i - 1, 0, p.tracks.splice(i, 1)[0]); renderForm(); schedule(); }, i === 0),
+      iconBtn('down', 'Move down', () => { p.tracks.splice(i + 1, 0, p.tracks.splice(i, 1)[0]); renderForm(); schedule(); }, i === p.tracks.length - 1),
+      iconBtn('del', 'Remove track', () => { p.tracks.splice(i, 1); renderForm(); schedule(); })]);
+    return el('div', { class: 'sub' }, [head,
+      el('div', { class: 'track-top' }, [art, el('div', { class: 'field' }, [link])]),
+      msg,
+      el('div', { class: 'two' }, [artist, title]),
+      chips,
+      el('div', { class: 'row' }, [artBtn, noArt, artFile])]);
+  }
+
+  // ---------- Spotify: title + artwork (oEmbed), artist suggestions (Apple Music search) ----------
+  function trackId(s) {
+    const m = String(s || '').match(/open\.spotify\.com\/(?:intl-[a-z-]+\/)?track\/([A-Za-z0-9]+)/) || String(s || '').match(/spotify:track:([A-Za-z0-9]+)/);
+    return m ? m[1] : null;
+  }
+  async function lookupTrack(t, ui) {
+    const raw = (t.link || '').trim();
+    ui.chips([]);
+    if (!raw) { ui.note(''); return; }
+    const id = trackId(raw);
+    if (!id) {
+      ui.note(/spotify\.link|spotify\.app\.link/.test(raw) ? 'Short spotify.link links cannot be read. Use Share → Copy song link in Spotify (open.spotify.com/track/…).' : 'This is not a Spotify track link (open.spotify.com/track/…).', 'warn');
+      return;
+    }
+    ui.note('Fetching from Spotify…');
+    try {
+      const r = await fetch('https://open.spotify.com/oembed?url=' + encodeURIComponent('https://open.spotify.com/track/' + id));
+      if (!r.ok) throw new Error('oembed ' + r.status);
+      const j = await r.json();
+      if (j.title) t.title = j.title;
+      if (j.thumbnail_url) {
+        try { t.art = await squareArt(j.thumbnail_url.replace('ab67616d00001e02', 'ab67616d0000b273')); }
+        catch (e) { t.art = await squareArt(j.thumbnail_url); }
+      }
+      ui.fields(); ui.art(); schedule();
+      ui.note('Title and artwork filled in. Check the artist: pick a suggestion or type it.');
+      const names = await artistSuggestions(t.title);
+      if (names.length) ui.chips(names);
+      else ui.note('Title and artwork filled in. No artist suggestions found: check or type the artist.');
+    } catch (e) {
+      ui.note('Could not fetch this track from Spotify. Fill in the fields yourself.', 'warn');
+    }
+  }
+  const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[’']/g, '').replace(/\s*[\(\[].*?[\)\]]\s*/g, ' ').replace(/\s+-\s+.*$/, '').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
+  // Apple Music search on the exact title; dance/electronic first (the right artist is usually in the top 2)
+  const DANCE = /dance|electronic|house|techno|trance/i;
+  async function artistSuggestions(title) {
+    const core = norm(title); if (!core) return [];
+    try {
+      const r = await fetch('https://itunes.apple.com/search?media=music&entity=song&limit=200&term=' + encodeURIComponent(core));
+      const j = await r.json(), seen = new Set(), out = [];
+      (j.results || []).filter(x => norm(x.trackName) === core)
+        .sort((a, b) => DANCE.test(b.primaryGenreName) - DANCE.test(a.primaryGenreName))   // stable: Apple's relevance order within each group
+        .forEach(x => {
+          const a = (x.artistName || '').trim(); if (!a || seen.has(a.toLowerCase())) return;
+          seen.add(a.toLowerCase()); out.push(a);
+        });
+      return out.slice(0, 5);
+    } catch (e) { return []; }
+  }
+  // square JPEG 640x640 from any image URL (Spotify covers allow this: CORS *)
+  function squareArt(src) {
+    return new Promise((res, rej) => {
+      const i = new Image(); i.crossOrigin = 'anonymous';
+      i.onload = () => {
+        try {
+          const s = Math.min(i.naturalWidth, i.naturalHeight), c = document.createElement('canvas'); c.width = c.height = 640;
+          const x = c.getContext('2d'); x.imageSmoothingQuality = 'high';
+          x.drawImage(i, (i.naturalWidth - s) / 2, (i.naturalHeight - s) / 2, s, s, 0, 0, 640, 640);
+          res(c.toDataURL('image/jpeg', 0.9));
+        } catch (e) { rej(e); }
+      };
+      i.onerror = rej; i.src = src;
+    });
+  }
+  // any logo -> white silhouette on transparent, trimmed. A solid background (all corners opaque) is keyed out first.
+  function whiteLogo(file) {
+    return new Promise((res, rej) => {
+      const url = URL.createObjectURL(file), i = new Image();
+      i.onload = () => {
+        try {
+          let w = i.naturalWidth || 1000, h = i.naturalHeight || 500;
+          const k = Math.min(1, 1600 / Math.max(w, h)) || 1; w = Math.round(w * k); h = Math.round(h * k);
+          if (/svg/.test(file.type) || /\.svg$/i.test(file.name)) { const s = 1600 / Math.max(w, h); w = Math.round(w * s); h = Math.round(h * s); }
+          const c = document.createElement('canvas'); c.width = w; c.height = h;
+          const x = c.getContext('2d'); x.drawImage(i, 0, 0, w, h);
+          const d = x.getImageData(0, 0, w, h), px = d.data;
+          const at = (xx, yy) => (yy * w + xx) * 4;
+          const corners = [at(0, 0), at(w - 1, 0), at(0, h - 1), at(w - 1, h - 1)];
+          const solid = corners.every(o => px[o + 3] > 250);
+          const bg = corners[0];
+          const br = px[bg], bgG = px[bg + 1], bb = px[bg + 2];
+          let minX = w, minY = h, maxX = -1, maxY = -1;
+          for (let yy = 0; yy < h; yy++) for (let xx = 0; xx < w; xx++) {
+            const o = at(xx, yy);
+            let a = px[o + 3];
+            if (solid) { const dist = Math.abs(px[o] - br) + Math.abs(px[o + 1] - bgG) + Math.abs(px[o + 2] - bb); a = Math.min(a, Math.max(0, Math.min(255, (dist - 30) * 3))); }
+            px[o] = px[o + 1] = px[o + 2] = 255; px[o + 3] = a;
+            if (a > 20) { if (xx < minX) minX = xx; if (xx > maxX) maxX = xx; if (yy < minY) minY = yy; if (yy > maxY) maxY = yy; }
+          }
+          if (maxX < 0) throw new Error('empty');
+          x.putImageData(d, 0, 0);
+          const tw = maxX - minX + 1, th = maxY - minY + 1, o = document.createElement('canvas'); o.width = tw; o.height = th;
+          o.getContext('2d').drawImage(c, minX, minY, tw, th, 0, 0, tw, th);
+          res({ data: o.toDataURL('image/png'), w: tw, h: th });
+        } catch (e) { rej(e); } finally { URL.revokeObjectURL(url); }
+      };
+      i.onerror = e => { URL.revokeObjectURL(url); rej(e); };
+      i.src = url;
+    });
+  }
+
+  // ---------- export ----------
+  function fileBase() { return 'Spinnin Records Song Briefing - ' + (B.date.trim() || defaultDate()).replace(/[\\/:*?"<>|]+/g, ''); }
+  function buildPdf() {
+    const k = PDF_K;
+    const pdf = new window.jspdf.jsPDF({ orientation: 'landscape', unit: 'pt', format: [W * k, H * k], compress: true });
+    [400, 500, 600].forEach(wt => { pdf.addFileToVFS(FAMILY + wt + '.ttf', window.BRIEF_FONTS[wt]); pdf.addFont(FAMILY + wt + '.ttf', FAMILY + wt, 'normal'); });
+    const P = pdfPainter(pdf), problems = [];
+    B.pages.forEach((p, i) => {
+      if (i > 0) pdf.addPage([W * k, H * k], 'landscape');
+      const fits = renderPage(P, p, true) || {};
+      if (Object.values(fits).includes('over')) problems.push(pageName(p));
+    });
+    pdf.setProperties({ title: fileBase(), subject: 'Song briefing', creator: 'Toolbox – General Briefing' });
+    return { pdf, problems };
+  }
+  $('exportPdf').addEventListener('click', async () => {
+    if (!window.jspdf) { status('PDF library did not load. Check the internet connection and reload.'); return; }
+    const btn = $('exportPdf'); btn.disabled = true; status('Building the PDF…');
+    try {
+      await imagesReady();
+      const { pdf, problems } = buildPdf();
+      pdf.save(fileBase() + '.pdf');
+      status('PDF exported (' + B.pages.length + ' pages).' + (problems.length ? ' Text is cut off on: ' + problems.join(', ') + '.' : ''));
+    } catch (e) { console.error(e); status('PDF export failed: ' + e.message); }
+    finally { btn.disabled = false; }
+  });
+
+  // ---------- saving: library (IndexedDB, one per date), editable file, draft ----------
+  const store = {
+    db: null,
+    open() {
+      if (!this.db) this.db = new Promise((res, rej) => {
+        const r = indexedDB.open('generalBriefing', 1);
+        r.onupgradeneeded = () => { r.result.createObjectStore('briefings', { keyPath: 'id' }); r.result.createObjectStore('meta'); };
+        r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+      });
+      return this.db;
+    },
+    async run(name, mode, fn) {
+      const db = await this.open();
+      return new Promise((res, rej) => {
+        const t = db.transaction(name, mode), req = fn(t.objectStore(name));
+        t.oncomplete = () => res(req && req.result); t.onerror = () => rej(t.error); t.onabort = () => rej(t.error);
+      });
+    },
+    all() { return this.run('briefings', 'readonly', s => s.getAll()); },
+    get(id) { return this.run('briefings', 'readonly', s => s.get(id)); },
+    put(rec) { return this.run('briefings', 'readwrite', s => s.put(rec)); },
+    del(id) { return this.run('briefings', 'readwrite', s => s.delete(id)); },
+    getMeta(k) { return this.run('meta', 'readonly', s => s.get(k)); },
+    setMeta(k, v) { return this.run('meta', 'readwrite', s => s.put(v, k)); }
+  };
+  const snapshot = () => JSON.parse(JSON.stringify(B));
+  function restore(d) {
+    if (!d || d.app !== 'general-briefing' || !Array.isArray(d.pages)) throw new Error('not a briefing');
+    d.pages.forEach(p => { if (!p.id) p.id = newId(); if (p.type === 'genre' && !Array.isArray(p.tracks)) p.tracks = []; if (p.type === 'labels' && !Array.isArray(p.items)) p.items = []; });
+    B = d; cur = 0;
+    $('date').value = B.date || '';
+    renderPages(); renderForm(); schedule();
+  }
+  const idOf = name => name.trim().toLowerCase().replace(/\s+/g, ' ') || 'untitled';
+  function fmtDate(t) { return new Date(t).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }); }
+  async function refreshLib() {
+    const lib = $('lib'); let list;
+    try { list = await store.all(); }
+    catch (e) { lib.innerHTML = '<p class="lib-empty">Saving in the browser is not available here (private window?). Use Download editable file instead.</p>'; return; }
+    list.sort((a, b) => b.savedAt - a.savedAt);
+    lib.innerHTML = '';
+    if (!list.length) { lib.appendChild(el('p', { class: 'lib-empty', text: 'No saved briefings yet. Click Save briefing to keep this one.' })); return; }
+    list.forEach(r => {
+      const open = el('button', { type: 'button', className: 'lib-open' }, [el('span', { class: 'lib-name', text: r.name }), el('span', { class: 'lib-meta', text: 'Saved ' + fmtDate(r.savedAt) })]);
+      open.addEventListener('click', async () => { try { const rec = await store.get(r.id); restore(rec.data); state.currentId = r.id; refreshLib(); status('Opened "' + r.name + '".'); } catch (e) { status('Could not open that briefing.'); } });
+      const del = iconBtn('del', 'Delete ' + r.name, async () => {
+        if (!confirm('Delete the saved briefing "' + r.name + '"?')) return;
+        await store.del(r.id); if (state.currentId === r.id) state.currentId = null; refreshLib(); status('Deleted "' + r.name + '".');
+      });
+      lib.appendChild(el('div', { class: 'lib-item' + (r.id === state.currentId ? ' active' : '') }, [open, del]));
+    });
+  }
+  $('saveBrief').addEventListener('click', async () => {
+    const name = B.date.trim() || defaultDate(), id = idOf(name);
+    try {
+      const existing = await store.get(id);
+      if (existing && id !== state.currentId && !confirm('A briefing for "' + existing.name + '" is already saved. Replace it?')) return;
+      await store.put({ id, name, savedAt: Date.now(), data: snapshot() });
+      state.currentId = id; refreshLib(); status('Saved as "' + name + '".');
+    } catch (e) { status('Could not save in the browser. Use Download editable file instead.'); }
+  });
+  $('newBrief').addEventListener('click', () => {
+    if (!confirm('Start a new briefing from the standard pages and tracks? Unsaved changes to the current one are lost.')) return;
+    restore(defaultBriefing()); state.currentId = null; refreshLib(); status('New briefing.');
+  });
+  $('downloadFile').addEventListener('click', () => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(snapshot())], { type: 'application/json' }));
+    a.download = fileBase() + ' (editable).json'; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    status('Editable file downloaded. It opens in this tool only: to send the briefing, use Export PDF.');
+  });
+  $('importFile').addEventListener('click', () => $('briefFile').click());
+  $('briefFile').addEventListener('change', async e => {
+    const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+    try { restore(JSON.parse(await f.text())); state.currentId = null; refreshLib(); status('Opened ' + f.name + '. Click Save briefing to keep it in the list.'); }
+    catch (err) { status('That is not an editable general briefing file (.json).'); }
+  });
+  let draftTimer = 0;
+  function saveDraft() {
+    clearTimeout(draftTimer);
+    draftTimer = setTimeout(() => { store.setMeta('draft', { data: snapshot(), currentId: state.currentId, page: cur }).catch(() => { }); }, 600);
+  }
+
+  let statusTimer = 0;
+  function status(msg) { $('status').textContent = msg; clearTimeout(statusTimer); statusTimer = setTimeout(() => $('status').textContent = '', 7000); }
+
+  $('date').addEventListener('input', () => { B.date = $('date').value; schedule(); });
+
+  // ---------- start ----------
+  const q = new URLSearchParams(location.search), canvasOnly = q.has('canvas');
+  if (canvasOnly) document.body.classList.add('canvas-only');
+  previewScale = canvasOnly || (window.devicePixelRatio || 1) > 1 ? 2 : 1;
+  canvas.width = W * previewScale; canvas.height = H * previewScale;
+  $('date').value = B.date;
+  window.generalBriefing = { buildPdf, imagesReady, get briefing() { return B; }, select, lookupTrack, artistSuggestions, store };
+  loadFonts()
+    .catch(() => status('Could not load the artwork font (fonts.js).'))
+    .then(async () => {
+      try { const d = await store.getMeta('draft'); if (d && d.data) { restore(d.data); state.currentId = d.currentId || null; cur = Math.min(d.page || 0, B.pages.length - 1); } } catch (e) { }
+      if (canvasOnly) cur = Math.max(0, Math.min(B.pages.length - 1, (parseInt(q.get('canvas'), 10) || 1) - 1));
+      renderPages(); renderForm(); draw(); refreshLib();
+      document.body.dataset.ready = '1';
+    });
+})();
+</script>
+</body>
+</html>
