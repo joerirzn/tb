@@ -361,18 +361,6 @@
     </div>
 
     <div class="card">
-      <div class="field">
-        <label for="date">Date</label>
-        <input type="text" id="date" autocomplete="off">
-        <p class="note">Shown on every page. The briefing is saved under this date.</p>
-      </div>
-      <div class="field">
-        <span class="lbl">Colour of “Song briefing” on the cover and end page</span>
-        <div id="coverColor"></div>
-      </div>
-    </div>
-
-    <div class="card">
       <div class="card-head">
         <p class="card-label">Pages</p>
         <button class="btn-utility small" id="addGenre" type="button">Add genre page</button>
@@ -878,9 +866,16 @@
   function renderForm() {
     const f = $('form'), p = B.pages[cur]; f.innerHTML = '';
     if (p.type === 'genre') renderGenreForm(f, p);
-    else {
+    else if (p.type === 'cover') {
+      // the only settings outside the genre pages: date (all pages) and the colour of "Song briefing" (cover + end)
+      f.appendChild(el('p', { class: 'card-label', text: 'Cover' }));
+      f.appendChild(inputField('Date', B.date, v => B.date = v, { note: 'Shown on every page. The briefing is saved under this date.' }));
+      f.appendChild(el('div', { class: 'field' }, [el('span', { class: 'lbl', text: 'Colour of “Song briefing”' }),
+        colorPicker(() => validHex(B.coverColor) ? B.coverColor : ACC[0], c => B.coverColor = c),
+        el('p', { class: 'note', text: 'Also used on the end page.' })]));
+    } else {
       f.appendChild(el('p', { class: 'card-label', text: pageName(p) }));
-      f.appendChild(el('p', { class: 'note', text: 'This page is fixed and cannot be edited here. Only the genre pages can be changed.' + (p.type === 'cover' || p.type === 'end' ? ' The date comes from the Date field above.' : '') }));
+      f.appendChild(el('p', { class: 'note', text: 'This page is fixed and cannot be edited here. Only the genre pages can be changed.' + (p.type === 'end' ? ' The date and the colour of “Song briefing” are set on the cover.' : '') }));
     }
     updateFitNotes();
   }
@@ -914,10 +909,7 @@
     paint();
     return box;
   }
-  function renderCoverColor() {
-    const box = $('coverColor'); box.innerHTML = '';
-    box.appendChild(colorPicker(() => validHex(B.coverColor) ? B.coverColor : ACC[0], c => B.coverColor = c));
-  }
+
 
   // genre: title, description, playlist, tracks (Spotify link fills title + artwork, artist suggestions)
   function renderGenreForm(f, p) {
@@ -1116,7 +1108,6 @@
       tracks: (Array.isArray(g.tracks) ? g.tracks : []).map(x => ({ link: x.link || '', artist: x.artist || '', title: x.title || '', art: x.art || null }))
     }));
     B = { app: 'general-briefing', version: 2, date: d.date || defaultDate(), coverColor: validHex(d.coverColor) ? d.coverColor.toLowerCase() : ACC[0], pages: fixedPages(genres) }; cur = 0;
-    $('date').value = B.date; renderCoverColor();
     renderPages(); renderForm(); schedule();
   }
   const idOf = name => name.trim().toLowerCase().replace(/\s+/g, ' ') || 'untitled';
@@ -1173,21 +1164,19 @@
   let statusTimer = 0;
   function status(msg) { $('status').textContent = msg; clearTimeout(statusTimer); statusTimer = setTimeout(() => $('status').textContent = '', 7000); }
 
-  $('date').addEventListener('input', () => { B.date = $('date').value; schedule(); });
 
   // ---------- start ----------
   const q = new URLSearchParams(location.search), canvasOnly = q.has('canvas');
   if (canvasOnly) document.body.classList.add('canvas-only');
   previewScale = canvasOnly || (window.devicePixelRatio || 1) > 1 ? 2 : 1;
   canvas.width = W * previewScale; canvas.height = H * previewScale;
-  $('date').value = B.date;
   window.generalBriefing = { buildPdf, imagesReady, get briefing() { return B; }, select, lookupTrack, artistSuggestions, store };
   loadFonts()
     .catch(() => status('Could not load the artwork font (fonts.js).'))
     .then(async () => {
       try { const d = await store.getMeta('draft'); if (d && d.data) { restore(d.data); state.currentId = d.currentId || null; cur = Math.min(d.page || 0, B.pages.length - 1); } } catch (e) { }
       if (canvasOnly) cur = Math.max(0, Math.min(B.pages.length - 1, (parseInt(q.get('canvas'), 10) || 1) - 1));
-      renderCoverColor(); renderPages(); renderForm(); draw(); refreshLib();
+      renderPages(); renderForm(); draw(); refreshLib();
       document.body.dataset.ready = '1';
     });
 })();
