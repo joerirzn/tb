@@ -633,7 +633,7 @@
     while (lines.length > maxLines && s > 56) { s -= 2; lines = wrap(500, s, str, maxW, TRK * s); }
     return { s, lines, status: s < TS ? 'shrunk' : 'ok' };
   }
-  function sLogo(P) { const S = 132; P.image(window.S_LOGO, W - M - S, H - M - S, S, S); }
+  function sLogo(P) { const S = 88; P.image(window.S_LOGO, W - M - S, H - M - S, S, S); }
 
   function drawCover(P, p, exp) {
     header(P, dateCaps(), COL.white);
