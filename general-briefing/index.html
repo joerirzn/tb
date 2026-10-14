@@ -296,6 +296,13 @@
     .stage { position: static; order: -1; }
   }
 
+  /* PIN screen while the tool is in testing */
+  body.locked > *:not(.gate) { display: none !important; }
+  .gate { display: none; }
+  body.locked .gate { display: grid; place-items: center; min-height: calc(100vh - 72px); }
+  .gate .card { width: 100%; max-width: 380px; }
+  .gate input { text-align: center; letter-spacing: 0.3em; font-size: 20px; }
+
   /* ?canvas=N: one page of the artwork only, for checks */
   body.canvas-only { padding: 0; }
   body.canvas-only > *:not(.main) { display: none; }
@@ -304,7 +311,17 @@
   body.canvas-only .canvas-wrap { border: none; border-radius: 0; }
 </style>
 </head>
-<body>
+<body class="locked">
+
+<div class="gate">
+  <form class="card" id="gateForm" autocomplete="off">
+    <p class="card-label">General Briefing is in testing</p>
+    <p class="note">Enter the PIN to open the tool.</p>
+    <input type="password" id="gatePin" inputmode="numeric" placeholder="PIN" aria-label="PIN">
+    <button class="btn-primary" type="submit">Open</button>
+    <p class="err" id="gateErr"></p>
+  </form>
+</div>
 
 <header>
   <div class="header-left">
@@ -373,6 +390,28 @@
 
 <footer class="foot">Internal use only — do not share this link outside the company.</footer>
 
+<script>
+// PIN screen while testing. Only a SHA-256 hash of the PIN is in the page; a soft gate, not real security (the site is public).
+(function () {
+  const PIN_HASH = 'a8cd0dfebcb193175d115a8a0536db15787150976f7aefcff30dd2528aba6278', KEY = 'generalBriefing.unlocked';
+  const open = () => document.body.classList.remove('locked');
+  try { if (localStorage.getItem(KEY) === PIN_HASH) open(); } catch (e) { }
+  if (new URLSearchParams(location.search).has('canvas')) open();
+  async function sha(s) {
+    const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('general-briefing:' + s));
+    return Array.from(new Uint8Array(b)).map(x => x.toString(16).padStart(2, '0')).join('');
+  }
+  document.getElementById('gateForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const pin = document.getElementById('gatePin');
+    if (await sha(pin.value.trim()) === PIN_HASH) {
+      try { localStorage.setItem(KEY, PIN_HASH); } catch (err) { }
+      open();
+    } else { document.getElementById('gateErr').textContent = 'Wrong PIN.'; pin.select(); }
+  });
+  if (document.body.classList.contains('locked')) document.getElementById('gatePin').focus();
+})();
+</script>
 <script>
 (function () {
   // ---------- artwork spec (matches the General Briefing PSDs, 1920x1080 per page) ----------
