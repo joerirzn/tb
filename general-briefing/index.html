@@ -391,25 +391,26 @@
 <footer class="foot">Internal use only — do not share this link outside the company.</footer>
 
 <script>
-// PIN screen while testing. Only a SHA-256 hash of the PIN is in the page; a soft gate, not real security (the site is public).
+// PIN screen while testing, asked every time the page is opened (nothing is remembered).
+// Only a SHA-256 hash of the PIN is in the page; a soft gate, not real security (the site is public).
 (function () {
-  const PIN_HASH = 'a8cd0dfebcb193175d115a8a0536db15787150976f7aefcff30dd2528aba6278', KEY = 'generalBriefing.unlocked';
-  const open = () => document.body.classList.remove('locked');
-  try { if (localStorage.getItem(KEY) === PIN_HASH) open(); } catch (e) { }
-  if (new URLSearchParams(location.search).has('canvas')) open();
+  const PIN_HASH = 'a8cd0dfebcb193175d115a8a0536db15787150976f7aefcff30dd2528aba6278';
+  try { localStorage.removeItem('generalBriefing.unlocked'); } catch (e) { }   // remembered by an earlier version
+  const body = document.body, pin = document.getElementById('gatePin'), err = document.getElementById('gateErr');
+  function lock() { body.classList.add('locked'); pin.value = ''; err.textContent = ''; pin.focus(); }
+  if (new URLSearchParams(location.search).has('canvas')) body.classList.remove('locked');
   async function sha(s) {
     const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('general-briefing:' + s));
     return Array.from(new Uint8Array(b)).map(x => x.toString(16).padStart(2, '0')).join('');
   }
   document.getElementById('gateForm').addEventListener('submit', async e => {
     e.preventDefault();
-    const pin = document.getElementById('gatePin');
-    if (await sha(pin.value.trim()) === PIN_HASH) {
-      try { localStorage.setItem(KEY, PIN_HASH); } catch (err) { }
-      open();
-    } else { document.getElementById('gateErr').textContent = 'Wrong PIN.'; pin.select(); }
+    if (await sha(pin.value.trim()) === PIN_HASH) { body.classList.remove('locked'); pin.value = ''; }
+    else { err.textContent = 'Wrong PIN.'; pin.select(); }
   });
-  if (document.body.classList.contains('locked')) document.getElementById('gatePin').focus();
+  // back/forward cache: a page restored from history locks again
+  window.addEventListener('pageshow', e => { if (e.persisted && !new URLSearchParams(location.search).has('canvas')) lock(); });
+  if (body.classList.contains('locked')) pin.focus();
 })();
 </script>
 <script>
