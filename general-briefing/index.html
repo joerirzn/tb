@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>General Briefing</title>
-<meta name="tool-version" content="2026-10-14.5">
+<meta name="tool-version" content="2026-10-14.6">
 <link rel="icon" type="image/png" href="../favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -713,7 +713,9 @@
       const cx0 = M + (i % g.cols) * cw, cy0 = y0 + Math.floor(i / g.cols) * ch, cx = cx0 + cw / 2, cy = cy0 + ch / 2;
       smallCaps(P, String(i + 1).padStart(2, '0'), Math.round(cx0 + (i % g.cols ? 24 : 0)), Math.round(cy0 + 24), COL.grey);
       if (it.logo && it.lw) {
-        const maxW = Math.min(cw * 0.7, 300), maxH = Math.min(ch * 0.4, 130), sc = Math.min(maxW / it.lw, maxH / it.lh);
+        // equal visual weight: every logo gets about the same area, within the cell
+        const area = Math.min(cw * ch * 0.1, 26000), maxW = cw * 0.72, maxH = Math.min(ch * 0.42, 150);
+        const sc = Math.min(Math.sqrt(area / (it.lw * it.lh)), maxW / it.lw, maxH / it.lh);
         const w = it.lw * sc, h = it.lh * sc;
         P.image(it.logo, cx - w / 2, cy - h / 2, w, h);
       } else {
