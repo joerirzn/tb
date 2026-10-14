@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>General Briefing</title>
-<meta name="tool-version" content="2026-10-14.4">
+<meta name="tool-version" content="2026-10-14.5">
 <link rel="icon" type="image/png" href="../favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -456,7 +456,7 @@
   const W = 1920, H = 1080, M = 64, LX1 = 704, RX = 768, RULE = 30, TOP = M + RULE + 56;
   const TS = 97, TLF = 1.04, CS = 190, TRK = -0.025;          // page titles, cover titles, title tracking (em)
   const COL = { bg: '#000000', white: '#ffffff', soft: '#b8b8b8', grey: '#808080', line: '#383838', photo: '#1c1c1c', hint: '#4d4d4d' };
-  const ACC = ['#ff80d2', '#ffc47f', '#a8e080', '#ff8679', '#6fdeb0'];   // pink, orange, green, coral, mint (their current deck)
+  const ACC = ['#ff8679', '#ff80d2', '#ffc47f', '#a8e080', '#6fdeb0'];   // red (coral), pink, orange, green, mint (their current deck); the first is the default
   // a colour darkened towards black (f = share of the colour that stays), as solid hex so the PDF can use it
   const shade = (hex, f) => '#' + [1, 3, 5].map(i => Math.round(parseInt(hex.substr(i, 2), 16) * f).toString(16).padStart(2, '0')).join('');
   // towards white (f = share of white mixed in)
