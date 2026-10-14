@@ -331,7 +331,9 @@
   .gate { display: none; }
   body.locked .gate { display: grid; place-items: center; min-height: calc(100vh - 72px); }
   .gate .card { width: 100%; max-width: 380px; }
-  .gate input { text-align: center; letter-spacing: 0.3em; font-size: 20px; }
+  /* a text field shown as dots (not type=password), so the browser does not offer to save a password */
+  .gate input { text-align: center; letter-spacing: 0.3em; font-size: 20px; -webkit-text-security: disc; text-security: disc; }
+  .gate input::placeholder { -webkit-text-security: none; }
 
   /* ?canvas=N: one page of the artwork only, for checks */
   body.canvas-only { padding: 0; }
@@ -347,7 +349,7 @@
   <form class="card" id="gateForm" autocomplete="off">
     <p class="card-label">General Briefing is in testing</p>
     <p class="note">Enter the PIN to open the tool.</p>
-    <input type="password" id="gatePin" inputmode="numeric" placeholder="PIN" aria-label="PIN">
+    <input type="text" id="gatePin" inputmode="numeric" placeholder="PIN" aria-label="PIN" autocomplete="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-1p-ignore>
     <button class="btn-primary" type="submit">Open</button>
     <p class="err" id="gateErr"></p>
   </form>
