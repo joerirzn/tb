@@ -124,6 +124,8 @@
   textarea.tall { min-height: 150px; }
   input::placeholder, textarea::placeholder { color: var(--muted); }
   input:focus, textarea:focus { border-color: var(--accent); }
+  input.need { border-color: var(--warning); }
+  input.need::placeholder { color: var(--warning); }
 
   .note { font-size: 12px; color: var(--muted); line-height: 1.4; }
   .warn { font-size: 12px; line-height: 1.4; color: var(--warning); }
@@ -196,16 +198,6 @@
   }
   .track-top { display: flex; gap: 12px; align-items: center; }
   .track-top .field { flex: 1; min-width: 0; }
-  .chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-  .chip {
-    background: transparent;
-    color: var(--text);
-    border: 1px solid var(--border-hover);
-    border-radius: 9999px;
-    font-size: 12px;
-    padding: 4px 10px;
-  }
-  .chip:hover { border-color: var(--accent); }
   .find { position: relative; }
   .results {
     display: none; flex-direction: column; gap: 2px;
@@ -953,34 +945,25 @@
   function trackCard(p, t, i) {
     const art = el('div', { class: 'track-art' });
     if (t.art) art.style.backgroundImage = 'url("' + t.art + '")';
-    const msg = el('p', { class: 'note' }), chips = el('div', { class: 'chips' });
+    const msg = el('p', { class: 'note' });
     const link = el('input', { type: 'text', value: t.link || '', placeholder: 'Search a track or paste a Spotify link', autocomplete: 'off', spellcheck: false }); link.dataset.k = 'link';
     const results = el('div', { class: 'results', role: 'listbox' });
     const artist = el('input', { type: 'text', value: t.artist || '', placeholder: 'Artist', autocomplete: 'off' });
     const title = el('input', { type: 'text', value: t.title || '', placeholder: 'Title', autocomplete: 'off' });
-    artist.addEventListener('input', () => { t.artist = artist.value; schedule(); });
+    artist.addEventListener('input', () => { t.artist = artist.value; if (artist.value.trim()) { artist.classList.remove('need'); artist.placeholder = 'Artist'; } schedule(); });
     title.addEventListener('input', () => { t.title = title.value; schedule(); });
     const ui = {
       note(s, cls) { msg.className = cls || 'note'; msg.textContent = s || ''; },
       art() { art.style.backgroundImage = t.art ? 'url("' + t.art + '")' : ''; },
       fields() { title.value = t.title || ''; artist.value = t.artist || ''; },
-      chips(list) {
-        chips.innerHTML = '';
-        if (!list || !list.length) return;
-        chips.appendChild(el('span', { class: 'note', text: 'Artist?' }));
-        list.forEach(name => {
-          const c = el('button', { type: 'button', className: 'chip', text: name });
-          c.addEventListener('click', () => { t.artist = name; artist.value = name; chips.innerHTML = ''; schedule(); });
-          chips.appendChild(c);
-        });
-      }
+      needArtist() { artist.classList.add('need'); artist.placeholder = 'Artist (fill in)'; artist.focus(); }
     };
     // one field: a Spotify track link is read from Spotify, anything else is searched in Apple Music
     let timer = 0, seq = 0;
     const closeResults = () => { results.classList.remove('open'); results.innerHTML = ''; };
     async function pick(r) {
       closeResults(); link.value = ''; t.link = '';
-      t.artist = r.artist; t.title = r.title; ui.fields(); ui.chips([]); schedule();
+      t.artist = r.artist; t.title = r.title; ui.fields(); artist.classList.remove('need'); artist.placeholder = 'Artist'; schedule();
       ui.note('Filled in from Apple Music. Fetching the artwork…');
       try { t.art = await squareArt(r.art); ui.art(); schedule(); ui.note('Filled in from Apple Music.'); }
       catch (e) { ui.note('Filled in from Apple Music, but the artwork could not be loaded. Upload it yourself if needed.', 'warn'); }
@@ -1040,7 +1023,6 @@
       results,
       msg,
       el('div', { class: 'two' }, [artist, title]),
-      chips,
       el('div', { class: 'row' }, [artBtn, noArt, artFile])]);
   }
 
@@ -1051,7 +1033,6 @@
   }
   async function lookupTrack(t, ui) {
     const raw = (t.link || '').trim();
-    ui.chips([]);
     if (!raw) { ui.note(''); return; }
     const id = trackId(raw);
     if (!id) {
@@ -1068,31 +1049,13 @@
         try { t.art = await squareArt(j.thumbnail_url.replace('ab67616d00001e02', 'ab67616d0000b273')); }
         catch (e) { t.art = await squareArt(j.thumbnail_url); }
       }
+      t.artist = '';   // Spotify does not share the artist with other websites: an old artist would be wrong
       ui.fields(); ui.art(); schedule();
-      ui.note('Title and artwork filled in. Check the artist: pick a suggestion or type it.');
-      const names = await artistSuggestions(t.title);
-      if (names.length) ui.chips(names);
-      else ui.note('Title and artwork filled in. No artist suggestions found: check or type the artist.');
+      ui.note('Title and artwork filled in from Spotify. Fill in the artist.', 'warn');
+      ui.needArtist();
     } catch (e) {
       ui.note('Could not fetch this track from Spotify. Fill in the fields yourself.', 'warn');
     }
-  }
-  const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[’']/g, '').replace(/\s*[\(\[].*?[\)\]]\s*/g, ' ').replace(/\s+-\s+.*$/, '').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
-  // Apple Music search on the exact title; dance/electronic first (the right artist is usually in the top 2)
-  const DANCE = /dance|electronic|house|techno|trance/i;
-  async function artistSuggestions(title) {
-    const core = norm(title); if (!core) return [];
-    try {
-      const r = await fetch('https://itunes.apple.com/search?media=music&entity=song&limit=200&term=' + encodeURIComponent(core));
-      const j = await r.json(), seen = new Set(), out = [];
-      (j.results || []).filter(x => norm(x.trackName) === core)
-        .sort((a, b) => DANCE.test(b.primaryGenreName) - DANCE.test(a.primaryGenreName))   // stable: Apple's relevance order within each group
-        .forEach(x => {
-          const a = (x.artistName || '').trim(); if (!a || seen.has(a.toLowerCase())) return;
-          seen.add(a.toLowerCase()); out.push(a);
-        });
-      return out.slice(0, 5);
-    } catch (e) { return []; }
   }
   // Apple Music catalogue search (CORS allowed from the online Toolbox): artist, title, artwork. null = search failed
   async function searchTracks(q) {
@@ -1248,7 +1211,7 @@
   if (canvasOnly) document.body.classList.add('canvas-only');
   previewScale = canvasOnly || (window.devicePixelRatio || 1) > 1 ? 2 : 1;
   canvas.width = W * previewScale; canvas.height = H * previewScale;
-  window.generalBriefing = { buildPdf, imagesReady, get briefing() { return B; }, select, lookupTrack, artistSuggestions, store };
+  window.generalBriefing = { buildPdf, imagesReady, get briefing() { return B; }, select, lookupTrack, store };
   loadFonts()
     .catch(() => status('Could not load the artwork font (fonts.js).'))
     .then(async () => {
