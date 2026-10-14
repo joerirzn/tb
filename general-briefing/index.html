@@ -206,6 +206,26 @@
     padding: 4px 10px;
   }
   .chip:hover { border-color: var(--accent); }
+  .find { position: relative; }
+  .results {
+    display: none; flex-direction: column; gap: 2px;
+    margin-top: 6px; padding: 6px;
+    background: var(--surface-2); border: 1px solid var(--border-hover); border-radius: 18px;
+    max-height: 320px; overflow-y: auto;
+  }
+  .results.open { display: flex; }
+  .res {
+    display: flex; align-items: center; gap: 12px; width: 100%;
+    background: none; border: none; border-radius: 8px; padding: 6px 8px;
+    color: var(--text); text-align: left;
+  }
+  .res:hover, .res:focus-visible { background: rgba(255,255,255,0.06); }
+  .res:active { transform: none; }
+  .res img { width: 40px; height: 40px; border-radius: 4px; flex-shrink: 0; background: #1c1c1c; }
+  .res .rt { min-width: 0; }
+  .res .rt b, .res .rt span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .res .rt b { font-size: 14px; font-weight: 600; }
+  .res .rt span { font-size: 12px; color: var(--muted); }
   .swatches { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
   .sw {
     width: 32px; height: 32px; border-radius: 9999px; padding: 0;
@@ -929,13 +949,14 @@
       const links = document.querySelectorAll('#form input[data-k="link"]'); if (links.length) links[links.length - 1].focus();
     });
     f.appendChild(el('div', { class: 'row' }, [add]));
-    f.appendChild(el('p', { class: 'note', text: 'Paste a Spotify track link to fill in the title and artwork. Spotify does not share artist names with other websites, so the tool suggests artists from Apple Music: click one or type it.' }));
+    f.appendChild(el('p', { class: 'note', text: 'Search a track (artist + title) to fill in the artist, title and artwork from Apple Music. Not found? Paste the Spotify track link instead, or fill in the fields yourself.' }));
   }
   function trackCard(p, t, i) {
     const art = el('div', { class: 'track-art' });
     if (t.art) art.style.backgroundImage = 'url("' + t.art + '")';
     const msg = el('p', { class: 'note' }), chips = el('div', { class: 'chips' });
-    const link = el('input', { type: 'url', value: t.link || '', placeholder: 'Spotify track link', autocomplete: 'off' }); link.dataset.k = 'link';
+    const link = el('input', { type: 'text', value: t.link || '', placeholder: 'Search a track or paste a Spotify link', autocomplete: 'off', spellcheck: false }); link.dataset.k = 'link';
+    const results = el('div', { class: 'results', role: 'listbox' });
     const artist = el('input', { type: 'text', value: t.artist || '', placeholder: 'Artist', autocomplete: 'off' });
     const title = el('input', { type: 'text', value: t.title || '', placeholder: 'Title', autocomplete: 'off' });
     artist.addEventListener('input', () => { t.artist = artist.value; schedule(); });
@@ -955,10 +976,52 @@
         });
       }
     };
-    let timer = 0;
+    // one field: a Spotify track link is read from Spotify, anything else is searched in Apple Music
+    let timer = 0, seq = 0;
+    const closeResults = () => { results.classList.remove('open'); results.innerHTML = ''; };
+    async function pick(r) {
+      closeResults(); link.value = ''; t.link = '';
+      t.artist = r.artist; t.title = r.title; ui.fields(); ui.chips([]); schedule();
+      ui.note('Filled in from Apple Music. Fetching the artwork…');
+      try { t.art = await squareArt(r.art); ui.art(); schedule(); ui.note('Filled in from Apple Music.'); }
+      catch (e) { ui.note('Filled in from Apple Music, but the artwork could not be loaded. Upload it yourself if needed.', 'warn'); }
+    }
+    async function search(q) {
+      const my = ++seq;
+      ui.note('Searching…');
+      const list = await searchTracks(q);
+      if (my !== seq) return;
+      results.innerHTML = '';
+      if (list === null) { closeResults(); ui.note(location.protocol === 'file:' ? 'Search only works in the online Toolbox.' : 'Search is not available right now. Paste a Spotify link or fill in the fields.', 'warn'); return; }
+      if (!list.length) { closeResults(); ui.note('Nothing found. Try artist + title, paste a Spotify link, or fill in the fields.', 'warn'); return; }
+      ui.note('Pick a track:');
+      list.forEach(r => {
+        const b = el('button', { type: 'button', className: 'res', role: 'option' }, [
+          el('img', { src: r.thumb, alt: '' }),
+          el('span', { class: 'rt' }, [el('b', { text: r.title }), el('span', { text: r.artist + (r.year ? ' · ' + r.year : '') })])]);
+        b.addEventListener('click', () => pick(r));
+        results.appendChild(b);
+      });
+      results.classList.add('open');
+    }
     link.addEventListener('input', () => {
-      t.link = link.value; clearTimeout(timer);
-      timer = setTimeout(() => lookupTrack(t, ui), 500);
+      clearTimeout(timer);
+      const v = link.value.trim();
+      if (trackId(v) || /spotify\.(link|app\.link)|open\.spotify\.com/.test(v)) { closeResults(); t.link = v; timer = setTimeout(() => lookupTrack(t, ui), 400); return; }
+      t.link = '';
+      if (v.length < 3) { closeResults(); ui.note(''); seq++; return; }
+      timer = setTimeout(() => search(v), 350);
+    });
+    link.addEventListener('keydown', e => {
+      if (e.key === 'Escape') closeResults();
+      if (e.key === 'ArrowDown' && results.firstChild) { e.preventDefault(); results.firstChild.focus(); }
+      if (e.key === 'Enter') { e.preventDefault(); if (results.firstChild) results.firstChild.click(); }
+    });
+    results.addEventListener('keydown', e => {
+      const b = document.activeElement;
+      if (e.key === 'ArrowDown' && b.nextSibling) { e.preventDefault(); b.nextSibling.focus(); }
+      if (e.key === 'ArrowUp') { e.preventDefault(); (b.previousSibling || link).focus(); }
+      if (e.key === 'Escape') { closeResults(); link.focus(); }
     });
     const artFile = el('input', { type: 'file', accept: 'image/*', hidden: true });
     artFile.addEventListener('change', async () => {
@@ -974,7 +1037,8 @@
       iconBtn('down', 'Move down', () => { p.tracks.splice(i + 1, 0, p.tracks.splice(i, 1)[0]); renderForm(); schedule(); }, i === p.tracks.length - 1),
       iconBtn('del', 'Remove track', () => { p.tracks.splice(i, 1); renderForm(); schedule(); })]);
     return el('div', { class: 'sub' }, [head,
-      el('div', { class: 'track-top' }, [art, el('div', { class: 'field' }, [link])]),
+      el('div', { class: 'track-top' }, [art, el('div', { class: 'field find' }, [link])]),
+      results,
       msg,
       el('div', { class: 'two' }, [artist, title]),
       chips,
@@ -1030,6 +1094,21 @@
         });
       return out.slice(0, 5);
     } catch (e) { return []; }
+  }
+  // Apple Music catalogue search (CORS allowed from the online Toolbox): artist, title, artwork. null = search failed
+  async function searchTracks(q) {
+    try {
+      const r = await fetch('https://itunes.apple.com/search?media=music&entity=song&limit=12&term=' + encodeURIComponent(q));
+      if (!r.ok) return null;
+      const j = await r.json(), seen = new Set(), out = [];
+      (j.results || []).forEach(x => {
+        const key = (x.artistName + '|' + x.trackName).toLowerCase();
+        if (!x.trackName || seen.has(key)) return; seen.add(key);
+        const a = x.artworkUrl100 || '';
+        out.push({ artist: x.artistName || '', title: x.trackName, thumb: a.replace('100x100bb', '80x80bb'), art: a.replace('100x100bb', '640x640bb'), year: (x.releaseDate || '').slice(0, 4) });
+      });
+      return out.slice(0, 8);
+    } catch (e) { return null; }
   }
   // square JPEG 640x640 from any image URL (Spotify covers allow this: CORS *)
   function squareArt(src) {
