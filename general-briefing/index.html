@@ -233,8 +233,7 @@
     outline: 2px solid transparent; outline-offset: 2px;
   }
   .sw.on { outline-color: var(--accent); }
-  .sw-custom { position: relative; overflow: hidden; display: grid; place-items: center; background: conic-gradient(#ff80d2, #ffc47f, #a8e080, #6fdeb0, #2997ff, #ff80d2); }
-  .sw-custom input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; border: 0; padding: 0; }
+
   .logo-thumb {
     width: 64px; height: 40px; flex-shrink: 0;
     border-radius: 8px;
@@ -450,7 +449,7 @@
   const tint = (hex, f) => '#' + [1, 3, 5].map(i => { const v = parseInt(hex.substr(i, 2), 16); return Math.round(v + (255 - v) * f).toString(16).padStart(2, '0'); }).join('');
   // light colours get black type, dark colours white type
   const isLight = hex => { const c = [1, 3, 5].map(i => { const v = parseInt(hex.substr(i, 2), 16) / 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2] > 0.3; };
-  const validHex = s => /^#[0-9a-f]{6}$/i.test(String(s || ''));
+  const validHex = s => ACC.includes(String(s || '').toLowerCase());   // only the deck colours
   const SL = 14, SLT = 0.84;                                   // small-caps labels: 14 px, tracking 60/1000 em
   const TRACK_ROWS = 8;
   const PDF_K = 0.75;                                          // 1920x1080 px = 1440x810 pt
@@ -914,20 +913,16 @@
     });
   }
 
-  // colour choice: the five deck colours + any colour
+  // colour choice: the five deck colours only
   function colorPicker(get, set) {
     const box = el('div', { class: 'swatches' });
-    const paint = () => box.querySelectorAll('.sw').forEach(b => b.classList.toggle('on', b.dataset.c ? b.dataset.c === get() : !ACC.includes(get())));
+    const paint = () => box.querySelectorAll('.sw').forEach(b => b.classList.toggle('on', b.dataset.c === get()));
     ACC.forEach(c => {
       const b = el('button', { type: 'button', className: 'sw', 'aria-label': 'Colour ' + c });
       b.dataset.c = c; b.style.background = c;
       b.addEventListener('click', () => { set(c); paint(); schedule(); });
       box.appendChild(b);
     });
-    const custom = el('input', { type: 'color', value: get(), 'aria-label': 'Other colour' });
-    custom.addEventListener('input', () => { set(custom.value.toLowerCase()); paint(); schedule(); });
-    const cw = el('label', { class: 'sw sw-custom', title: 'Other colour' }, [custom]);
-    box.appendChild(cw);
     paint();
     return box;
   }
@@ -938,8 +933,7 @@
     f.appendChild(el('p', { class: 'card-label', text: 'Genre page' }));
     f.appendChild(inputField('Genre', p.title, v => p.title = v, { relist: true, fit: 'title', key: 'title', ph: 'e.g. Deep House' }));
     f.appendChild(el('div', { class: 'field' }, [el('span', { class: 'lbl', text: 'Colour' }),
-      colorPicker(() => validHex(p.color) ? p.color : ACC[0], c => p.color = c),
-      el('p', { class: 'note', text: 'Light colours get black text, dark colours white text.' })]));
+      colorPicker(() => validHex(p.color) ? p.color : ACC[0], c => p.color = c)]));
     f.appendChild(inputField('Description', p.desc, v => p.desc = v, { area: true, fit: 'desc', ph: 'Optional: a short description of what we are looking for in this genre.' }));
     f.appendChild(inputField('Spotify playlist link', p.playlist, v => p.playlist = v, { type: 'url', ph: 'https://open.spotify.com/playlist/…', note: 'One playlist per genre, clickable in the PDF. Leave empty to hide it.' }));
     f.appendChild(el('div', { class: 'card-head' }, [el('p', { class: 'card-label', text: 'Tracks (' + p.tracks.length + ' of ' + TRACK_ROWS + ')' })]));
