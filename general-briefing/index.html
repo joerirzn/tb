@@ -703,14 +703,16 @@
   }
   function drawGenre(P, p, exp) {
     const fits = {};
-    const acc = validHex(p.color) ? p.color.toLowerCase() : ACC[Math.max(0, B.pages.filter(x => x.type === 'genre').indexOf(p)) % ACC.length], PX = RX - 32;
+    const acc = validHex(p.color) ? p.color.toLowerCase() : ACC[Math.max(0, B.pages.filter(x => x.type === 'genre').indexOf(p)) % ACC.length];
+    // colour panel with 64 px inside the colour on both sides, track list 64 px after it (the page margin)
+    const PX = LX1 + M, TX0 = PX + M;
     const light = isLight(acc), ink = light ? '#000000' : '#ffffff';
     const soft = light ? shade(acc, 0.4) : tint(acc, 0.6), hint = light ? shade(acc, 0.7) : tint(acc, 0.4), rule = light ? shade(acc, 0.75) : tint(acc, 0.25);
     P.rect(0, 0, PX, H, acc);
     smallCaps(P, 'SPINNIN’ RECORDS', M, M, ink);
     smallCaps(P, 'SONG BRIEFING  ·  ' + dateCaps(), W - M, M, COL.grey, true);
-    P.rect(M, M + RULE, PX - M, 1, rule);
-    P.rect(RX, M + RULE, W - M - RX, 1, COL.line);
+    P.rect(M, M + RULE, PX - 2 * M, 1, rule);
+    P.rect(TX0, M + RULE, W - M - TX0, 1, COL.line);
     // left: title, description, playlist
     const gTitle = (p.title || '').trim(), tf = titleFit(gTitle || (exp ? '' : 'Genre'), LX1 - M, 2); fits.title = gTitle ? tf.status : 'ok';
     const tb0 = TOP + cap(500, tf.s), tld = Math.round(tf.s * TLF);
@@ -735,17 +737,17 @@
     // right: track rows; the artwork column only when a track on this page has artwork
     const y0 = M + RULE, PR = (H - M - y0) / TRACK_ROWS, AW = 84, AS = 24;
     const tracks = p.tracks.slice(0, TRACK_ROWS), withArt = tracks.some(t => t.art);
-    const tx = RX + 56 + (withArt ? AW + 28 : 0), tw = W - M - tx;
+    const tx = TX0 + 56 + (withArt ? AW + 28 : 0), tw = W - M - tx;
     let worst = 'ok';
     for (let i = 0; i < TRACK_ROWS; i++) {
       const top = Math.round(y0 + i * PR), bot = Math.round(y0 + (i + 1) * PR), cy = (top + bot) / 2;
-      P.rect(RX, bot - 1, W - M - RX, 1, COL.line);
+      P.rect(TX0, bot - 1, W - M - TX0, 1, COL.line);
       const t = tracks[i]; if (!t) continue;
-      smallCaps(P, String(i + 1).padStart(2, '0'), RX, Math.round(cy - cap(600, SL) / 2), COL.grey);
+      smallCaps(P, String(i + 1).padStart(2, '0'), TX0, Math.round(cy - cap(600, SL) / 2), COL.grey);
       if (withArt) {
         const ay = Math.round(cy - AW / 2);
-        P.rect(RX + 56, ay, AW, AW, COL.photo);
-        if (t.art) P.image(t.art, RX + 56, ay, AW, AW);
+        P.rect(TX0 + 56, ay, AW, AW, COL.photo);
+        if (t.art) P.image(t.art, TX0 + 56, ay, AW, AW);
       }
       const a = fitLine((t.artist || '').trim() || (exp ? '' : 'Artist'), 600, AS, 18, tw);
       const s = fitLine((t.title || '').trim() || (exp ? '' : 'Title'), 400, AS, 18, tw);
