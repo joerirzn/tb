@@ -110,7 +110,7 @@
   .field label, .field .lbl { font-size: 13px; font-weight: 400; color: var(--text-muted); }
   .two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 
-  input[type="text"], input[type="url"], textarea {
+  input[type="text"], input[type="url"], input[type="password"], textarea {
     width: 100%;
     background: var(--surface-3);
     border: 1px solid var(--border);
@@ -119,7 +119,7 @@
     outline: none;
     transition: border-color 0.15s ease;
   }
-  input[type="text"], input[type="url"] { border-radius: 9999px; padding: 11px 18px; }
+  input[type="text"], input[type="url"], input[type="password"] { border-radius: 9999px; padding: 11px 18px; }
   textarea { border-radius: 18px; padding: 12px 18px; resize: vertical; min-height: 84px; line-height: 1.45; }
   textarea.tall { min-height: 150px; }
   input::placeholder, textarea::placeholder { color: var(--muted); }
@@ -206,6 +206,15 @@
     padding: 4px 10px;
   }
   .chip:hover { border-color: var(--accent); }
+  .swatches { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .sw {
+    width: 32px; height: 32px; border-radius: 9999px; padding: 0;
+    border: 1px solid var(--border-hover);
+    outline: 2px solid transparent; outline-offset: 2px;
+  }
+  .sw.on { outline-color: var(--accent); }
+  .sw-custom { position: relative; overflow: hidden; display: grid; place-items: center; background: conic-gradient(#ff80d2, #ffc47f, #a8e080, #6fdeb0, #2997ff, #ff80d2); }
+  .sw-custom input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; border: 0; padding: 0; }
   .logo-thumb {
     width: 64px; height: 40px; flex-shrink: 0;
     border-radius: 8px;
@@ -357,6 +366,10 @@
         <input type="text" id="date" autocomplete="off">
         <p class="note">Shown on every page. The briefing is saved under this date.</p>
       </div>
+      <div class="field">
+        <span class="lbl">Colour of “Song briefing” on the cover and end page</span>
+        <div id="coverColor"></div>
+      </div>
     </div>
 
     <div class="card">
@@ -420,6 +433,14 @@
   const W = 1920, H = 1080, M = 64, LX1 = 704, RX = 768, RULE = 30, TOP = M + RULE + 56;
   const TS = 97, TLF = 1.04, CS = 190, TRK = -0.025;          // page titles, cover titles, title tracking (em)
   const COL = { bg: '#000000', white: '#ffffff', soft: '#b8b8b8', grey: '#808080', line: '#383838', photo: '#1c1c1c', hint: '#4d4d4d' };
+  const ACC = ['#ff80d2', '#ffc47f', '#a8e080', '#ff8679', '#6fdeb0'];   // pink, orange, green, coral, mint (their current deck)
+  // a colour darkened towards black (f = share of the colour that stays), as solid hex so the PDF can use it
+  const shade = (hex, f) => '#' + [1, 3, 5].map(i => Math.round(parseInt(hex.substr(i, 2), 16) * f).toString(16).padStart(2, '0')).join('');
+  // towards white (f = share of white mixed in)
+  const tint = (hex, f) => '#' + [1, 3, 5].map(i => { const v = parseInt(hex.substr(i, 2), 16); return Math.round(v + (255 - v) * f).toString(16).padStart(2, '0'); }).join('');
+  // light colours get black type, dark colours white type
+  const isLight = hex => { const c = [1, 3, 5].map(i => { const v = parseInt(hex.substr(i, 2), 16) / 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2] > 0.3; };
+  const validHex = s => /^#[0-9a-f]{6}$/i.test(String(s || ''));
   const SL = 14, SLT = 0.84;                                   // small-caps labels: 14 px, tracking 60/1000 em
   const TRACK_ROWS = 8;
   const PDF_K = 0.75;                                          // 1920x1080 px = 1440x810 pt
@@ -435,7 +456,7 @@
   const newId = () => 'p' + Date.now().toString(36) + (uid++);
 
   // ---------- pages: only the genre pages are edited here; the rest is fixed ----------
-  function genre(title, tracks) { return { id: newId(), type: 'genre', title, desc: '', playlist: '', tracks }; }
+  function genre(title, tracks, color) { return { id: newId(), type: 'genre', title, desc: '', playlist: '', color: color || ACC[0], tracks }; }
   // logos come from labels.js (built from ~/Documents/Claude/General Briefing/logos/)
   const LABELS = window.BRIEF_LABELS || { inhouse: [], artist: [] };
   const labelItems = list => list.map(l => ({ name: l.name, logo: l.logo || null, lw: l.w || 0, lh: l.h || 0 }));
@@ -452,7 +473,7 @@
   }
   // a new briefing starts with one empty genre page
   function defaultGenres() { return [genre('', [])]; }
-  function defaultBriefing() { return { app: 'general-briefing', version: 2, date: defaultDate(), pages: fixedPages(defaultGenres()) }; }
+  function defaultBriefing() { return { app: 'general-briefing', version: 2, date: defaultDate(), coverColor: ACC[0], pages: fixedPages(defaultGenres()) }; }
   let B = defaultBriefing(), cur = 0;
   const state = { currentId: null };
 
@@ -575,10 +596,10 @@
         const fmt = data.startsWith('data:image/png') ? 'PNG' : 'JPEG';
         pdf.addImage(data, fmt, x * k, y * k, w * k, h * k, aliases.get(data), 'FAST');
       },
-      spotify(x, y, size, col) {
+      spotify(x, y, size, col, behind) {
         const s = size / 24;
         pdf.setFillColor(col); pdf.circle((x + 12 * s) * k, (y + 12 * s) * k, 12 * s * k, 'F');
-        pdf.setFillColor(COL.bg);
+        pdf.setFillColor(behind || COL.bg);
         SPOTIFY_SUBS.slice(1).forEach(sp => {
           let px = sp.start[0], py = sp.start[1];
           const rel = sp.segs.map(c => { const r = [c[0] - px, c[1] - py, c[2] - px, c[3] - py, c[4] - px, c[5] - py]; px = c[4]; py = c[5]; return r; });
@@ -639,7 +660,7 @@
     header(P, dateCaps(), COL.white);
     const bLast = H - M - 0.5 - descOf(500, CS, 'Song briefing'), b0 = bLast - Math.round(CS * TLF);
     titleLine(P, 'Spinnin’ Records', CS, b0, COL.white);
-    titleLine(P, 'Song briefing', CS, bLast, COL.grey);
+    titleLine(P, 'Song briefing', CS, bLast, validHex(B.coverColor) ? B.coverColor : ACC[0]);
     if ((p.intro || '').trim()) smallCaps(P, p.intro.trim().toUpperCase(), M, b0 - cap(500, CS) - 72, COL.grey);
     sLogo(P);
     return {};
@@ -648,7 +669,7 @@
     header(P, dateCaps(), COL.white);
     const bLast = H - M - 0.5 - descOf(500, CS, 'Song briefing'), b0 = bLast - Math.round(CS * TLF);
     titleLine(P, 'The end', CS, b0, COL.white);
-    titleLine(P, 'Song briefing', CS, bLast, COL.grey);
+    titleLine(P, 'Song briefing', CS, bLast, validHex(B.coverColor) ? B.coverColor : ACC[0]);
     sLogo(P);
     return {};
   }
@@ -682,11 +703,18 @@
   }
   function drawGenre(P, p, exp) {
     const fits = {};
-    innerHeader(P);
+    const acc = validHex(p.color) ? p.color.toLowerCase() : ACC[Math.max(0, B.pages.filter(x => x.type === 'genre').indexOf(p)) % ACC.length], PX = RX - 32;
+    const light = isLight(acc), ink = light ? '#000000' : '#ffffff';
+    const soft = light ? shade(acc, 0.4) : tint(acc, 0.6), hint = light ? shade(acc, 0.7) : tint(acc, 0.4), rule = light ? shade(acc, 0.75) : tint(acc, 0.25);
+    P.rect(0, 0, PX, H, acc);
+    smallCaps(P, 'SPINNIN’ RECORDS', M, M, ink);
+    smallCaps(P, 'SONG BRIEFING  ·  ' + dateCaps(), W - M, M, COL.grey, true);
+    P.rect(M, M + RULE, PX - M, 1, rule);
+    P.rect(RX, M + RULE, W - M - RX, 1, COL.line);
     // left: title, description, playlist
     const gTitle = (p.title || '').trim(), tf = titleFit(gTitle || (exp ? '' : 'Genre'), LX1 - M, 2); fits.title = gTitle ? tf.status : 'ok';
     const tb0 = TOP + cap(500, tf.s), tld = Math.round(tf.s * TLF);
-    tf.lines.forEach((ln, i) => titleLine(P, ln, tf.s, tb0 + i * tld, gTitle ? COL.white : COL.hint));
+    tf.lines.forEach((ln, i) => titleLine(P, ln, tf.s, tb0 + i * tld, gTitle ? ink : hint));
     const descTop = tb0 + (tf.lines.length - 1) * tld + 56;
     const url = playlistUrl(p.playlist), IS = 48, iy = H - M - IS;
     const desc = (p.desc || '').trim();
@@ -695,13 +723,13 @@
         { w: LX1 - M, capTop: descTop, maxBottom: url ? iy - 40 : H - M, wt: 400, size: 24, lead: 34, min: 16 });
       if (desc) fits.desc = f.status;
       const b0 = descTop + cap(400, f.s);
-      f.lines.forEach((ln, i) => { if (ln) P.text(ln, M, b0 + i * f.ld, 400, f.s, desc ? COL.white : COL.hint, 0); });
+      f.lines.forEach((ln, i) => { if (ln) P.text(ln, M, b0 + i * f.ld, 400, f.s, desc ? ink : hint, 0); });
     }
     if (url) {
-      P.spotify(M, iy, IS, COL.white);
+      P.spotify(M, iy, IS, ink, acc);
       const tx = M + IS + 18;
-      P.text('Genre playlist', tx, iy + 21, 600, 18, COL.white, 0);
-      P.text('Listen on Spotify', tx, iy + IS - 6, 400, 14, COL.grey, 0);
+      P.text('Genre playlist', tx, iy + 21, 600, 18, ink, 0);
+      P.text('Listen on Spotify', tx, iy + IS - 6, 400, 14, soft, 0);
       P.link(M, iy, IS + 18 + textW(600, 18, 'Genre playlist'), IS, url);
     }
     // right: track rows; the artwork column only when a track on this page has artwork
@@ -819,7 +847,7 @@
   $('addGenre').addEventListener('click', () => {
     let at = -1; B.pages.forEach((p, i) => { if (p.type === 'genre') at = i; });
     if (at < 0) at = B.pages.findIndex(p => p.id === 'artist');   // no genres left: right after the label pages
-    const g = genre('', []); B.pages.splice(at + 1, 0, g);
+    const g = genre('', [], ACC[B.pages.filter(p => p.type === 'genre').length % ACC.length]); B.pages.splice(at + 1, 0, g);
     select(at + 1);
     const t = document.querySelector('#form input[data-k="title"]'); if (t) t.focus();
   });
@@ -867,10 +895,35 @@
     });
   }
 
+  // colour choice: the five deck colours + any colour
+  function colorPicker(get, set) {
+    const box = el('div', { class: 'swatches' });
+    const paint = () => box.querySelectorAll('.sw').forEach(b => b.classList.toggle('on', b.dataset.c ? b.dataset.c === get() : !ACC.includes(get())));
+    ACC.forEach(c => {
+      const b = el('button', { type: 'button', className: 'sw', 'aria-label': 'Colour ' + c });
+      b.dataset.c = c; b.style.background = c;
+      b.addEventListener('click', () => { set(c); paint(); schedule(); });
+      box.appendChild(b);
+    });
+    const custom = el('input', { type: 'color', value: get(), 'aria-label': 'Other colour' });
+    custom.addEventListener('input', () => { set(custom.value.toLowerCase()); paint(); schedule(); });
+    const cw = el('label', { class: 'sw sw-custom', title: 'Other colour' }, [custom]);
+    box.appendChild(cw);
+    paint();
+    return box;
+  }
+  function renderCoverColor() {
+    const box = $('coverColor'); box.innerHTML = '';
+    box.appendChild(colorPicker(() => validHex(B.coverColor) ? B.coverColor : ACC[0], c => B.coverColor = c));
+  }
+
   // genre: title, description, playlist, tracks (Spotify link fills title + artwork, artist suggestions)
   function renderGenreForm(f, p) {
     f.appendChild(el('p', { class: 'card-label', text: 'Genre page' }));
     f.appendChild(inputField('Genre', p.title, v => p.title = v, { relist: true, fit: 'title', key: 'title', ph: 'e.g. Deep House' }));
+    f.appendChild(el('div', { class: 'field' }, [el('span', { class: 'lbl', text: 'Colour' }),
+      colorPicker(() => validHex(p.color) ? p.color : ACC[0], c => p.color = c),
+      el('p', { class: 'note', text: 'Light colours get black text, dark colours white text.' })]));
     f.appendChild(inputField('Description', p.desc, v => p.desc = v, { area: true, fit: 'desc', ph: 'Optional: a short description of what we are looking for in this genre.' }));
     f.appendChild(inputField('Spotify playlist link', p.playlist, v => p.playlist = v, { type: 'url', ph: 'https://open.spotify.com/playlist/…', note: 'One playlist per genre, clickable in the PDF. Leave empty to hide it.' }));
     f.appendChild(el('div', { class: 'card-head' }, [el('p', { class: 'card-label', text: 'Tracks (' + p.tracks.length + ' of ' + TRACK_ROWS + ')' })]));
@@ -1051,16 +1104,17 @@
     getMeta(k) { return this.run('meta', 'readonly', s => s.get(k)); },
     setMeta(k, v) { return this.run('meta', 'readwrite', s => s.put(v, k)); }
   };
-  const snapshot = () => JSON.parse(JSON.stringify({ app: 'general-briefing', version: 2, date: B.date, genres: B.pages.filter(p => p.type === 'genre') }));
+  const snapshot = () => JSON.parse(JSON.stringify({ app: 'general-briefing', version: 2, date: B.date, coverColor: B.coverColor, genres: B.pages.filter(p => p.type === 'genre') }));
   // accepts version 2 (date + genres) and version 1 (all pages): only the genre pages are taken over
   function restore(d) {
     if (!d || d.app !== 'general-briefing') throw new Error('not a briefing');
-    const genres = (Array.isArray(d.genres) ? d.genres : (d.pages || []).filter(p => p.type === 'genre')).map(g => ({
+    const genres = (Array.isArray(d.genres) ? d.genres : (d.pages || []).filter(p => p.type === 'genre')).map((g, i) => ({
       id: g.id || newId(), type: 'genre', title: g.title || '', desc: g.desc || '', playlist: g.playlist || '',
+      color: validHex(g.color) ? g.color.toLowerCase() : ACC[i % ACC.length],
       tracks: (Array.isArray(g.tracks) ? g.tracks : []).map(x => ({ link: x.link || '', artist: x.artist || '', title: x.title || '', art: x.art || null }))
     }));
-    B = { app: 'general-briefing', version: 2, date: d.date || defaultDate(), pages: fixedPages(genres) }; cur = 0;
-    $('date').value = B.date;
+    B = { app: 'general-briefing', version: 2, date: d.date || defaultDate(), coverColor: validHex(d.coverColor) ? d.coverColor.toLowerCase() : ACC[0], pages: fixedPages(genres) }; cur = 0;
+    $('date').value = B.date; renderCoverColor();
     renderPages(); renderForm(); schedule();
   }
   const idOf = name => name.trim().toLowerCase().replace(/\s+/g, ' ') || 'untitled';
@@ -1131,7 +1185,7 @@
     .then(async () => {
       try { const d = await store.getMeta('draft'); if (d && d.data) { restore(d.data); state.currentId = d.currentId || null; cur = Math.min(d.page || 0, B.pages.length - 1); } } catch (e) { }
       if (canvasOnly) cur = Math.max(0, Math.min(B.pages.length - 1, (parseInt(q.get('canvas'), 10) || 1) - 1));
-      renderPages(); renderForm(); draw(); refreshLib();
+      renderCoverColor(); renderPages(); renderForm(); draw(); refreshLib();
       document.body.dataset.ready = '1';
     });
 })();
