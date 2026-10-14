@@ -858,7 +858,10 @@
   $('addGenre').addEventListener('click', () => {
     let at = -1; B.pages.forEach((p, i) => { if (p.type === 'genre') at = i; });
     if (at < 0) at = B.pages.findIndex(p => p.id === 'artist');   // no genres left: right after the label pages
-    const g = genre('', [], ACC[B.pages.filter(p => p.type === 'genre').length % ACC.length]); B.pages.splice(at + 1, 0, g);
+    // the next deck colour after the genre page before it, so two genre pages in a row never share a colour
+    const prev = B.pages[at] && B.pages[at].type === 'genre' ? B.pages[at] : null;
+    const color = prev ? ACC[(Math.max(0, ACC.indexOf(prev.color)) + 1) % ACC.length] : ACC[0];
+    const g = genre('', [], color); B.pages.splice(at + 1, 0, g);
     select(at + 1);
     const t = document.querySelector('#form input[data-k="title"]'); if (t) t.focus();
   });
