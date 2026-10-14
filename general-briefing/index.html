@@ -435,7 +435,6 @@
   const newId = () => 'p' + Date.now().toString(36) + (uid++);
 
   // ---------- pages: only the genre pages are edited here; the rest is fixed ----------
-  function tr(artist, title) { return { link: '', artist, title, art: null }; }
   function genre(title, tracks) { return { id: newId(), type: 'genre', title, desc: '', playlist: '', tracks }; }
   // logos come from labels.js (built from ~/Documents/Claude/General Briefing/logos/)
   const LABELS = window.BRIEF_LABELS || { inhouse: [], artist: [] };
@@ -451,25 +450,8 @@
       { id: 'end', type: 'end' }
     ];
   }
-  // starting genres: the current Spinnin' Records briefing
-  function defaultGenres() {
-    return [
-        genre('Commercial / Crossover', [tr('ANOTR', 'Talk To You (feat. 54 Ultra)'), tr('Sonny Fodera', 'Think About Us'), tr('Gordo & Reinier Zonneveld', 'Loco Loco'),
-          tr('Armand van Helden, Raphi & George Reid', 'This Ain’t Love'), tr('James Hype', 'Be Mine')]),
-        genre('Interpolations / Samples', [tr('Juste & Jaxstyle & Jon', 'Turn The Lights Off'), tr('Bebe Rexha & Faithless', 'New Religion'),
-          tr('Mall Grab & Milky', 'Just The Way You Are'), tr('Blasterjaxx', 'Unfaithful')]),
-        genre('Deep House', [tr('Secondcity', 'I Wanna Feel'), tr('Route 94', 'My Love'), tr('Duke Dumont', 'I Got U'), tr('Redondo & Ferreck Dawn', 'Love Too Deep'),
-          tr('Duke Dumont', 'Need (100%)'), tr('Storm Queen', 'Look Right Through (MK Remix)'), tr('Hot Natured', 'Reverse Skydiving'), tr('Gorgon City', 'Ready For Your Love')]),
-        genre('Trance', [tr('Tiësto', 'Bring Me To Life'), tr('Trance Mums', 'forever'), tr('Delirium', 'Silence (Tiësto Remix)'), tr('Benwal', 'Dive'),
-          tr('Modea & Bryan Kearny', 'Ready To Fly')]),
-        genre('Spinnin’ Deep', [tr('Gudfella', 'Morning Coffee'), tr('Odd Mob', 'Coming Up (It’s Dare)'), tr('Jonas Blue, Malive', 'Edge Of Desire'),
-          tr('Blond:ish', 'Nothing Last 4ever'), tr('Joshwa', 'Out of My Mind'), tr('Sama', 'EY')]),
-        genre('PonyPlay', [tr('KI/KI & Marlon Hoffstadt', 'Losing Control'), tr('ANDATA, 2HOT2PLAY', 'Never Gonna Stop'), tr('PETERBLUE', 'BICHO AL CALLAO'),
-          tr('Luvstruck', 'What’s A Girl To Do'), tr('KETTAMA', 'Man With a Second Face')]),
-        genre('Innerjoin', [tr('PAULY!', 'House Is Gettin’ Raw'), tr('Ben van Kuringen', 'All This Love'), tr('Milion', 'BADBOYZ'), tr('Interplanetary Criminal', 'Slow Burner'),
-          tr('Dean Turnley', 'Actin Tough'), tr('Julian Fijma', 'Get Stupid'), tr('Silva Bumpa', 'Doin’ It')])
-    ];
-  }
+  // a new briefing starts with one empty genre page
+  function defaultGenres() { return [genre('', [])]; }
   function defaultBriefing() { return { app: 'general-briefing', version: 2, date: defaultDate(), pages: fixedPages(defaultGenres()) }; }
   let B = defaultBriefing(), cur = 0;
   const state = { currentId: null };
@@ -702,9 +684,9 @@
     const fits = {};
     innerHeader(P);
     // left: title, description, playlist
-    const tf = titleFit(p.title || '', LX1 - M, 2); fits.title = tf.status;
+    const gTitle = (p.title || '').trim(), tf = titleFit(gTitle || (exp ? '' : 'Genre'), LX1 - M, 2); fits.title = gTitle ? tf.status : 'ok';
     const tb0 = TOP + cap(500, tf.s), tld = Math.round(tf.s * TLF);
-    tf.lines.forEach((ln, i) => titleLine(P, ln, tf.s, tb0 + i * tld, COL.white));
+    tf.lines.forEach((ln, i) => titleLine(P, ln, tf.s, tb0 + i * tld, gTitle ? COL.white : COL.hint));
     const descTop = tb0 + (tf.lines.length - 1) * tld + 56;
     const url = playlistUrl(p.playlist), IS = 48, iy = H - M - IS;
     const desc = (p.desc || '').trim();
@@ -1110,7 +1092,7 @@
     } catch (e) { status('Could not save in the browser. Use Download editable file instead.'); }
   });
   $('newBrief').addEventListener('click', () => {
-    if (!confirm('Start a new briefing from the standard pages and tracks? Unsaved changes to the current one are lost.')) return;
+    if (!confirm('Start a new briefing with one empty genre page? Unsaved changes to the current one are lost.')) return;
     restore(defaultBriefing()); state.currentId = null; refreshLib(); status('New briefing.');
   });
   $('downloadFile').addEventListener('click', () => {
