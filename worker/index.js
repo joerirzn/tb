@@ -106,6 +106,9 @@ export default {
     const res = await env.ASSETS.fetch(request);
     const out = new Response(res.body, res);
     out.headers.set('Cache-Control', 'private, no-cache');
+    // pages and scripts are UTF-8; without this, "—" or "×" can show up as "â€"" in some browsers
+    const type = out.headers.get('Content-Type') || '';
+    if (/^(text\/|application\/javascript)/.test(type) && !/charset/i.test(type)) out.headers.set('Content-Type', type + '; charset=utf-8');
     // the launcher shows an admin-only tool as a link to the admin and as "coming soon" to everyone else
     if ((out.headers.get('Content-Type') || '').includes('text/html')) {
       return new HTMLRewriter().on(user.is_admin ? '[data-not-admin]' : '[data-admin-only]', { element(e) { e.remove(); } }).transform(out);
