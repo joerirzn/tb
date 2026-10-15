@@ -89,7 +89,8 @@ export default {
       if (user && user.status === 'approved') return redirect(safeNext(url.searchParams.get('next')));
       return html(loginPage({ next: safeNext(url.searchParams.get('next')) }));
     }
-    if (path === '/favicon.png') return env.ASSETS.fetch(request);
+    // the login page needs these before anyone is signed in; nothing private in them
+    if (path === '/favicon.png' || path === '/shared/motion.css' || path === '/shared/motion.js') return env.ASSETS.fetch(request);
     if (path.startsWith('/auth/')) return handleAuth(request, env, url, user);
 
     // ---- everything below needs an accepted account ----
@@ -128,9 +129,15 @@ export default {
     // pages and scripts are UTF-8; without this, "—" or "×" can show up as "â€"" in some browsers
     const type = out.headers.get('Content-Type') || '';
     if (/^(text\/|application\/javascript)/.test(type) && !/charset/i.test(type)) out.headers.set('Content-Type', type + '; charset=utf-8');
-    // the launcher shows an admin-only tool as a link to the admin and as "coming soon" to everyone else
+    // the launcher shows an admin-only tool as a link to the admin and as "coming soon" to everyone else,
+    // and gets the signed-in person filled in right away, so nothing pops in after the page has loaded
     if ((out.headers.get('Content-Type') || '').includes('text/html')) {
-      return new HTMLRewriter().on(user.is_admin ? '[data-not-admin]' : '[data-admin-only]', { element(e) { e.remove(); } }).transform(out);
+      return new HTMLRewriter()
+        .on(user.is_admin ? '[data-not-admin]' : '[data-admin-only]', { element(e) { e.remove(); } })
+        .on('#account', { element(e) { e.removeAttribute('hidden'); } })
+        .on('#accountName', { element(e) { e.setInnerContent(user.name || user.email); } })
+        .on('#adminLink', { element(e) { if (user.is_admin) e.removeAttribute('hidden'); } })
+        .transform(out);
     }
     return out;
   }

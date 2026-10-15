@@ -4,11 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>General Briefing</title>
-<meta name="tool-version" content="2026-10-15.3">
+<meta name="tool-version" content="2026-10-15.4">
 <link rel="icon" type="image/png" href="../favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/motion.css">
+<script src="../shared/motion.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="fonts.js"></script>
 <script src="logo.js"></script>
@@ -825,7 +827,7 @@
       box.appendChild(row);
     });
   }
-  function select(i) { cur = Math.max(0, Math.min(B.pages.length - 1, i)); renderPages(); renderForm(); schedule(); }
+  function select(i) { cur = Math.max(0, Math.min(B.pages.length - 1, i)); renderPages(); renderForm(); schedule(); if (window.tbIn) tbIn($('form')); }
   function moveGenre(i, d) {
     const j = i + d; if (!B.pages[j] || B.pages[j].type !== 'genre') return;
     const t = B.pages[i]; B.pages[i] = B.pages[j]; B.pages[j] = t;
@@ -1022,6 +1024,7 @@
     const add = el('button', { type: 'button', className: 'btn-utility', text: 'Add track', disabled: p.tracks.length >= TRACK_ROWS });
     add.addEventListener('click', () => {
       p.tracks.push({ link: '', artist: '', title: '', art: null }); renderForm(); schedule();
+      const cards = document.querySelectorAll('#form .sub'); if (window.tbIn && cards.length) tbIn(cards[cards.length - 1]);
       const links = document.querySelectorAll('#form input[data-k="link"]'); if (links.length) links[links.length - 1].focus();
     });
     f.appendChild(el('div', { class: 'row' }, [add]));

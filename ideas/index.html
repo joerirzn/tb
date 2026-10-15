@@ -8,6 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/motion.css">
+<script src="../shared/motion.js" defer></script>
 <style>
   @view-transition{ navigation: auto; }
 
@@ -187,6 +189,13 @@
   const $ = id => document.getElementById(id);
   let data = { ideas: [], isAdmin: false }, filter = 'all', sort = 'votes';
   const open = new Set();   // ideas with their comments shown
+  // motion: only what is new moves; a vote or a re-sort does not make everything fly in again
+  const seen = new Set();            // ideas already on screen
+  const justOpened = new Set();      // comment boxes opened by a click
+  const commentCache = {};           // idea id -> comments, so a re-render shows them at once
+  const stale = new Set();           // ideas whose comments need fetching
+  let animateAll = true;             // first render, filter or sort change
+  let postedTo = 0;                  // idea that just got a comment from you
 
   function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
   function ago(t) {
@@ -231,7 +240,7 @@
       const b = el('button', 'chip' + (filter === k ? ' on' : ''), label);
       b.type = 'button'; b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', filter === k);
       b.appendChild(el('span', 'n', String(counts[k] || 0)));
-      b.addEventListener('click', () => { filter = k; render(); });
+      b.addEventListener('click', () => { if (filter !== k) { filter = k; animateAll = true; render(); } });
       box.appendChild(b);
     });
   }
@@ -245,7 +254,13 @@
       list.appendChild(el('div', 'card empty', data.ideas.length ? 'No ideas with this status.' : 'No ideas yet. Be the first to share one.'));
       return;
     }
-    ideas.forEach(i => list.appendChild(ideaCard(i)));
+    ideas.forEach((i, k) => {
+      const card = ideaCard(i);
+      list.appendChild(card);
+      if (window.tbIn && (animateAll || !seen.has(i.id))) tbIn(card, animateAll ? Math.min(k, 8) * 40 : 0);
+      seen.add(i.id);
+    });
+    animateAll = false;
   }
 
   function ideaCard(i) {
@@ -273,7 +288,10 @@
     const toggle = el('button', 'btn-utility small', i.comments === 1 ? '1 comment' : i.comments + ' comments');
     toggle.type = 'button';
     toggle.setAttribute('aria-expanded', open.has(i.id));
-    toggle.addEventListener('click', () => { open.has(i.id) ? open.delete(i.id) : open.add(i.id); render(); });
+    toggle.addEventListener('click', () => {
+      if (open.has(i.id)) open.delete(i.id); else { open.add(i.id); justOpened.add(i.id); stale.add(i.id); }
+      render();
+    });
     actions.appendChild(toggle);
     if (data.isAdmin) {
       const sel = el('select'); sel.setAttribute('aria-label', 'Status');
@@ -304,8 +322,8 @@
   function commentsBox(i) {
     const box = el('div', 'comments');
     const list = el('div', null); list.style.cssText = 'display:flex;flex-direction:column;gap:12px';
-    list.appendChild(el('p', 'note', 'Loading comments…'));
     box.appendChild(list);
+    if (justOpened.delete(i.id) && window.tbIn) tbIn(box);
 
     const form = el('form', 'comment-form'); form.noValidate = true;
     const ta = el('textarea'); ta.maxLength = 1000; ta.placeholder = 'Write a comment'; ta.setAttribute('aria-label', 'Comment');
@@ -314,12 +332,10 @@
     const msg = el('p', 'msg err');
     box.appendChild(form); box.appendChild(msg);
 
-    async function loadComments() {
-      try {
-        const r = await api('/api/ideas/' + i.id + '/comments');
+    function showComments(comments, animateLast) {
         list.innerHTML = '';
-        if (!r.comments.length) list.appendChild(el('p', 'note', 'No comments yet.'));
-        r.comments.forEach(c => {
+        if (!comments.length) list.appendChild(el('p', 'note', 'No comments yet.'));
+        comments.forEach((c, k) => {
           const row = el('div', 'comment'), head = el('div', 'who');
           head.appendChild(el('span', null, who(c.author, c.author_job) + ' · ' + ago(c.created_at)));
           if (c.mine || data.isAdmin) {
@@ -333,17 +349,27 @@
           }
           row.appendChild(head); row.appendChild(el('p', null, c.body));
           list.appendChild(row);
+          if (animateLast && k === comments.length - 1 && window.tbIn) tbIn(row);
         });
-      } catch (e) { list.innerHTML = ''; msg.textContent = e.message; }
+    }
+    async function loadComments(animateLast) {
+      try {
+        const r = await api('/api/ideas/' + i.id + '/comments');
+        commentCache[i.id] = r.comments; stale.delete(i.id);
+        if (box.isConnected) showComments(r.comments, animateLast);
+      } catch (e) { msg.textContent = e.message; }
     }
     form.addEventListener('submit', async e => {
       e.preventDefault(); msg.textContent = '';
       const text = ta.value.trim(); if (!text) { msg.textContent = 'Write a comment first.'; return; }
       send.disabled = true;
-      try { await api('/api/ideas/' + i.id + '/comments', { body: text }); i.comments++; render(); }
+      try { await api('/api/ideas/' + i.id + '/comments', { body: text }); i.comments++; stale.add(i.id); postedTo = i.id; render(); }
       catch (err) { msg.textContent = err.message; send.disabled = false; }
     });
-    loadComments();
+    // cached comments show at once; fetch only when opened or after posting
+    if (commentCache[i.id]) showComments(commentCache[i.id]);
+    else list.appendChild(el('p', 'note', 'Loading comments…'));
+    if (stale.has(i.id) || !commentCache[i.id]) { const anim = postedTo === i.id; postedTo = 0; loadComments(anim); }
     return box;
   }
 
@@ -365,7 +391,7 @@
     } catch (err) { msg.className = 'msg err'; msg.textContent = err.message; }
     btn.disabled = false;
   });
-  $('sort').addEventListener('change', () => { sort = $('sort').value; render(); });
+  $('sort').addEventListener('change', () => { sort = $('sort').value; animateAll = true; render(); });
 
   load();
 })();

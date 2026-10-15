@@ -8,6 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/motion.css">
+<script src="../shared/motion.js" defer></script>
 <style>
   @view-transition{ navigation: auto; }
 
@@ -617,7 +619,7 @@
     queueCount.textContent = `${files.length} file${files.length > 1 ? 's' : ''}`;
 
     const items = files.map(file => buildQueueItem(file));
-    items.forEach(item => queueList.appendChild(item.el));
+    items.forEach((item, k) => { queueList.appendChild(item.el); if (window.tbIn) tbIn(item.el, Math.min(k, 8) * 40); });
 
     if (!isProcessing) processAll(items);
   }

@@ -1,0 +1,53 @@
+/* Toolbox motion: one calm system for every page.
+   fast 150 ms  hover, press, colour changes
+   base 250 ms  things that appear (panels, lists, messages)
+   page 280 ms  going from one page to another
+   Everything that moves slides up a few pixels and fades in; nothing bounces.
+   With "reduce motion" switched on in the OS, all of it is off. */
+
+:root {
+  --tb-fast: .15s;
+  --tb-base: .25s;
+  --tb-ease: cubic-bezier(.2, .8, .2, 1);
+}
+
+/* ---- between pages: the old page fades out, the new one fades up ---- */
+@view-transition { navigation: auto; }
+::view-transition-old(root) { animation: tb-page-out .16s ease both; }
+::view-transition-new(root) { animation: tb-page-in .28s var(--tb-ease) both; }
+@keyframes tb-page-out { to { opacity: 0; } }
+@keyframes tb-page-in { from { opacity: 0; transform: translateY(8px); } }
+
+html { scroll-behavior: smooth; }
+
+/* ---- state changes fade instead of snapping (a component that sets its own transition keeps it) ---- */
+:where(a, button, input, select, textarea, label, .chip, .sw, .tab, .pg, .sub, .queue-item) {
+  transition: color var(--tb-fast) ease, background-color var(--tb-fast) ease, border-color var(--tb-fast) ease,
+    outline-color var(--tb-fast) ease, opacity var(--tb-fast) ease, transform .1s ease;
+}
+
+/* ---- entry: added by motion.js (tbIn) to things that are new on the page ---- */
+@keyframes tb-in { from { opacity: 0; transform: translateY(6px); } }
+@keyframes tb-fade { from { opacity: 0; } }
+.tb-in { animation: tb-in var(--tb-base) var(--tb-ease) both; }
+.tb-fade { animation: tb-fade .2s ease both; }
+
+/* ---- things shown with .visible / .open, or by removing [hidden], fade in on their own ---- */
+:where(.visible, .open, .nt-panel, .done, .update) {
+  transition: opacity var(--tb-base) var(--tb-ease), transform var(--tb-base) var(--tb-ease);
+}
+@starting-style {
+  :where(.visible, .open, .done, .update) { opacity: 0; transform: translateY(6px); }
+  :where(.nt-panel) { opacity: 0; transform: translateY(-4px) scale(.98); }
+}
+
+/* ---- images fade in once loaded instead of popping in ---- */
+img.tb-img { opacity: 0; transition: opacity .3s ease; }
+img.tb-img.tb-img-in { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root), ::view-transition-new(root) { animation: none; }
+  html { scroll-behavior: auto; }
+  .tb-in, .tb-fade { animation: none; }
+  img.tb-img { opacity: 1; transition: none; }
+}

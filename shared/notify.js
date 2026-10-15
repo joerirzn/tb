@@ -36,7 +36,8 @@
   const style = document.createElement('style'); style.textContent = css; document.head.appendChild(style);
 
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
-  const wrap = el('span', 'nt'); wrap.hidden = true;
+  // shown straight away (no jump when the count arrives); hidden again only if the server does not answer
+  const wrap = el('span', 'nt'); wrap.hidden = location.protocol === 'file:';
   const btn = el('button', 'nt-btn'); btn.type = 'button'; btn.setAttribute('aria-haspopup', 'true'); btn.setAttribute('aria-expanded', 'false');
   btn.innerHTML = '<svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>';
   const badge = el('span', 'nt-badge'); badge.hidden = true; btn.appendChild(badge);
@@ -103,11 +104,11 @@
   async function load() {
     try {
       const r = await fetch('/api/notifications');
-      if (!r.ok) return;
+      if (!r.ok) { wrap.hidden = true; return; }
       const j = await r.json();
       items = j.items; unread = j.unread; wrap.hidden = false;
       if (panel.hidden) paint();
-    } catch (e) { }
+    } catch (e) { wrap.hidden = true; }
   }
   function open() { paint(); panel.hidden = false; btn.setAttribute('aria-expanded', 'true'); }
   function close() { panel.hidden = true; btn.setAttribute('aria-expanded', 'false'); }

@@ -10,7 +10,9 @@ const HEAD = `<meta charset="utf-8">
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">`;
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/shared/motion.css">
+<script src="/shared/motion.js" defer></script>`;
 
 const BASE_CSS = `
   :root{
@@ -133,6 +135,7 @@ ${BASE_CSS}
     $('registerForm').hidden = m !== 'register';
     $('done').hidden = true;
     $('lead').textContent = m === 'login' ? 'Sign in to open the tools.' : 'No account yet? Request access. The admin accepts or declines your request.';
+    if (window.tbIn) tbIn(m === 'login' ? $('loginForm') : $('registerForm'));
     var first = m === 'login' ? $('li-email') : $('rg-first'); first.focus();
   }
   tabs.forEach(function (t) { t.addEventListener('click', function () { mode(t.dataset.mode); }); });
@@ -299,6 +302,7 @@ ${BASE_CSS}
     list.forEach(function (u) { box.appendChild(render(u)); });
   }
 
+  var firstLoad = true;
   async function load() {
     var r = await fetch('/admin/api/users');
     if (!r.ok) { status('Could not load the list. Reload the page.', true); return; }
@@ -345,6 +349,9 @@ ${BASE_CSS}
       row.appendChild(el('span', 'p', TOOLS[a.path] || a.path));
       act.appendChild(row);
     });
+    // the lists come in one after the other the first time; later updates stay still
+    if (firstLoad && window.tbIn) document.querySelectorAll('section.card').forEach(function (c, i) { tbIn(c, i * 50); });
+    firstLoad = false;
   }
   // ---- announcements ----
   async function loadAnnouncements() {
