@@ -105,6 +105,10 @@
   /* tool in testing: no preview image, just a lock */
   .card-locked{ display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: var(--muted, #86868b); font-size: 14px; }
   .card-locked svg{ width: 40px; height: 40px; stroke: currentColor; }
+  /* ideas board: an icon instead of a preview image */
+  .card-icon{ display: flex; align-items: center; justify-content: center; color: var(--text); }
+  .card-icon svg{ width: 56px; height: 56px; stroke: currentColor; transition: transform .4s ease, color .15s ease; }
+  .card:hover .card-icon svg{ transform: scale(1.08); color: var(--accent); }
   /* tool in the making, shown to everyone without access: not clickable */
   .card.soon{ cursor: default; }
   .card.soon:hover{ border-color: var(--border); transform: none; }
@@ -300,6 +304,19 @@
         <p class="card-desc">Builds the Spinnin' Records genre and trend briefing: label logos and genre pages with tracks pulled from Spotify links. Exports as a multi-page vector PDF.</p>
       </div>
     </div>
+
+    <a class="card" href="ideas/">
+      <div class="card-image card-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.6.5 1.1 1.3 1.1 2.2h5c0-.9.5-1.7 1.1-2.2A6 6 0 0 0 12 3z"/></svg>
+      </div>
+      <div class="card-content">
+        <div class="card-top">
+          <p class="card-title">Ideas</p>
+          <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M8 7h9v9"/></svg></div>
+        </div>
+        <p class="card-desc">Have an idea for a new tool, or for a better one? Share it, vote on the ideas of others and see what gets built next.</p>
+      </div>
+    </a>
 
   </div>
 

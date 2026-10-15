@@ -248,7 +248,7 @@ ${BASE_CSS}
   var $ = function (id) { return document.getElementById(id); };
   $('me').textContent = 'Signed in as ' + ${jsStr(me)};
   var TOOLS = { '/': 'Toolbox home', '/admin': 'Admin', '/banner-generator/': 'Social Banner Creator', '/cover-converter/': 'Cover Converter',
-    '/sessions-radio-maker/': 'Sessions Asset Generator', '/thumbnail-maker/': 'Thumbnail Maker', '/song-briefing/': 'Song Briefing', '/general-briefing/': 'General Briefing' };
+    '/sessions-radio-maker/': 'Sessions Asset Generator', '/thumbnail-maker/': 'Thumbnail Maker', '/song-briefing/': 'Song Briefing', '/general-briefing/': 'General Briefing', '/ideas/': 'Ideas' };
 
   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
   function when(t) {

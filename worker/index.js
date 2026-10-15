@@ -6,6 +6,7 @@
 // ADMIN_EMAIL secret (set in the Cloudflare dashboard, never in this repo).
 
 import { loginPage, adminPage, accountPage } from './pages.js';
+import { IDEAS_SCHEMA, handleIdeas } from './ideas.js';
 
 const SESSION_COOKIE = '__Host-tb_session';
 const SESSION_DAYS = 30;
@@ -63,7 +64,7 @@ const ADDED_COLUMNS = { users: { job_title: "TEXT NOT NULL DEFAULT ''" } };
 let schemaReady = null;
 function ensureSchema(env) {
   if (!schemaReady) schemaReady = (async () => {
-    await env.DB.batch(SCHEMA.map(s => env.DB.prepare(s)));
+    await env.DB.batch(SCHEMA.concat(IDEAS_SCHEMA).map(s => env.DB.prepare(s)));
     for (const [table, cols] of Object.entries(ADDED_COLUMNS)) {
       const have = new Set((await env.DB.prepare('PRAGMA table_info(' + table + ')').all()).results.map(c => c.name));
       for (const [col, def] of Object.entries(cols)) {
@@ -107,6 +108,8 @@ export default {
       if (!user.is_admin) return redirect('/');
       return html(adminPage({ me: user.email }));
     }
+    if (path.startsWith('/api/ideas') || path.startsWith('/api/comments/')) return handleIdeas(request, env, url, user);
+
     if (path.startsWith('/admin/api/')) {
       if (!user.is_admin) return json({ error: 'Not allowed.' }, 403);
       return handleAdmin(request, env, url, user);
@@ -300,7 +303,7 @@ async function logActivity(env, user, path) {
 
 // ---------- rate limiting: max `limit` tries per `minutes` per key ----------
 
-async function allow(env, key, limit, minutes) {
+export async function allow(env, key, limit, minutes) {
   const now = Date.now(), win = minutes * 60000;
   const row = await env.DB.prepare('SELECT count, window_start FROM attempts WHERE key = ?').bind(key).first();
   if (!row || now - row.window_start > win) {
@@ -361,14 +364,14 @@ function isNavigation(request) {
   if (mode) return mode === 'navigate';
   return request.method === 'GET' && (request.headers.get('Accept') || '').includes('text/html');
 }
-function sameOrigin(request, url) { return request.headers.get('Origin') === url.origin; }
+export function sameOrigin(request, url) { return request.headers.get('Origin') === url.origin; }
 function getCookie(request, name) {
   const m = (request.headers.get('Cookie') || '').match(new RegExp('(?:^|;\\s*)' + name.replace(/[-]/g, '\\-') + '=([^;]+)'));
   return m ? m[1] : null;
 }
 function clearCookie() { return `${SESSION_COOKIE}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax`; }
-async function readJson(request) { try { return await request.json(); } catch (e) { return {}; } }
-function json(data, status = 200, headers = {}) {
+export async function readJson(request) { try { return await request.json(); } catch (e) { return {}; } }
+export function json(data, status = 200, headers = {}) {
   return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...headers } });
 }
 function html(body) {

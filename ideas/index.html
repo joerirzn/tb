@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ideas</title>
+<link rel="icon" type="image/png" href="../favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  @view-transition{ navigation: auto; }
+
+  :root{
+    --bg: #000000;
+    --surface: #272729;
+    --surface-2: #2a2a2c;
+    --surface-3: #252527;
+    --border: rgba(255, 255, 255, 0.08);
+    --border-hover: rgba(255, 255, 255, 0.16);
+    --text: #ffffff;
+    --text-muted: #cccccc;
+    --text-faint: #86868b;
+    --accent: #2997ff;
+    --accent-focus: #0071e3;
+    --on-accent: #ffffff;
+    --success: #30d158;
+    --warning: #ffd60a;
+    --error: #ff453a;
+    --font: 'Inter', -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  *{ box-sizing: border-box; }
+  html{ background: var(--bg); overflow-y: auto; scrollbar-gutter: stable; }
+  body{
+    margin: 0 auto; max-width: 1180px; min-height: 100vh;
+    padding: 32px 40px 48px;
+    background: var(--bg); color: var(--text); font-family: var(--font);
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection{ background: var(--accent); color: #fff; }
+  button{ font-family: inherit; cursor: pointer; }
+  button:active{ transform: scale(0.95); }
+  a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible{ outline: 2px solid var(--accent-focus); outline-offset: 3px; }
+
+  /* header */
+  .app-header{ display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 8px; }
+  .back-link{ display: inline-flex; align-items: center; gap: 6px; color: var(--text); text-decoration: none; border: 1px solid var(--border-hover); border-radius: 9999px; padding: 8px 15px; font-size: 14px; }
+  .back-link:hover{ border-color: var(--text-faint); }
+  .back-link svg{ width: 14px; height: 14px; stroke: currentColor; fill: none; }
+  h1{ font-size: 26px; font-weight: 600; letter-spacing: -0.02em; margin: 0; }
+  .lead{ font-size: 17px; line-height: 1.47; color: var(--text-muted); margin: 0 0 28px; max-width: 60ch; }
+
+  /* layout */
+  .layout{ display: grid; grid-template-columns: 360px 1fr; gap: 20px; align-items: start; }
+  .side{ position: sticky; top: 24px; display: flex; flex-direction: column; gap: 12px; }
+  @media (max-width: 900px){
+    body{ padding: 24px 20px 48px; }
+    .layout{ grid-template-columns: 1fr; }
+    .side{ position: static; }
+  }
+
+  .card{ background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 24px; }
+  .card-label{ font-size: 14px; font-weight: 600; margin: 0 0 4px; }
+  .note{ font-size: 13px; line-height: 1.5; color: var(--text-faint); margin: 0; }
+
+  /* form */
+  form{ display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+  label{ font-size: 13px; color: var(--text-muted); margin: 2px 0 -4px 20px; }
+  input, textarea, select{
+    width: 100%; background: var(--surface-3); border: 1px solid var(--border); color: var(--text);
+    border-radius: 9999px; padding: 12px 20px; font: 400 17px var(--font);
+  }
+  textarea{ border-radius: 18px; resize: vertical; min-height: 120px; line-height: 1.47; }
+  input:focus, textarea:focus, select:focus{ outline: none; border-color: var(--accent); }
+  input::placeholder, textarea::placeholder{ color: var(--text-faint); }
+  .count{ font-size: 12px; color: var(--text-faint); text-align: right; margin: -4px 8px 0 0; }
+
+  .btn{ background: var(--accent); color: var(--on-accent); border: none; border-radius: 9999px; font: 400 17px var(--font); padding: 11px 22px; transition: transform .1s ease; }
+  .btn:disabled{ background: var(--surface-2); color: var(--text-faint); cursor: default; transform: none; }
+  .btn-utility{ background: transparent; color: var(--text); border: 1px solid var(--border-hover); border-radius: 9999px; padding: 8px 15px; font: 400 14px var(--font); transition: transform .1s ease, border-color .15s ease; }
+  .btn-utility:hover{ border-color: var(--text-faint); }
+  .btn-utility.small{ padding: 5px 12px; font-size: 13px; }
+  .btn-utility.danger:hover{ color: #e55; border-color: #e55; }
+  .msg{ font-size: 14px; line-height: 1.5; margin: 0; min-height: 1.5em; }
+  .msg.err{ color: var(--error); }
+  .msg.ok{ color: var(--success); }
+  #listMsg:empty{ display: none; }
+  #listMsg{ margin-bottom: 12px; }
+
+  /* toolbar */
+  .toolbar{ display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+  .filters{ display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip{ background: transparent; color: var(--text-muted); border: 1px solid var(--border-hover); border-radius: 9999px; padding: 6px 12px; font: 400 13px var(--font); }
+  .chip .n{ color: var(--text-faint); margin-left: 4px; }
+  .chip.on{ border-color: var(--accent); color: var(--text); background: rgba(41,151,255,0.08); }
+  .sort{ width: auto; padding: 7px 14px; font-size: 13px; }
+
+  /* ideas */
+  .list{ display: flex; flex-direction: column; gap: 12px; }
+  .idea{ display: flex; gap: 16px; padding: 20px; }
+  .vote{
+    flex: none; width: 56px; height: 64px; border-radius: 14px;
+    background: var(--surface-3); border: 1px solid var(--border-hover); color: var(--text);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    font: 600 16px var(--font); transition: transform .1s ease, border-color .15s ease;
+  }
+  .vote svg{ width: 16px; height: 16px; stroke: currentColor; fill: none; }
+  .vote:hover{ border-color: var(--text-faint); }
+  .vote.on{ border-color: var(--accent); color: var(--accent); background: rgba(41,151,255,0.08); }
+  .idea-body{ flex: 1; min-width: 0; }
+  .idea-top{ display: flex; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
+  .idea-title{ font-size: 18px; font-weight: 600; letter-spacing: -0.01em; margin: 0; flex: 1; min-width: 200px; overflow-wrap: anywhere; }
+  .status{ font-size: 12px; border: 1px solid var(--border-hover); border-radius: 9999px; padding: 2px 10px; color: var(--text-faint); white-space: nowrap; }
+  .status.planned{ color: var(--accent); border-color: rgba(41,151,255,0.5); }
+  .status.in-progress{ color: var(--warning); border-color: rgba(255,214,10,0.45); }
+  .status.done{ color: var(--success); border-color: rgba(48,209,88,0.45); }
+  .status.declined{ color: var(--text-faint); text-decoration: line-through; }
+  .idea-text{ font-size: 15px; line-height: 1.55; color: var(--text-muted); margin: 8px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .meta{ font-size: 12px; color: var(--text-faint); margin-top: 10px; }
+  .actions{ display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .actions select{ width: auto; padding: 5px 12px; font-size: 13px; }
+
+  .comments{ margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 12px; }
+  .comment{ font-size: 14px; line-height: 1.5; }
+  .comment .who{ font-size: 12px; color: var(--text-faint); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .comment p{ margin: 2px 0 0; color: var(--text-muted); white-space: pre-wrap; overflow-wrap: anywhere; }
+  .link-btn{ background: none; border: none; padding: 0; color: var(--text-faint); font: 400 12px var(--font); }
+  .link-btn:hover{ color: #e55; }
+  .link-btn:active{ transform: none; }
+  .comment-form{ display: flex; gap: 8px; align-items: flex-end; margin: 0; flex-direction: row; }
+  .comment-form textarea{ min-height: 44px; height: 44px; padding: 11px 18px; font-size: 15px; border-radius: 22px; }
+  .empty{ text-align: center; color: var(--text-faint); font-size: 15px; padding: 48px 24px; }
+
+  @media (max-width: 560px){
+    .idea{ gap: 12px; padding: 16px; }
+    .vote{ width: 48px; height: 56px; }
+    .comment-form{ flex-direction: column; align-items: stretch; }
+  }
+  @media (prefers-reduced-motion: reduce){ *{ animation-duration: .001s !important; transition-duration: .001s !important; } }
+  [hidden]{ display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <a class="back-link" href="../"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 19l-7-7 7-7"/></svg>Toolbox</a>
+  <h1>Ideas</h1>
+</div>
+<p class="lead">Missing a tool, or a feature in one? Share it here. Vote for the ideas you want most, so we know what to build next.</p>
+
+<div class="layout">
+  <aside class="side">
+    <div class="card">
+      <p class="card-label">Share an idea</p>
+      <p class="note">What should the tool do, and what would it save you?</p>
+      <form id="ideaForm" novalidate>
+        <label for="title">Title</label>
+        <input id="title" type="text" maxlength="120" placeholder="e.g. Story maker for releases" autocomplete="off">
+        <label for="body">Explain your idea <span style="color:var(--text-faint)">(optional)</span></label>
+        <textarea id="body" maxlength="2000" placeholder="Who uses it, what goes in, what comes out?"></textarea>
+        <p class="count" id="bodyCount">0 / 2000</p>
+        <button class="btn" type="submit">Share idea</button>
+        <p class="msg" id="formMsg" role="alert"></p>
+      </form>
+    </div>
+  </aside>
+
+  <main>
+    <div class="toolbar">
+      <div class="filters" id="filters" role="tablist" aria-label="Filter by status"></div>
+      <select class="sort" id="sort" aria-label="Sort">
+        <option value="votes">Most votes</option>
+        <option value="new">Newest</option>
+      </select>
+    </div>
+    <p class="msg err" id="listMsg" role="alert"></p>
+    <div class="list" id="list"></div>
+  </main>
+</div>
+
+<script>
+(function () {
+  const STATUS = { 'new': 'New', 'planned': 'Planned', 'in-progress': 'In progress', 'done': 'Done', 'declined': 'Declined' };
+  const $ = id => document.getElementById(id);
+  let data = { ideas: [], isAdmin: false }, filter = 'all', sort = 'votes';
+  const open = new Set();   // ideas with their comments shown
+
+  function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function ago(t) {
+    const m = Math.round((Date.now() - t) / 60000);
+    if (m < 1) return 'just now';
+    if (m < 60) return m + ' min ago';
+    if (m < 60 * 24) return Math.round(m / 60) + ' h ago';
+    if (m < 60 * 24 * 7) return Math.round(m / 1440) + ' d ago';
+    return new Date(t).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+  function who(name, job) { return (name || 'Former member') + (job ? ' · ' + job : ''); }
+
+  async function api(path, body) {
+    const r = await fetch(path, body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {});
+    let j = {}; try { j = await r.json(); } catch (e) { }
+    if (r.status === 401) { location.href = '/login?next=' + encodeURIComponent(location.pathname); throw new Error('signed out'); }
+    if (!r.ok) throw new Error(j.error || 'Something went wrong. Try again.');
+    return j;
+  }
+
+  async function load() {
+    try { data = await api('/api/ideas'); $('listMsg').textContent = ''; render(); }
+    catch (e) { $('listMsg').textContent = location.protocol === 'file:' ? 'Ideas only work in the online Toolbox.' : e.message; }
+  }
+
+  function renderFilters() {
+    const box = $('filters'); box.innerHTML = '';
+    const counts = { all: data.ideas.length };
+    data.ideas.forEach(i => counts[i.status] = (counts[i.status] || 0) + 1);
+    [['all', 'All']].concat(Object.entries(STATUS)).forEach(([k, label]) => {
+      if (k !== 'all' && !counts[k] && filter !== k) return;
+      const b = el('button', 'chip' + (filter === k ? ' on' : ''), label);
+      b.type = 'button'; b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', filter === k);
+      b.appendChild(el('span', 'n', String(counts[k] || 0)));
+      b.addEventListener('click', () => { filter = k; render(); });
+      box.appendChild(b);
+    });
+  }
+
+  function render() {
+    renderFilters();
+    const list = $('list'); list.innerHTML = '';
+    let ideas = data.ideas.filter(i => filter === 'all' || i.status === filter);
+    ideas.sort(sort === 'new' ? (a, b) => b.created_at - a.created_at : (a, b) => b.votes - a.votes || b.created_at - a.created_at);
+    if (!ideas.length) {
+      list.appendChild(el('div', 'card empty', data.ideas.length ? 'No ideas with this status.' : 'No ideas yet. Be the first to share one.'));
+      return;
+    }
+    ideas.forEach(i => list.appendChild(ideaCard(i)));
+  }
+
+  function ideaCard(i) {
+    const card = el('article', 'card idea');
+    const vote = el('button', 'vote' + (i.voted ? ' on' : ''));
+    vote.type = 'button';
+    vote.setAttribute('aria-pressed', i.voted);
+    vote.setAttribute('aria-label', (i.voted ? 'Remove your vote' : 'Vote') + ' (' + i.votes + ' votes)');
+    vote.innerHTML = '<svg viewBox="0 0 24 24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>';
+    vote.appendChild(el('span', null, String(i.votes)));
+    vote.addEventListener('click', async () => {
+      try { const r = await api('/api/ideas/' + i.id + '/vote', {}); i.voted = r.voted; i.votes = r.votes; render(); }
+      catch (e) { $('listMsg').textContent = e.message; }
+    });
+
+    const body = el('div', 'idea-body');
+    const top = el('div', 'idea-top');
+    top.appendChild(el('h2', 'idea-title', i.title));
+    top.appendChild(el('span', 'status ' + i.status, STATUS[i.status] || i.status));
+    body.appendChild(top);
+    if (i.body) body.appendChild(el('p', 'idea-text', i.body));
+    body.appendChild(el('div', 'meta', who(i.author, i.author_job) + ' · ' + ago(i.created_at)));
+
+    const actions = el('div', 'actions');
+    const toggle = el('button', 'btn-utility small', i.comments === 1 ? '1 comment' : i.comments + ' comments');
+    toggle.type = 'button';
+    toggle.setAttribute('aria-expanded', open.has(i.id));
+    toggle.addEventListener('click', () => { open.has(i.id) ? open.delete(i.id) : open.add(i.id); render(); });
+    actions.appendChild(toggle);
+    if (data.isAdmin) {
+      const sel = el('select'); sel.setAttribute('aria-label', 'Status');
+      Object.entries(STATUS).forEach(([k, label]) => { const o = el('option', null, label); o.value = k; o.selected = k === i.status; sel.appendChild(o); });
+      sel.addEventListener('change', async () => {
+        try { await api('/api/ideas/' + i.id + '/status', { status: sel.value }); i.status = sel.value; render(); }
+        catch (e) { $('listMsg').textContent = e.message; }
+      });
+      actions.appendChild(sel);
+    }
+    if (i.mine || data.isAdmin) {
+      const del = el('button', 'btn-utility small danger', 'Delete');
+      del.type = 'button';
+      del.addEventListener('click', async () => {
+        if (!confirm('Delete the idea "' + i.title + '" with its votes and comments?')) return;
+        try { await api('/api/ideas/' + i.id + '/delete', {}); load(); }
+        catch (e) { $('listMsg').textContent = e.message; }
+      });
+      actions.appendChild(del);
+    }
+    body.appendChild(actions);
+    if (open.has(i.id)) body.appendChild(commentsBox(i));
+
+    card.appendChild(vote); card.appendChild(body);
+    return card;
+  }
+
+  function commentsBox(i) {
+    const box = el('div', 'comments');
+    const list = el('div', null); list.style.cssText = 'display:flex;flex-direction:column;gap:12px';
+    list.appendChild(el('p', 'note', 'Loading comments…'));
+    box.appendChild(list);
+
+    const form = el('form', 'comment-form'); form.noValidate = true;
+    const ta = el('textarea'); ta.maxLength = 1000; ta.placeholder = 'Write a comment'; ta.setAttribute('aria-label', 'Comment');
+    const send = el('button', 'btn-utility', 'Post'); send.type = 'submit';
+    form.appendChild(ta); form.appendChild(send);
+    const msg = el('p', 'msg err');
+    box.appendChild(form); box.appendChild(msg);
+
+    async function loadComments() {
+      try {
+        const r = await api('/api/ideas/' + i.id + '/comments');
+        list.innerHTML = '';
+        if (!r.comments.length) list.appendChild(el('p', 'note', 'No comments yet.'));
+        r.comments.forEach(c => {
+          const row = el('div', 'comment'), head = el('div', 'who');
+          head.appendChild(el('span', null, who(c.author, c.author_job) + ' · ' + ago(c.created_at)));
+          if (c.mine || data.isAdmin) {
+            const d = el('button', 'link-btn', 'Delete'); d.type = 'button';
+            d.addEventListener('click', async () => {
+              if (!confirm('Delete this comment?')) return;
+              try { await api('/api/comments/' + c.id + '/delete', {}); i.comments = Math.max(0, i.comments - 1); render(); }
+              catch (e) { msg.textContent = e.message; }
+            });
+            head.appendChild(d);
+          }
+          row.appendChild(head); row.appendChild(el('p', null, c.body));
+          list.appendChild(row);
+        });
+      } catch (e) { list.innerHTML = ''; msg.textContent = e.message; }
+    }
+    form.addEventListener('submit', async e => {
+      e.preventDefault(); msg.textContent = '';
+      const text = ta.value.trim(); if (!text) { msg.textContent = 'Write a comment first.'; return; }
+      send.disabled = true;
+      try { await api('/api/ideas/' + i.id + '/comments', { body: text }); i.comments++; render(); }
+      catch (err) { msg.textContent = err.message; send.disabled = false; }
+    });
+    loadComments();
+    return box;
+  }
+
+  // share an idea
+  $('body').addEventListener('input', () => { $('bodyCount').textContent = $('body').value.length + ' / 2000'; });
+  $('ideaForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const msg = $('formMsg'), btn = e.target.querySelector('.btn');
+    msg.className = 'msg'; msg.textContent = '';
+    const title = $('title').value.trim();
+    if (!title) { msg.className = 'msg err'; msg.textContent = 'Give your idea a title.'; $('title').focus(); return; }
+    btn.disabled = true;
+    try {
+      await api('/api/ideas', { title, body: $('body').value.trim() });
+      e.target.reset(); $('bodyCount').textContent = '0 / 2000';
+      msg.className = 'msg ok'; msg.textContent = 'Thanks! Your idea is on the board.';
+      filter = 'all'; sort = 'new'; $('sort').value = 'new';
+      await load();
+    } catch (err) { msg.className = 'msg err'; msg.textContent = err.message; }
+    btn.disabled = false;
+  });
+  $('sort').addEventListener('change', () => { sort = $('sort').value; render(); });
+
+  load();
+})();
+</script>
+</body>
+</html>
