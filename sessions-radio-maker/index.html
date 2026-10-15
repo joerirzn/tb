@@ -1,4 +1,5 @@
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sessions Asset Generator</title>
 <link rel="icon" type="image/png" href="../favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -307,6 +308,21 @@
 
   @media (prefers-reduced-motion: reduce){
     *{ animation-duration: .001s !important; transition-duration: .001s !important; }
+  }
+
+  /* wide screens: the tool stops growing at 1680 px and stays centred */
+  html { background: var(--bg); }
+  body { max-width: 1680px; margin-left: auto; margin-right: auto; }
+
+  /* small laptops and tablets in landscape: the formats stay next to the settings */
+  @media (min-width: 881px) and (max-width: 1240px) {
+    .main { flex-basis: 400px; }
+  }
+
+  /* phones and small tablets: the settings rail goes full width (after the .rail rule, so it wins) */
+  @media (max-width: 880px) {
+    body { padding: 24px 20px 48px; }
+    .rail { width: 100%; }
   }
 </style>
 

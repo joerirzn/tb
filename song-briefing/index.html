@@ -247,6 +247,10 @@
   body.canvas-only .sidebar, body.canvas-only .actions, body.canvas-only .status { display: none; }
   body.canvas-only .main { display: block; }
   body.canvas-only .canvas-wrap { border: none; border-radius: 0; }
+
+  /* wide screens: the tool stops growing at 1680 px and stays centred */
+  html { background: var(--bg); }
+  body { max-width: 1680px; margin-left: auto; margin-right: auto; }
 </style>
 </head>
 <body>

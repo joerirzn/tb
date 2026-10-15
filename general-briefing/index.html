@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>General Briefing</title>
-<meta name="tool-version" content="2026-10-15.2">
+<meta name="tool-version" content="2026-10-15.3">
 <link rel="icon" type="image/png" href="../favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -340,6 +340,10 @@
   body.canvas-only .sidebar, body.canvas-only .actions, body.canvas-only .status, body.canvas-only .pager { display: none; }
   body.canvas-only .main { display: block; }
   body.canvas-only .canvas-wrap { border: none; border-radius: 0; }
+
+  /* wide screens: the tool stops growing at 1680 px and stays centred */
+  html { background: var(--bg); }
+  body { max-width: 1680px; margin-left: auto; margin-right: auto; }
 </style>
 </head>
 <body>

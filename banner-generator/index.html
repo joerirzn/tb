@@ -229,6 +229,22 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 @media (prefers-reduced-motion: reduce){
   *{ animation-duration: .001s !important; transition-duration: .001s !important; }
 }
+
+  /* wide screens: the tool stops growing at 1680 px and stays centred */
+  html { background: var(--bg); }
+  body { max-width: 1680px; margin-left: auto; margin-right: auto; }
+
+  /* small laptops and tablets in landscape: banners stay next to the settings, one per row */
+  @media (min-width: 901px) and (max-width: 1240px) {
+    .main { flex-basis: 400px; grid-template-columns: 1fr; }
+  }
+
+  /* phones and small tablets: settings full width, banners stacked */
+  @media (max-width: 900px) {
+    body { padding: 24px 20px 48px; }
+    .sidebar { width: 100%; }
+    .main { flex-basis: 100%; grid-template-columns: 1fr; }
+  }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
