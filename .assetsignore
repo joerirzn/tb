@@ -7,3 +7,5 @@ node_modules
 wrangler.jsonc
 STYLE_GUIDE.md
 .DS_Store
+worker
+.dev.vars

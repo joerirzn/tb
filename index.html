@@ -178,13 +178,35 @@
   .card:nth-child(3){ animation-delay: .2s; }
   .card:nth-child(4){ animation-delay: .26s; }
 
+  /* signed-in person (only when served by the Toolbox server) */
+  .top{ display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .account{ display: flex; align-items: center; gap: 8px; flex-wrap: wrap; animation: rise .5s ease both; }
+  .account[hidden]{ display: none; }
+  .account .who{ font-size: 13px; color: var(--text-faint); margin-right: 4px; }
+  .pill{
+    background: transparent; color: var(--text);
+    border: 1px solid var(--border-hover); border-radius: 9999px;
+    padding: 8px 15px; font: 400 14px var(--font); cursor: pointer;
+    transition: transform .1s ease, border-color .15s ease;
+  }
+  .pill:hover{ border-color: var(--text-faint); }
+  .pill:active{ transform: scale(0.95); }
+  .pill:focus-visible{ outline: 2px solid var(--accent-focus); outline-offset: 3px; }
+
   @media (prefers-reduced-motion: reduce){
     *{ animation-duration: .001s !important; transition-duration: .001s !important; }
   }
 </style>
 
 <div class="wrap">
-  <h1>Toolbox</h1>
+  <div class="top">
+    <h1>Toolbox</h1>
+    <div class="account" id="account" hidden>
+      <span class="who" id="accountName"></span>
+      <a class="pill" id="adminLink" href="/admin" hidden>Access</a>
+      <button class="pill" id="signOut" type="button">Sign out</button>
+    </div>
+  </div>
   <p class="sub">Every asset generator in one place. Pick a tool to open it.</p>
 
   <div class="grid">
@@ -262,3 +284,16 @@
 
   <footer class="foot">Internal use only — do not share this link outside the company.</footer>
 </div>
+<script>
+  // shows who is signed in; stays hidden when the page is not served by the Toolbox server
+  fetch('/auth/me').then(r => r.ok ? r.json() : null).then(me => {
+    if (!me) return;
+    document.getElementById('accountName').textContent = me.name || me.email;
+    document.getElementById('adminLink').hidden = !me.isAdmin;
+    document.getElementById('account').hidden = false;
+  }).catch(() => {});
+  document.getElementById('signOut').addEventListener('click', async () => {
+    try { await fetch('/auth/logout', { method: 'POST' }); } catch (e) {}
+    location.href = '/login';
+  });
+</script>

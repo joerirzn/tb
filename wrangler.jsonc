@@ -1,9 +1,16 @@
-// Cloudflare Workers config: serves the Toolbox as static files.
-// Access (login) is set up in the Cloudflare dashboard, not here.
+// Cloudflare Workers config. worker/index.js runs before every file and only
+// lets signed-in people with accepted access through (login + admin pages).
+// ADMIN_EMAIL is a secret set in the Cloudflare dashboard, not in this repo.
 {
   "name": "tb",
+  "main": "worker/index.js",
   "compatibility_date": "2026-10-01",
   "assets": {
-    "directory": "./"
-  }
+    "directory": "./",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  },
+  "d1_databases": [
+    { "binding": "DB", "database_name": "tb-auth", "database_id": "f20f515a-237a-41c8-9ed7-ef40e0fb1ac8" }
+  ]
 }
