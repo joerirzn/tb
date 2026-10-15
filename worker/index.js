@@ -5,12 +5,21 @@
 // Storage: D1 database (binding DB). The admin is whoever registers with the
 // ADMIN_EMAIL secret (set in the Cloudflare dashboard, never in this repo).
 
-import { loginPage, adminPage } from './pages.js';
+import { loginPage, adminPage, accountPage } from './pages.js';
 
 const SESSION_COOKIE = '__Host-tb_session';
 const SESSION_DAYS = 30;
 const PBKDF2_ITERATIONS = 100000;          // the maximum Workers allows
 const MIN_PASSWORD = 10;
+// tools still in the making: only the admin can open them (pages and files)
+const ADMIN_ONLY = ['/general-briefing'];
+function adminOnly(path) {
+  // compare a normalised path, so /General-Briefing, %2D or // variants are caught too
+  let p = path;
+  try { p = decodeURIComponent(path); } catch (e) { }
+  p = p.toLowerCase().replace(/\/+/g, '/');
+  return ADMIN_ONLY.some(a => p === a || p.startsWith(a + '/'));
+}
 
 const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS users (
@@ -76,6 +85,12 @@ export default {
       return new Response('Sign in required', { status: 401, headers: { 'Cache-Control': 'no-store' } });
     }
 
+    if (path === '/account' || path === '/account/') return html(accountPage({ me: user.email }));
+    if (adminOnly(path) && !user.is_admin) {
+      if (isNavigation(request)) return redirect('/');
+      return new Response('Not available', { status: 403, headers: { 'Cache-Control': 'no-store' } });
+    }
+
     if (path === '/admin' || path === '/admin/') {
       if (!user.is_admin) return redirect('/');
       return html(adminPage({ me: user.email }));
@@ -91,6 +106,10 @@ export default {
     const res = await env.ASSETS.fetch(request);
     const out = new Response(res.body, res);
     out.headers.set('Cache-Control', 'private, no-cache');
+    // the launcher only shows admin-only tools to the admin
+    if (!user.is_admin && (out.headers.get('Content-Type') || '').includes('text/html')) {
+      return new HTMLRewriter().on('[data-admin-only]', { element(e) { e.remove(); } }).transform(out);
+    }
     return out;
   }
 };
@@ -117,6 +136,20 @@ async function handleAuth(request, env, url, user) {
   const ip = request.headers.get('CF-Connecting-IP') || 'local';
   const email = normEmail(body.email);
   const password = String(body.password || '');
+
+  if (path === '/auth/change-password') {
+    if (!user || user.status !== 'approved') return json({ error: 'Sign in required' }, 401);
+    if (!(await allow(env, 'pw-change:' + user.id, 10, 15))) return json({ error: 'Too many attempts. Wait 15 minutes and try again.' }, 429);
+    if (!(await checkPassword(String(body.current || ''), user.pw_salt, user.pw_hash))) return json({ error: 'Your current password is not right.' }, 400);
+    if (password.length < MIN_PASSWORD) return json({ error: 'Use a new password of at least ' + MIN_PASSWORD + ' characters.' }, 400);
+    const { hash, salt } = await hashPassword(password);
+    const keep = await sha256(getCookie(request, SESSION_COOKIE));
+    await env.DB.batch([
+      env.DB.prepare('UPDATE users SET pw_hash = ?, pw_salt = ? WHERE id = ?').bind(hash, salt, user.id),
+      env.DB.prepare('DELETE FROM sessions WHERE user_id = ? AND token_hash != ?').bind(user.id, keep),   // sign out other devices
+    ]);
+    return json({ ok: true });
+  }
 
   if (path === '/auth/login') {
     if (!(await allow(env, 'login-ip:' + ip, 20, 15)) || !(await allow(env, 'login-email:' + email, 10, 15))) {

@@ -203,6 +203,7 @@
     <h1>Toolbox</h1>
     <div class="account" id="account" hidden>
       <span class="who" id="accountName"></span>
+      <a class="pill" href="/account">Account</a>
       <a class="pill" id="adminLink" href="/admin" hidden>Access</a>
       <button class="pill" id="signOut" type="button">Sign out</button>
     </div>
@@ -266,7 +267,8 @@
       </div>
     </a>
 
-    <a class="card" href="general-briefing/">
+    <!-- data-admin-only: the Toolbox server removes this card for everyone but the admin -->
+    <a class="card" href="general-briefing/" data-admin-only>
       <div class="card-image card-locked" aria-label="General Briefing is in testing">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
         <span>Testing</span>

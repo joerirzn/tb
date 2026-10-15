@@ -335,3 +335,91 @@ ${BASE_CSS}
 </body>
 </html>`;
 }
+
+export function accountPage({ me }) {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+${HEAD}
+<title>Toolbox · Account</title>
+<style>
+${BASE_CSS}
+  .wrap{ max-width: 520px; margin: 0 auto; padding: 40px 40px 80px; }
+  @media (max-width: 600px){ .wrap{ padding: 24px 16px 60px; } }
+  header{ display: flex; align-items: center; gap: 16px; margin-bottom: 32px; }
+  .back{ display: inline-flex; align-items: center; gap: 6px; color: var(--text); border: 1px solid var(--border-hover); border-radius: 9999px; padding: 8px 15px; font-size: 14px; }
+  .back svg{ width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; }
+  h1{ font-size: 26px; font-weight: 600; letter-spacing: -0.02em; margin: 0; }
+  section{ margin-bottom: 20px; }
+  h2{ font-size: 17px; font-weight: 600; margin: 0 0 4px; }
+  .sub{ font-size: 14px; color: var(--text-muted); margin: 0 0 16px; line-height: 1.5; word-break: break-all; }
+  form{ display: flex; flex-direction: column; gap: 12px; }
+  label{ font-size: 13px; color: var(--text-muted); margin: 4px 0 -4px 20px; }
+  .hint{ font-size: 12px; color: var(--text-faint); margin: -4px 0 0 20px; }
+  .btn{ margin-top: 8px; }
+  .msg{ font-size: 14px; line-height: 1.5; margin: 4px 0 0; min-height: 1.5em; }
+  .msg.err{ color: var(--error); }
+  .msg.ok{ color: var(--success); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="back" href="/"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M15 19l-7-7 7-7"/></svg>Toolbox</a>
+    <h1>Account</h1>
+  </header>
+
+  <section class="card">
+    <h2>Signed in as</h2>
+    <p class="sub" id="me"></p>
+    <button class="btn-utility" type="button" id="signOut">Sign out</button>
+  </section>
+
+  <section class="card">
+    <h2>Change password</h2>
+    <p class="sub">You stay signed in here; other devices are signed out.</p>
+    <form id="pwForm" novalidate>
+      <input type="email" autocomplete="username" id="user" hidden>
+      <label for="cur">Current password</label>
+      <input id="cur" type="password" autocomplete="current-password" required>
+      <label for="pw1">New password</label>
+      <input id="pw1" type="password" autocomplete="new-password" minlength="10" required>
+      <p class="hint">At least 10 characters.</p>
+      <label for="pw2">New password again</label>
+      <input id="pw2" type="password" autocomplete="new-password" minlength="10" required>
+      <button class="btn" type="submit">Change password</button>
+      <p class="msg" id="msg" role="alert"></p>
+    </form>
+  </section>
+</div>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var me = ${jsStr(me)};
+  $('me').textContent = me; $('user').value = me;
+  $('signOut').addEventListener('click', async function () {
+    try { await fetch('/auth/logout', { method: 'POST' }); } catch (e) {}
+    location.href = '/login';
+  });
+  $('pwForm').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    var msg = $('msg'), btn = this.querySelector('.btn');
+    msg.className = 'msg'; msg.textContent = '';
+    var cur = $('cur').value, pw1 = $('pw1').value, pw2 = $('pw2').value;
+    if (!cur || !pw1) { msg.className = 'msg err'; msg.textContent = 'Fill in your current and new password.'; return; }
+    if (pw1.length < 10) { msg.className = 'msg err'; msg.textContent = 'Use a new password of at least 10 characters.'; return; }
+    if (pw1 !== pw2) { msg.className = 'msg err'; msg.textContent = 'The two new passwords are not the same.'; return; }
+    btn.disabled = true;
+    try {
+      var r = await fetch('/auth/change-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ current: cur, password: pw1 }) });
+      var j = {}; try { j = await r.json(); } catch (err) {}
+      if (r.ok) { msg.className = 'msg ok'; msg.textContent = 'Password changed.'; this.reset(); }
+      else { msg.className = 'msg err'; msg.textContent = j.error || 'Changing the password failed. Try again.'; }
+    } catch (err) { msg.className = 'msg err'; msg.textContent = 'No connection. Try again.'; }
+    btn.disabled = false;
+  });
+})();
+</script>
+</body>
+</html>`;
+}
