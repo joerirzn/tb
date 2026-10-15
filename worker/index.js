@@ -6,7 +6,7 @@
 // ADMIN_EMAIL secret (set in the Cloudflare dashboard, never in this repo).
 
 import { loginPage, adminPage, accountPage } from './pages.js';
-import { IDEAS_SCHEMA, handleIdeas, handleNotifications } from './ideas.js';
+import { IDEAS_SCHEMA, handleIdeas, handleNotifications, listAnnouncements, deleteAnnouncement, syncTools } from './ideas.js';
 
 const SESSION_COOKIE = '__Host-tb_session';
 const SESSION_DAYS = 30;
@@ -116,8 +116,11 @@ export default {
       return handleAdmin(request, env, url, user);
     }
 
-    // a tool or the launcher was opened: remember who used what
-    if (isNavigation(request)) ctx.waitUntil(logActivity(env, user, path));
+    // a tool or the launcher was opened: remember who used what, and announce tools that are new on the launcher
+    if (isNavigation(request)) {
+      ctx.waitUntil(logActivity(env, user, path));
+      ctx.waitUntil(syncTools(env, url.origin).catch(e => console.error('syncTools', e)));
+    }
 
     const res = await env.ASSETS.fetch(request);
     const out = new Response(res.body, res);
@@ -253,9 +256,17 @@ async function handleAdmin(request, env, url, me) {
     return json({ users: users.results, activity: activity.results });
   }
 
+  if (action === 'announcements' && request.method === 'GET') return json({ announcements: await listAnnouncements(env) });
+
   if (request.method !== 'POST') return new Response('Method not allowed', { status: 405 });
   if (!sameOrigin(request, url)) return json({ error: 'Bad request.' }, 403);
   const body = await readJson(request);
+
+  if (action === 'announcements/delete') {
+    await deleteAnnouncement(env, Number(body.id) || 0);
+    return json({ ok: true });
+  }
+
   const id = Number(body.id);
   const target = id ? await env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(id).first() : null;
   if (!target) return json({ error: 'Person not found.' }, 404);

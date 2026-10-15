@@ -36,7 +36,82 @@ export const IDEAS_SCHEMA = [
      read_at INTEGER
    )`,
   `CREATE INDEX IF NOT EXISTS notifications_user ON notifications (user_id, created_at)`,
+  `CREATE TABLE IF NOT EXISTS known_tools (
+     path TEXT PRIMARY KEY,
+     seen_at INTEGER NOT NULL
+   )`,
+  `CREATE TABLE IF NOT EXISTS announcements (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     kind TEXT NOT NULL,                          -- tool | update
+     title TEXT NOT NULL,
+     body TEXT NOT NULL DEFAULT '',
+     link TEXT NOT NULL DEFAULT '/',
+     created_at INTEGER NOT NULL
+   )`,
 ];
+
+// ---------- announcements: everyone hears about a new tool on the Toolbox home ----------
+// stored as a notification of type 'announce' whose idea_id holds the announcement id
+
+// the tools everyone can open, read from the launcher cards (admin-only and "coming soon" cards are left out)
+function launcherTools(html) {
+  const text = s => s.replace(/<span class="card-badge">[\s\S]*?<\/span>/g, '').replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;|&rsquo;/g, "'").replace(/\s+/g, ' ').trim();
+  const tools = [];
+  for (const m of html.matchAll(/<a class="card[^"]*" href="([^"]+)"([^>]*)>([\s\S]*?)<\/a>/g)) {
+    if (/data-admin-only/.test(m[2])) continue;
+    const title = m[3].match(/<p class="card-title">([\s\S]*?)<\/p>/), desc = m[3].match(/<p class="card-desc">([\s\S]*?)<\/p>/);
+    if (!title) continue;
+    tools.push({ path: '/' + m[1].replace(/^\.?\//, ''), title: text(title[1]), desc: desc ? text(desc[1]) : '' });
+  }
+  return tools;
+}
+
+// once in a while: a launcher card nobody has been told about yet is announced to everyone.
+// The very first run only remembers the tools that are already there.
+let lastToolCheck = 0;
+export async function syncTools(env, origin) {
+  if (Date.now() - lastToolCheck < 5 * 60000) return;
+  lastToolCheck = Date.now();
+  const res = await env.ASSETS.fetch(new Request(origin + '/index.html'));
+  if (!res.ok) return;
+  const tools = launcherTools(await res.text());
+  if (!tools.length) return;
+  const known = await env.DB.prepare('SELECT COUNT(*) AS n FROM known_tools').first();
+  const firstRun = known.n === 0, now = Date.now();
+  for (const t of tools) {
+    const r = await env.DB.prepare('INSERT OR IGNORE INTO known_tools (path, seen_at) VALUES (?, ?)').bind(t.path, now).run();
+    if (r.meta.changes === 1 && !firstRun) await announce(env, { id: 0 }, { kind: 'tool', title: t.title, body: t.desc, link: t.path });
+  }
+}
+
+export async function listAnnouncements(env) {
+  const rows = await env.DB.prepare(
+    `SELECT a.*, (SELECT COUNT(*) FROM notifications n WHERE n.type = 'announce' AND n.idea_id = a.id) AS sent,
+            (SELECT COUNT(*) FROM notifications n WHERE n.type = 'announce' AND n.idea_id = a.id AND n.read_at IS NOT NULL) AS opened
+     FROM announcements a ORDER BY a.created_at DESC LIMIT 20`).all();
+  return rows.results;
+}
+
+export async function announce(env, me, body) {
+  const kind = body.kind === 'update' ? 'update' : 'tool';
+  const title = clean(body.title, 80).replace(/\n/g, ' '), text = clean(body.body, 200).replace(/\n/g, ' ');
+  let link = String(body.link || '/').trim();
+  if (!link.startsWith('/') || link.startsWith('//')) link = '/';
+  if (!title) return { error: 'Give the announcement a title, e.g. the name of the tool.' };
+  const now = Date.now();
+  const res = await env.DB.prepare('INSERT INTO announcements (kind, title, body, link, created_at) VALUES (?, ?, ?, ?, ?)').bind(kind, title, text, link.slice(0, 200), now).run();
+  const people = await env.DB.prepare("SELECT id FROM users WHERE status = 'approved'").all();
+  await notify(env, people.results.map(p => p.id), me.id, 'announce', res.meta.last_row_id);
+  return { ok: true, sent: people.results.filter(p => p.id !== me.id).length };
+}
+
+export async function deleteAnnouncement(env, id) {
+  await env.DB.batch([
+    env.DB.prepare("DELETE FROM notifications WHERE type = 'announce' AND idea_id = ?").bind(id),
+    env.DB.prepare('DELETE FROM announcements WHERE id = ?').bind(id),
+  ]);
+}
 
 // ---------- notifications ----------
 
@@ -51,8 +126,13 @@ async function notify(env, recipients, actorId, type, ideaId, detail = '') {
 export async function handleNotifications(request, env, url, user) {
   if (request.method === 'GET') {
     const rows = await env.DB.prepare(
-      `SELECT n.id, n.type, n.idea_id, n.detail, n.created_at, n.read_at, a.name AS actor, i.title AS idea_title
-       FROM notifications n LEFT JOIN users a ON a.id = n.actor_id LEFT JOIN ideas i ON i.id = n.idea_id
+      `SELECT n.id, n.type, n.idea_id, n.detail, n.created_at, n.read_at, a.name AS actor,
+              CASE WHEN n.type = 'announce' THEN NULL ELSE i.title END AS idea_title,
+              an.kind AS ann_kind, an.title AS ann_title, an.body AS ann_body, an.link AS ann_link
+       FROM notifications n
+         LEFT JOIN users a ON a.id = n.actor_id
+         LEFT JOIN ideas i ON i.id = n.idea_id AND n.type != 'announce'
+         LEFT JOIN announcements an ON an.id = n.idea_id AND n.type = 'announce'
        WHERE n.user_id = ? ORDER BY n.created_at DESC LIMIT 30`).bind(user.id).all();
     const unread = await env.DB.prepare('SELECT COUNT(*) AS n FROM notifications WHERE user_id = ? AND read_at IS NULL').bind(user.id).first();
     return json({ unread: unread.n, items: rows.results.map(r => ({ ...r, read: !!r.read_at })) });

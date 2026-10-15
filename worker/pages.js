@@ -224,6 +224,8 @@ ${BASE_CSS}
   .act .p{ color: var(--text-muted); }
   @media (max-width: 600px){ .act{ grid-template-columns: 1fr; gap: 2px; } }
   .status{ font-size: 13px; color: var(--text-faint); min-height: 1.4em; margin: 0 0 16px; }
+  .ann-item{ display: flex; align-items: center; gap: 16px; padding: 12px 0; border-top: 1px solid var(--border); flex-wrap: wrap; }
+  .ann-item .who{ min-width: 220px; }
   .status.err{ color: var(--error); }
 </style>
 </head>
@@ -239,6 +241,11 @@ ${BASE_CSS}
   <p class="status" id="status" role="status"></p>
 
   <section class="card"><div class="card-head"><h2>Requests</h2><span class="count" id="c-pending"></span></div><div id="pending"></div></section>
+  <section class="card">
+    <div class="card-head"><h2>New tool announcements</h2><span class="count">sent automatically</span></div>
+    <p class="note" style="margin:4px 0 12px">When a new tool appears on the Toolbox home, everyone with access gets a notification. Admin-only tools are announced once they are opened up to everyone.</p>
+    <div id="announcements"></div>
+  </section>
   <section class="card"><div class="card-head"><h2>People with access</h2><span class="count" id="c-approved"></span></div><div id="approved"></div></section>
   <section class="card"><div class="card-head"><h2>Declined or removed</h2><span class="count" id="c-denied"></span></div><div id="denied"></div></section>
   <section class="card"><div class="card-head"><h2>Recent activity</h2><span class="count">last 100 opened pages</span></div><div id="activity"></div></section>
@@ -339,7 +346,26 @@ ${BASE_CSS}
       act.appendChild(row);
     });
   }
+  // ---- announcements ----
+  async function loadAnnouncements() {
+    var r = await fetch('/admin/api/announcements'); if (!r.ok) return;
+    var list = (await r.json()).announcements, box = $('announcements'); box.innerHTML = '';
+    list.forEach(function (a) {
+      var row = el('div', 'ann-item'), who = el('div', 'who');
+      who.appendChild(el('div', 'name', 'New tool: ' + a.title));
+      if (a.body) who.appendChild(el('div', 'note', a.body));
+      who.appendChild(el('div', 'meta', when(a.created_at) + ' · opens ' + (TOOLS[a.link] || a.link) + ' · sent to ' + a.sent + ', opened by ' + a.opened));
+      var del = button('Delete', 'btn-utility danger', async function () {
+        if (!confirm('Delete this announcement? It also disappears from the notifications of everyone.')) return;
+        var x = await fetch('/admin/api/announcements/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: a.id }) });
+        if (x.ok) { status('Announcement deleted.'); loadAnnouncements(); } else status('Deleting failed. Reload and try again.', true);
+      });
+      row.appendChild(who); row.appendChild(el('div', 'actions')).appendChild(del);
+      box.appendChild(row);
+    });
+  }
   load();
+  loadAnnouncements();
 })();
 </script>
 </body>

@@ -61,6 +61,7 @@
     else if (n.type === 'reply') what.append(actor, t(' also commented on '), title);
     else if (n.type === 'status') what.append(t('Your idea '), title, t(' is now '), el('b', null, STATUS[n.detail] || n.detail));
     else if (n.type === 'idea') what.append(actor, t(' shared a new idea '), title);
+    else if (n.type === 'announce') what.append(t('New tool: '), el('b', null, n.ann_title || 'a tool'));
     return what;
   }
 
@@ -76,15 +77,17 @@
     }
     panel.appendChild(head);
     const list = el('div', 'nt-list');
-    if (!items.length) list.appendChild(el('div', 'nt-empty', 'Nothing yet. You hear here when people vote on or reply to your ideas.'));
+    if (!items.length) list.appendChild(el('div', 'nt-empty', 'Nothing yet. You hear here about new tools, and when people vote on or reply to your ideas.'));
     items.forEach(n => {
       const it = el('button', 'nt-item' + (n.read ? '' : ' unread')); it.type = 'button';
       it.appendChild(line(n));
       if ((n.type === 'comment' || n.type === 'reply') && n.detail) it.appendChild(el('div', 'nt-snip', n.detail));
+      if (n.type === 'announce' && n.ann_body) it.appendChild(el('div', 'nt-snip', n.ann_body));
       it.appendChild(el('div', 'nt-time', ago(n.created_at)));
       it.addEventListener('click', async () => {
         if (!n.read) { await post({ id: n.id }); n.read = true; unread = Math.max(0, unread - 1); }
         close();
+        if (n.type === 'announce') { location.href = n.ann_link || '/'; return; }
         const target = '/ideas/#idea-' + n.idea_id;
         if (location.pathname === '/ideas/' || location.pathname === '/ideas') { location.hash = 'idea-' + n.idea_id; paint(); }
         else location.href = target;
