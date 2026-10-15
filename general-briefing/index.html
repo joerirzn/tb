@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>General Briefing</title>
-<meta name="tool-version" content="2026-10-15.1">
+<meta name="tool-version" content="2026-10-15.2">
 <link rel="icon" type="image/png" href="../favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -334,15 +334,6 @@
     .stage { position: static; order: -1; }
   }
 
-  /* PIN screen while the tool is in testing */
-  body.locked > *:not(.gate) { display: none !important; }
-  .gate { display: none; }
-  body.locked .gate { display: grid; place-items: center; min-height: calc(100vh - 72px); }
-  .gate .card { width: 100%; max-width: 380px; }
-  /* a text field shown as dots (not type=password), so the browser does not offer to save a password */
-  .gate input { text-align: center; letter-spacing: 0.3em; font-size: 20px; -webkit-text-security: disc; text-security: disc; }
-  .gate input::placeholder { -webkit-text-security: none; }
-
   /* ?canvas=N: one page of the artwork only, for checks */
   body.canvas-only { padding: 0; }
   body.canvas-only > *:not(.main) { display: none; }
@@ -351,17 +342,7 @@
   body.canvas-only .canvas-wrap { border: none; border-radius: 0; }
 </style>
 </head>
-<body class="locked">
-
-<div class="gate">
-  <form class="card" id="gateForm" autocomplete="off">
-    <p class="card-label">General Briefing is in testing</p>
-    <p class="note">Enter the PIN to open the tool.</p>
-    <input type="text" id="gatePin" inputmode="numeric" placeholder="PIN" aria-label="PIN" autocomplete="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-1p-ignore>
-    <button class="btn-primary" type="submit">Open</button>
-    <p class="err" id="gateErr"></p>
-  </form>
-</div>
+<body>
 
 <div class="update" id="update" hidden>
   <span>A newer version of this tool is online.</span>
@@ -427,29 +408,6 @@
 
 <footer class="foot">Internal use only — do not share this link outside the company.</footer>
 
-<script>
-// PIN screen while testing, asked every time the page is opened (nothing is remembered).
-// Only a SHA-256 hash of the PIN is in the page; a soft gate, not real security (the site is public).
-(function () {
-  const PIN_HASH = 'a8cd0dfebcb193175d115a8a0536db15787150976f7aefcff30dd2528aba6278';
-  try { localStorage.removeItem('generalBriefing.unlocked'); } catch (e) { }   // remembered by an earlier version
-  const body = document.body, pin = document.getElementById('gatePin'), err = document.getElementById('gateErr');
-  function lock() { body.classList.add('locked'); pin.value = ''; err.textContent = ''; pin.focus(); }
-  if (new URLSearchParams(location.search).has('canvas')) body.classList.remove('locked');
-  async function sha(s) {
-    const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('general-briefing:' + s));
-    return Array.from(new Uint8Array(b)).map(x => x.toString(16).padStart(2, '0')).join('');
-  }
-  document.getElementById('gateForm').addEventListener('submit', async e => {
-    e.preventDefault();
-    if (await sha(pin.value.trim()) === PIN_HASH) { body.classList.remove('locked'); pin.value = ''; }
-    else { err.textContent = 'Wrong PIN.'; pin.select(); }
-  });
-  // back/forward cache: a page restored from history locks again
-  window.addEventListener('pageshow', e => { if (e.persisted && !new URLSearchParams(location.search).has('canvas')) lock(); });
-  if (body.classList.contains('locked')) pin.focus();
-})();
-</script>
 <script>
 (function () {
   // ---------- artwork spec (matches the General Briefing PSDs, 1920x1080 per page) ----------

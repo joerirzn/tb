@@ -106,9 +106,9 @@ export default {
     const res = await env.ASSETS.fetch(request);
     const out = new Response(res.body, res);
     out.headers.set('Cache-Control', 'private, no-cache');
-    // the launcher only shows admin-only tools to the admin
-    if (!user.is_admin && (out.headers.get('Content-Type') || '').includes('text/html')) {
-      return new HTMLRewriter().on('[data-admin-only]', { element(e) { e.remove(); } }).transform(out);
+    // the launcher shows an admin-only tool as a link to the admin and as "coming soon" to everyone else
+    if ((out.headers.get('Content-Type') || '').includes('text/html')) {
+      return new HTMLRewriter().on(user.is_admin ? '[data-not-admin]' : '[data-admin-only]', { element(e) { e.remove(); } }).transform(out);
     }
     return out;
   }

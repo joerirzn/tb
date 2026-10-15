@@ -103,6 +103,11 @@
   /* tool in testing: no preview image, just a lock */
   .card-locked{ display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: var(--muted, #86868b); font-size: 14px; }
   .card-locked svg{ width: 40px; height: 40px; stroke: currentColor; }
+  /* tool in the making, shown to everyone without access: not clickable */
+  .card.soon{ cursor: default; }
+  .card.soon:hover{ border-color: var(--border); transform: none; }
+  .card.soon:active{ transform: none; }
+  .card.soon .card-title, .card.soon .card-desc{ color: var(--text-faint); }
 
   .card-content{
     padding: 16px 20px 20px;
@@ -267,7 +272,7 @@
       </div>
     </a>
 
-    <!-- data-admin-only: the Toolbox server removes this card for everyone but the admin -->
+    <!-- the Toolbox server keeps one of these two cards: data-admin-only for the admin, data-not-admin for everyone else -->
     <a class="card" href="general-briefing/" data-admin-only>
       <div class="card-image card-locked" aria-label="General Briefing is in testing">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
@@ -281,6 +286,19 @@
         <p class="card-desc">Builds the Spinnin' Records genre and trend briefing: label logos and genre pages with tracks pulled from Spotify links. Exports as a multi-page vector PDF.</p>
       </div>
     </a>
+
+    <div class="card soon" data-not-admin aria-disabled="true">
+      <div class="card-image card-locked" aria-label="General Briefing is coming soon">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+        <span>In the making</span>
+      </div>
+      <div class="card-content">
+        <div class="card-top">
+          <p class="card-title">General Briefing<span class="card-badge">Coming soon</span></p>
+        </div>
+        <p class="card-desc">Builds the Spinnin' Records genre and trend briefing: label logos and genre pages with tracks pulled from Spotify links. Exports as a multi-page vector PDF.</p>
+      </div>
+    </div>
 
   </div>
 
