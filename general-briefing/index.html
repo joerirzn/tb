@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>General Briefing</title>
-<meta name="tool-version" content="2026-10-14.9">
+<meta name="tool-version" content="2026-10-15.1">
 <link rel="icon" type="image/png" href="../favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -483,12 +483,17 @@
   // logos come from labels.js (built from ~/Documents/Claude/General Briefing/logos/)
   const LABELS = window.BRIEF_LABELS || { inhouse: [], artist: [] };
   const labelItems = list => list.map(l => ({ name: l.name, logo: l.logo || null, lw: l.w || 0, lh: l.h || 0 }));
+  // the logos can be changed per briefing; a new briefing starts with the standard ones from labels.js
+  const LABEL_PAGES = ['inhouse', 'artist'];
+  const standardLabels = id => labelItems(LABELS[id] || []);
+  const isStandard = (id, items) => JSON.stringify(items) === JSON.stringify(standardLabels(id));
   const EASY_TEXT = 'We would greatly appreciate it if you could send over a list with easy to clear copyrights from your catalogue. Our artists are always looking for samples to work on and incorporate in their releases.\n\nSo please send over any easy to clear catalogue you have.\n\nThank you!';
-  function fixedPages(genres) {
+  function fixedPages(genres, labels) {
+    labels = labels || {};
     return [
       { id: 'cover', type: 'cover', intro: 'GENRES, TRENDS & LABELS' },
-      { id: 'inhouse', type: 'labels', title: 'In-house labels', items: labelItems(LABELS.inhouse) },
-      { id: 'artist', type: 'labels', title: 'Artist labels', items: labelItems(LABELS.artist) },
+      { id: 'inhouse', type: 'labels', title: 'In-house labels', items: labels.inhouse || standardLabels('inhouse') },
+      { id: 'artist', type: 'labels', title: 'Artist labels', items: labels.artist || standardLabels('artist') },
       ...genres,
       { id: 'easy', type: 'text', title: 'Easy to clear lists', text: EASY_TEXT },
       { id: 'end', type: 'end' }
@@ -819,7 +824,7 @@
   }
 
   // ---------- page list ----------
-  const KIND = { cover: 'Fixed', labels: 'Fixed', genre: 'Genre', text: 'Fixed', end: 'Fixed' };
+  const KIND = { cover: 'Fixed', labels: 'Logos', genre: 'Genre', text: 'Fixed', end: 'Fixed' };
   function pageName(p) {
     if (p.type === 'cover') return 'Cover';
     if (p.type === 'end') return 'The end';
@@ -906,6 +911,7 @@
   function renderForm() {
     const f = $('form'), p = B.pages[cur]; f.innerHTML = '';
     if (p.type === 'genre') renderGenreForm(f, p);
+    else if (p.type === 'labels') renderLabelsForm(f, p);
     else if (p.type === 'cover') {
       // the only settings outside the genre pages: date (all pages) and the colour of "Song briefing" (cover + end)
       f.appendChild(el('p', { class: 'card-label', text: 'Cover' }));
@@ -915,7 +921,7 @@
         el('p', { class: 'note', text: 'Also used on the end page.' })]));
     } else {
       f.appendChild(el('p', { class: 'card-label', text: pageName(p) }));
-      f.appendChild(el('p', { class: 'note', text: 'This page is fixed and cannot be edited here. Only the genre pages can be changed.' + (p.type === 'end' ? ' The date and the colour of “Song briefing” are set on the cover.' : '') }));
+      f.appendChild(el('p', { class: 'note', text: 'This page is fixed and cannot be edited here. Only the genre and logo pages can be changed.' + (p.type === 'end' ? ' The date and the colour of “Song briefing” are set on the cover.' : '') }));
     }
     updateFitNotes();
   }
@@ -946,6 +952,99 @@
     return box;
   }
 
+
+  // logos: upload (several at once), name, order, remove, back to the standard logos; every logo becomes white
+  function renderLabelsForm(f, p) {
+    f.appendChild(el('p', { class: 'card-label', text: p.title + ' (' + p.items.length + ')' }));
+    const drop = el('div', { class: 'drop', tabIndex: 0, role: 'button' }, [document.createTextNode('Drop logos or click to add'),
+      el('small', { text: 'PNG or SVG with a transparent background works best. Every logo is made white.' })]);
+    const file = el('input', { type: 'file', accept: 'image/png,image/svg+xml,image/jpeg,image/webp,.svg', multiple: true, hidden: true });
+    drop.addEventListener('click', () => file.click());
+    drop.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); file.click(); } });
+    ['dragenter', 'dragover'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add('drag'); }));
+    ['dragleave', 'drop'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove('drag'); }));
+    const addFiles = async files => {
+      for (const fl of Array.from(files)) {
+        if (!fl.type.startsWith('image/') && !/\.svg$/i.test(fl.name)) continue;
+        try { const w = await whiteLogo(fl); p.items.push({ name: fl.name.replace(/\.[^.]+$/, '').replace(/^\d+\s*/, '').replace(/[-_]+/g, ' ').trim(), logo: w.data, lw: w.w, lh: w.h }); }
+        catch (e) { status('Could not read ' + fl.name + '.'); }
+      }
+      renderForm(); schedule();
+    };
+    drop.addEventListener('drop', e => addFiles(e.dataTransfer.files));
+    file.addEventListener('change', () => { addFiles(file.files); file.value = ''; });
+    f.appendChild(drop); f.appendChild(file);
+
+    p.items.forEach((it, i) => {
+      const thumb = el('div', { class: 'logo-thumb' });
+      if (it.logo) thumb.style.backgroundImage = 'url("' + it.logo + '")'; else thumb.textContent = 'no logo';
+      const name = el('input', { type: 'text', value: it.name || '', placeholder: 'Label name', autocomplete: 'off', 'aria-label': 'Label name' });
+      name.addEventListener('input', () => { it.name = name.value; schedule(); });
+      const repl = el('input', { type: 'file', accept: 'image/png,image/svg+xml,image/jpeg,image/webp,.svg', hidden: true });
+      repl.addEventListener('change', async () => {
+        const fl = repl.files[0]; repl.value = ''; if (!fl) return;
+        try { const w = await whiteLogo(fl); it.logo = w.data; it.lw = w.w; it.lh = w.h; renderForm(); schedule(); } catch (e) { status('Could not read ' + fl.name + '.'); }
+      });
+      const setBtn = el('button', { type: 'button', className: 'btn-utility small', text: it.logo ? 'Replace logo' : 'Add logo' });
+      setBtn.addEventListener('click', () => repl.click());
+      const head = el('div', { class: 'sub-head' }, [el('span', { class: 't', text: String(i + 1).padStart(2, '0') }),
+        iconBtn('up', 'Move up', () => { p.items.splice(i - 1, 0, p.items.splice(i, 1)[0]); renderForm(); schedule(); }, i === 0),
+        iconBtn('down', 'Move down', () => { p.items.splice(i + 1, 0, p.items.splice(i, 1)[0]); renderForm(); schedule(); }, i === p.items.length - 1),
+        iconBtn('del', 'Remove ' + (it.name || 'label'), () => { p.items.splice(i, 1); renderForm(); schedule(); })]);
+      f.appendChild(el('div', { class: 'sub' }, [head, el('div', { class: 'row' }, [thumb, el('div', { style: 'flex:1;min-width:0' }, [name])]), el('div', { class: 'row' }, [setBtn]), repl]));
+    });
+
+    const add = el('button', { type: 'button', className: 'btn-utility', text: 'Add label' });
+    add.addEventListener('click', () => {
+      p.items.push({ name: '', logo: null, lw: 0, lh: 0 }); renderForm(); schedule();
+      const names = document.querySelectorAll('#form .sub input[type="text"]'); if (names.length) names[names.length - 1].focus();
+    });
+    const reset = el('button', { type: 'button', className: 'btn-utility', text: 'Back to the standard logos' });
+    reset.addEventListener('click', () => {
+      if (isStandard(p.id, p.items)) { status('These are already the standard logos.'); return; }
+      if (!confirm('Replace the logos on "' + p.title + '" with the standard ones?')) return;
+      p.items = standardLabels(p.id); renderForm(); schedule();
+    });
+    f.appendChild(el('div', { class: 'row' }, [add, reset]));
+    f.appendChild(el('p', { class: 'note', text: 'Changes are saved with this briefing; a new briefing starts with the standard logos. Without a logo the label name is shown. 1–5 labels fill one row, up to 10 two rows, more three rows.' }));
+  }
+
+  // any logo -> white silhouette on transparent, trimmed. A solid background (all corners opaque) is keyed out first.
+  function whiteLogo(file) {
+    return new Promise((res, rej) => {
+      const url = URL.createObjectURL(file), i = new Image();
+      i.onload = () => {
+        try {
+          const MAX = 1000;
+          let w = i.naturalWidth || MAX, h = i.naturalHeight || MAX / 2;
+          const k = /svg/.test(file.type) || /\.svg$/i.test(file.name) ? MAX / Math.max(w, h) : Math.min(1, MAX / Math.max(w, h));
+          w = Math.round(w * k); h = Math.round(h * k);
+          const c = document.createElement('canvas'); c.width = w; c.height = h;
+          const x = c.getContext('2d'); x.imageSmoothingQuality = 'high'; x.drawImage(i, 0, 0, w, h);
+          const d = x.getImageData(0, 0, w, h), px = d.data;
+          const at = (xx, yy) => (yy * w + xx) * 4;
+          const corners = [at(0, 0), at(w - 1, 0), at(0, h - 1), at(w - 1, h - 1)];
+          const solid = corners.every(o => px[o + 3] > 250);
+          const bg = corners[0], br = px[bg], bgG = px[bg + 1], bb = px[bg + 2];
+          let minX = w, minY = h, maxX = -1, maxY = -1;
+          for (let yy = 0; yy < h; yy++) for (let xx = 0; xx < w; xx++) {
+            const o = at(xx, yy);
+            let a = px[o + 3];
+            if (solid) { const dist = Math.abs(px[o] - br) + Math.abs(px[o + 1] - bgG) + Math.abs(px[o + 2] - bb); a = Math.min(a, Math.max(0, Math.min(255, (dist - 30) * 3))); }
+            px[o] = px[o + 1] = px[o + 2] = 255; px[o + 3] = a;
+            if (a > 20) { if (xx < minX) minX = xx; if (xx > maxX) maxX = xx; if (yy < minY) minY = yy; if (yy > maxY) maxY = yy; }
+          }
+          if (maxX < 0) throw new Error('empty');
+          x.putImageData(d, 0, 0);
+          const tw = maxX - minX + 1, th = maxY - minY + 1, o = document.createElement('canvas'); o.width = tw; o.height = th;
+          o.getContext('2d').drawImage(c, minX, minY, tw, th, 0, 0, tw, th);
+          res({ data: o.toDataURL('image/png'), w: tw, h: th });
+        } catch (e) { rej(e); } finally { URL.revokeObjectURL(url); }
+      };
+      i.onerror = e => { URL.revokeObjectURL(url); rej(e); };
+      i.src = url;
+    });
+  }
 
   // genre: title, description, playlist, tracks (Spotify link fills title + artwork, artist suggestions)
   function renderGenreForm(f, p) {
@@ -1200,8 +1299,14 @@
   };
   // colours: 2 = red first. Briefings saved before that (pink first) get the red-first order when opened.
   const COLORS = 2;
-  const snapshot = () => JSON.parse(JSON.stringify({ app: 'general-briefing', version: 2, colors: COLORS, date: B.date, coverColor: B.coverColor, genres: B.pages.filter(p => p.type === 'genre') }));
-  // accepts version 2 (date + genres) and version 1 (all pages): only the genre pages are taken over
+  // logo pages are only stored when they differ from the standard ones, so updates to labels.js still reach the other briefings
+  function changedLabels() {
+    const out = {};
+    B.pages.forEach(p => { if (p.type === 'labels' && LABEL_PAGES.includes(p.id) && !isStandard(p.id, p.items)) out[p.id] = p.items; });
+    return Object.keys(out).length ? out : undefined;
+  }
+  const snapshot = () => JSON.parse(JSON.stringify({ app: 'general-briefing', version: 2, colors: COLORS, date: B.date, coverColor: B.coverColor, genres: B.pages.filter(p => p.type === 'genre'), labels: changedLabels() }));
+  // accepts version 2 (date + genres + changed logo pages) and version 1 (all pages): only the genre and logo pages are taken over
   function restore(d) {
     if (!d || d.app !== 'general-briefing') throw new Error('not a briefing');
     const genres = (Array.isArray(d.genres) ? d.genres : (d.pages || []).filter(p => p.type === 'genre')).map((g, i) => ({
@@ -1209,7 +1314,12 @@
       color: d.colors === COLORS && validHex(g.color) ? g.color.toLowerCase() : ACC[i % ACC.length],
       tracks: (Array.isArray(g.tracks) ? g.tracks : []).map(x => ({ link: x.link || '', artist: x.artist || '', title: x.title || '', art: x.art || null }))
     }));
-    B = { app: 'general-briefing', version: 2, date: d.date || defaultDate(), coverColor: d.colors === COLORS && validHex(d.coverColor) ? d.coverColor.toLowerCase() : ACC[0], pages: fixedPages(genres) }; cur = 0;
+    const labels = {};
+    LABEL_PAGES.forEach(id => {
+      const list = d.labels && d.labels[id];
+      if (Array.isArray(list)) labels[id] = list.map(x => ({ name: x.name || '', logo: x.logo || null, lw: x.lw || 0, lh: x.lh || 0 }));
+    });
+    B = { app: 'general-briefing', version: 2, date: d.date || defaultDate(), coverColor: d.colors === COLORS && validHex(d.coverColor) ? d.coverColor.toLowerCase() : ACC[0], pages: fixedPages(genres, labels) }; cur = 0;
     renderPages(); renderForm(); schedule();
   }
   const idOf = name => name.trim().toLowerCase().replace(/\s+/g, ' ') || 'untitled';
