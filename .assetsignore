@@ -1,0 +1,9 @@
+# files in the repo that should not be served
+.git
+.gitignore
+.assetsignore
+.wrangler
+node_modules
+wrangler.jsonc
+STYLE_GUIDE.md
+.DS_Store

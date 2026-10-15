@@ -1,0 +1,9 @@
+// Cloudflare Workers config: serves the Toolbox as static files.
+// Access (login) is set up in the Cloudflare dashboard, not here.
+{
+  "name": "tb",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./"
+  }
+}
