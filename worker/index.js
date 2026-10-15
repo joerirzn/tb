@@ -126,6 +126,11 @@ async function handleAuth(request, env, url, user) {
     // always hash, so a wrong email takes as long as a wrong password
     const ok = await checkPassword(password, u ? u.pw_salt : 'AAAAAAAAAAAAAAAAAAAAAA==', u ? u.pw_hash : '');
     if (!u || !ok) return json({ error: 'Wrong email or password.' }, 401);
+    // the admin address is always an accepted admin, also when the secret was set after registering
+    if (isAdminEmail(env, u.email) && (u.status !== 'approved' || !u.is_admin)) {
+      await env.DB.prepare("UPDATE users SET status = 'approved', is_admin = 1, decided_at = ? WHERE id = ?").bind(Date.now(), u.id).run();
+      u.status = 'approved'; u.is_admin = 1;
+    }
     if (u.status === 'pending') return json({ error: 'Your access request is waiting for approval. You can sign in once it has been accepted.' }, 403);
     if (u.status !== 'approved') return json({ error: 'You do not have access to the Toolbox.' }, 403);
     return startSession(env, u, body.next);
@@ -141,7 +146,7 @@ async function handleAuth(request, env, url, user) {
     const existing = await env.DB.prepare('SELECT id FROM users WHERE email = ?').bind(email).first();
     if (existing) return json({ error: 'This email already has an account or a request. Sign in instead, or ask the admin to reset your password.' }, 409);
 
-    const isAdmin = !!env.ADMIN_EMAIL && email === normEmail(env.ADMIN_EMAIL);
+    const isAdmin = isAdminEmail(env, email);
     const { hash, salt } = await hashPassword(password);
     const now = Date.now();
     const res = await env.DB.prepare('INSERT INTO users (email, name, note, pw_hash, pw_salt, status, is_admin, created_at, decided_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
@@ -280,6 +285,10 @@ function tempPassword() {
 // ---------- small helpers ----------
 
 function normEmail(s) { return String(s || '').trim().toLowerCase(); }
+function isAdminEmail(env, email) {
+  const admin = normEmail(env.ADMIN_EMAIL).replace(/^["']+|["']+$/g, '').trim();
+  return !!admin && email === admin;
+}
 function validEmail(s) { return /^[^\s@<>"'`]+@[^\s@<>"'`]+\.[^\s@<>"'`]+$/.test(s) && s.length <= 200; }
 function safeNext(n) { n = String(n || '/'); return n.startsWith('/') && !n.startsWith('//') && !n.startsWith('/\\') ? n : '/'; }
 function isNavigation(request) {
