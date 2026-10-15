@@ -26,6 +26,7 @@ const SCHEMA = [
      id INTEGER PRIMARY KEY AUTOINCREMENT,
      email TEXT NOT NULL UNIQUE,
      name TEXT NOT NULL DEFAULT '',
+     job_title TEXT NOT NULL DEFAULT '',
      note TEXT NOT NULL DEFAULT '',
      pw_hash TEXT NOT NULL,
      pw_salt TEXT NOT NULL,
@@ -56,9 +57,20 @@ const SCHEMA = [
   `CREATE INDEX IF NOT EXISTS activity_at ON activity (at)`,
 ];
 
+// columns added after the first release, for databases that already exist
+const ADDED_COLUMNS = { users: { job_title: "TEXT NOT NULL DEFAULT ''" } };
+
 let schemaReady = null;
 function ensureSchema(env) {
-  if (!schemaReady) schemaReady = env.DB.batch(SCHEMA.map(s => env.DB.prepare(s))).catch(e => { schemaReady = null; throw e; });
+  if (!schemaReady) schemaReady = (async () => {
+    await env.DB.batch(SCHEMA.map(s => env.DB.prepare(s)));
+    for (const [table, cols] of Object.entries(ADDED_COLUMNS)) {
+      const have = new Set((await env.DB.prepare('PRAGMA table_info(' + table + ')').all()).results.map(c => c.name));
+      for (const [col, def] of Object.entries(cols)) {
+        if (!have.has(col)) await env.DB.prepare('ALTER TABLE ' + table + ' ADD COLUMN ' + col + ' ' + def).run();
+      }
+    }
+  })().catch(e => { schemaReady = null; throw e; });
   return schemaReady;
 }
 
@@ -85,7 +97,7 @@ export default {
       return new Response('Sign in required', { status: 401, headers: { 'Cache-Control': 'no-store' } });
     }
 
-    if (path === '/account' || path === '/account/') return html(accountPage({ me: user.email }));
+    if (path === '/account' || path === '/account/') return html(accountPage({ me: user.email, name: user.name, jobTitle: user.job_title }));
     if (adminOnly(path) && !user.is_admin) {
       if (isNavigation(request)) return redirect('/');
       return new Response('Not available', { status: 403, headers: { 'Cache-Control': 'no-store' } });
@@ -124,7 +136,7 @@ async function handleAuth(request, env, url, user) {
 
   if (path === '/auth/me' && request.method === 'GET') {
     if (!user || user.status !== 'approved') return json({ error: 'Sign in required' }, 401);
-    return json({ email: user.email, name: user.name, isAdmin: !!user.is_admin });
+    return json({ email: user.email, name: user.name, jobTitle: user.job_title, isAdmin: !!user.is_admin });
   }
   if (request.method !== 'POST') return new Response('Method not allowed', { status: 405 });
   if (!sameOrigin(request, url)) return json({ error: 'Bad request.' }, 403);
@@ -154,6 +166,15 @@ async function handleAuth(request, env, url, user) {
     return json({ ok: true });
   }
 
+  if (path === '/auth/profile') {
+    if (!user || user.status !== 'approved') return json({ error: 'Sign in required' }, 401);
+    if (!(await allow(env, 'profile:' + user.id, 20, 15))) return json({ error: 'Too many changes. Wait 15 minutes and try again.' }, 429);
+    const n = profile(body);
+    if (n.error) return json({ error: n.error }, 400);
+    await env.DB.prepare('UPDATE users SET name = ?, job_title = ? WHERE id = ?').bind(n.name, n.jobTitle, user.id).run();
+    return json({ ok: true, name: n.name, jobTitle: n.jobTitle });
+  }
+
   if (path === '/auth/login') {
     if (!(await allow(env, 'login-ip:' + ip, 20, 15)) || !(await allow(env, 'login-email:' + email, 10, 15))) {
       return json({ error: 'Too many attempts. Wait 15 minutes and try again.' }, 429);
@@ -174,9 +195,9 @@ async function handleAuth(request, env, url, user) {
 
   if (path === '/auth/register') {
     if (!(await allow(env, 'register-ip:' + ip, 5, 60))) return json({ error: 'Too many requests. Try again in an hour.' }, 429);
-    const name = String(body.name || '').trim().slice(0, 80);
+    const n = profile(body), name = n.name;
     const note = String(body.note || '').trim().slice(0, 500);
-    if (!name) return json({ error: 'Fill in your name.' }, 400);
+    if (n.error) return json({ error: n.error }, 400);
     if (!validEmail(email)) return json({ error: 'Fill in a valid email address.' }, 400);
     if (password.length < MIN_PASSWORD) return json({ error: 'Use a password of at least ' + MIN_PASSWORD + ' characters.' }, 400);
     const existing = await env.DB.prepare('SELECT id FROM users WHERE email = ?').bind(email).first();
@@ -185,8 +206,8 @@ async function handleAuth(request, env, url, user) {
     const isAdmin = isAdminEmail(env, email);
     const { hash, salt } = await hashPassword(password);
     const now = Date.now();
-    const res = await env.DB.prepare('INSERT INTO users (email, name, note, pw_hash, pw_salt, status, is_admin, created_at, decided_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
-      .bind(email, name, note, hash, salt, isAdmin ? 'approved' : 'pending', isAdmin ? 1 : 0, now, isAdmin ? now : null).run();
+    const res = await env.DB.prepare('INSERT INTO users (email, name, job_title, note, pw_hash, pw_salt, status, is_admin, created_at, decided_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .bind(email, name, n.jobTitle, note, hash, salt, isAdmin ? 'approved' : 'pending', isAdmin ? 1 : 0, now, isAdmin ? now : null).run();
     if (isAdmin) {
       const u = await env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(res.meta.last_row_id).first();
       return startSession(env, u, body.next);
@@ -223,7 +244,7 @@ async function handleAdmin(request, env, url, me) {
   const action = url.pathname.slice('/admin/api/'.length);
 
   if (action === 'users' && request.method === 'GET') {
-    const users = await env.DB.prepare('SELECT id, email, name, note, status, is_admin, created_at, decided_at, last_login_at, last_seen_at FROM users ORDER BY created_at DESC').all();
+    const users = await env.DB.prepare('SELECT id, email, name, job_title, note, status, is_admin, created_at, decided_at, last_login_at, last_seen_at FROM users ORDER BY created_at DESC').all();
     const activity = await env.DB.prepare('SELECT a.path, a.at, u.name, u.email FROM activity a JOIN users u ON u.id = a.user_id ORDER BY a.at DESC LIMIT 100').all();
     return json({ users: users.results, activity: activity.results });
   }
@@ -321,6 +342,14 @@ function tempPassword() {
 // ---------- small helpers ----------
 
 function normEmail(s) { return String(s || '').trim().toLowerCase(); }
+// first name, last name and job title are all required; the name is stored as "First Last"
+function profile(body) {
+  const clean = (v, max) => String(v || '').replace(/\s+/g, ' ').trim().slice(0, max);
+  const first = clean(body.firstName, 40), last = clean(body.lastName, 40), jobTitle = clean(body.jobTitle, 80);
+  if (!first || !last) return { error: 'Fill in your first and last name.' };
+  if (!jobTitle) return { error: 'Fill in your job title.' };
+  return { name: first + ' ' + last, jobTitle };
+}
 function isAdminEmail(env, email) {
   const admin = normEmail(env.ADMIN_EMAIL).replace(/^["']+|["']+$/g, '').trim();
   return !!admin && email === admin;

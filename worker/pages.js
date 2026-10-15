@@ -63,6 +63,8 @@ ${BASE_CSS}
   .tab:active{ transform: none; }
   form{ display: flex; flex-direction: column; gap: 12px; }
   label{ font-size: 13px; color: var(--text-muted); margin: 4px 0 -4px 20px; }
+  .two{ display: flex; gap: 10px; }
+  .two .col{ flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
   .hint{ font-size: 12px; color: var(--text-faint); margin: -4px 0 0 20px; }
   .btn{ margin-top: 8px; }
   .msg{ font-size: 14px; line-height: 1.5; margin: 4px 0 0; min-height: 1.5em; }
@@ -95,8 +97,12 @@ ${BASE_CSS}
     </form>
 
     <form id="registerForm" novalidate hidden>
-      <label for="rg-name">Name</label>
-      <input id="rg-name" type="text" autocomplete="name" required>
+      <div class="two">
+        <div class="col"><label for="rg-first">First name</label><input id="rg-first" type="text" autocomplete="given-name" maxlength="40" required></div>
+        <div class="col"><label for="rg-last">Last name</label><input id="rg-last" type="text" autocomplete="family-name" maxlength="40" required></div>
+      </div>
+      <label for="rg-job">Job title</label>
+      <input id="rg-job" type="text" autocomplete="organization-title" maxlength="80" required>
       <label for="rg-email">Email</label>
       <input id="rg-email" type="email" autocomplete="email" required>
       <label for="rg-pw">Password</label>
@@ -127,7 +133,7 @@ ${BASE_CSS}
     $('registerForm').hidden = m !== 'register';
     $('done').hidden = true;
     $('lead').textContent = m === 'login' ? 'Sign in to open the tools.' : 'No account yet? Request access. The admin accepts or declines your request.';
-    var first = m === 'login' ? $('li-email') : $('rg-name'); first.focus();
+    var first = m === 'login' ? $('li-email') : $('rg-first'); first.focus();
   }
   tabs.forEach(function (t) { t.addEventListener('click', function () { mode(t.dataset.mode); }); });
   $('backToLogin').addEventListener('click', function () { mode('login'); });
@@ -156,8 +162,10 @@ ${BASE_CSS}
   $('registerForm').addEventListener('submit', async function (e) {
     e.preventDefault();
     var msg = $('registerMsg'); msg.className = 'msg'; msg.textContent = '';
-    var data = { name: $('rg-name').value.trim(), email: $('rg-email').value.trim(), password: $('rg-pw').value, note: $('rg-note').value.trim(), next: next };
-    if (!data.name || !data.email || !data.password) { msg.className = 'msg err'; msg.textContent = 'Fill in your name, email and a password.'; return; }
+    var data = { firstName: $('rg-first').value.trim(), lastName: $('rg-last').value.trim(), jobTitle: $('rg-job').value.trim(), email: $('rg-email').value.trim(), password: $('rg-pw').value, note: $('rg-note').value.trim(), next: next };
+    if (!data.firstName || !data.lastName) { msg.className = 'msg err'; msg.textContent = 'Fill in your first and last name.'; return; }
+    if (!data.jobTitle) { msg.className = 'msg err'; msg.textContent = 'Fill in your job title.'; return; }
+    if (!data.email || !data.password) { msg.className = 'msg err'; msg.textContent = 'Fill in your email and a password.'; return; }
     if (data.password.length < 10) { msg.className = 'msg err'; msg.textContent = 'Use a password of at least 10 characters.'; return; }
     busy(this, true);
     try {
@@ -202,6 +210,7 @@ ${BASE_CSS}
   .who{ flex: 1; min-width: 220px; }
   .name{ font-size: 15px; font-weight: 600; }
   .badge{ font-size: 11px; font-weight: 400; color: var(--text-faint); border: 1px solid var(--border-hover); border-radius: 9999px; padding: 1px 8px; margin-left: 8px; vertical-align: 1px; }
+  .job{ font-weight: 400; color: var(--text-muted); }
   .email{ font-size: 13px; color: var(--text-muted); margin-top: 2px; word-break: break-all; }
   .note{ font-size: 13px; color: var(--text-muted); margin-top: 6px; line-height: 1.5; white-space: pre-wrap; }
   .meta{ font-size: 12px; color: var(--text-faint); margin-top: 4px; }
@@ -264,6 +273,7 @@ ${BASE_CSS}
   function person(u, buttons, metaText) {
     var row = el('div', 'row'), who = el('div', 'who');
     var name = el('div', 'name', u.name || '(no name)');
+    if (u.job_title) name.appendChild(el('span', 'job', ' · ' + u.job_title));
     if (u.is_admin) name.appendChild(el('span', 'badge', 'Admin'));
     who.appendChild(name);
     who.appendChild(el('div', 'email', u.email));
@@ -336,7 +346,7 @@ ${BASE_CSS}
 </html>`;
 }
 
-export function accountPage({ me }) {
+export function accountPage({ me, name, jobTitle }) {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -360,6 +370,8 @@ ${BASE_CSS}
   .msg{ font-size: 14px; line-height: 1.5; margin: 4px 0 0; min-height: 1.5em; }
   .msg.err{ color: var(--error); }
   .msg.ok{ color: var(--success); }
+  .two{ display: flex; gap: 10px; }
+  .two .col{ flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
 </style>
 </head>
 <body>
@@ -373,6 +385,21 @@ ${BASE_CSS}
     <h2>Signed in as</h2>
     <p class="sub" id="me"></p>
     <button class="btn-utility" type="button" id="signOut">Sign out</button>
+  </section>
+
+  <section class="card">
+    <h2>Profile</h2>
+    <p class="sub">Shown on the Toolbox and to the admin.</p>
+    <form id="nameForm" novalidate>
+      <div class="two">
+        <div class="col"><label for="nm-first">First name</label><input id="nm-first" type="text" autocomplete="given-name" maxlength="40" required></div>
+        <div class="col"><label for="nm-last">Last name</label><input id="nm-last" type="text" autocomplete="family-name" maxlength="40" required></div>
+      </div>
+      <label for="nm-job">Job title</label>
+      <input id="nm-job" type="text" autocomplete="organization-title" maxlength="80" required>
+      <button class="btn" type="submit">Save profile</button>
+      <p class="msg" id="nameMsg" role="alert"></p>
+    </form>
   </section>
 
   <section class="card">
@@ -395,8 +422,31 @@ ${BASE_CSS}
 <script>
 (function () {
   var $ = function (id) { return document.getElementById(id); };
-  var me = ${jsStr(me)};
-  $('me').textContent = me; $('user').value = me;
+  var me = ${jsStr(me)}, name = ${jsStr(name || '')}, job = ${jsStr(jobTitle || '')};
+  function showMe() { $('me').textContent = name ? name + ' · ' + me : me; }
+  showMe(); $('user').value = me;
+  // the name is stored as "First Last": everything after the first space is the last name
+  var cut = name.indexOf(' ');
+  $('nm-first').value = cut < 0 ? name : name.slice(0, cut);
+  $('nm-last').value = cut < 0 ? '' : name.slice(cut + 1);
+  $('nm-job').value = job;
+  if (!job) { var m0 = $('nameMsg'); m0.className = 'msg err'; m0.textContent = 'Your job title is missing. Fill it in and save.'; }
+  $('nameForm').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    var msg = $('nameMsg'), btn = this.querySelector('.btn');
+    msg.className = 'msg'; msg.textContent = '';
+    var first = $('nm-first').value.trim(), last = $('nm-last').value.trim(), jt = $('nm-job').value.trim();
+    if (!first || !last) { msg.className = 'msg err'; msg.textContent = 'Fill in your first and last name.'; return; }
+    if (!jt) { msg.className = 'msg err'; msg.textContent = 'Fill in your job title.'; return; }
+    btn.disabled = true;
+    try {
+      var r = await fetch('/auth/profile', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ firstName: first, lastName: last, jobTitle: jt }) });
+      var j = {}; try { j = await r.json(); } catch (err) {}
+      if (r.ok) { name = j.name; job = j.jobTitle; showMe(); msg.className = 'msg ok'; msg.textContent = 'Profile saved.'; }
+      else { msg.className = 'msg err'; msg.textContent = j.error || 'Saving the profile failed. Try again.'; }
+    } catch (err) { msg.className = 'msg err'; msg.textContent = 'No connection. Try again.'; }
+    btn.disabled = false;
+  });
   $('signOut').addEventListener('click', async function () {
     try { await fetch('/auth/logout', { method: 'POST' }); } catch (e) {}
     location.href = '/login';
