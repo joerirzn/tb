@@ -25,7 +25,48 @@ export const IDEAS_SCHEMA = [
      created_at INTEGER NOT NULL
    )`,
   `CREATE INDEX IF NOT EXISTS idea_comments_idea ON idea_comments (idea_id)`,
+  `CREATE TABLE IF NOT EXISTS notifications (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     user_id INTEGER NOT NULL,                    -- who gets it
+     actor_id INTEGER NOT NULL,                   -- who did it
+     type TEXT NOT NULL,                          -- vote | comment | reply | status | idea
+     idea_id INTEGER NOT NULL,
+     detail TEXT NOT NULL DEFAULT '',             -- comment snippet or new status
+     created_at INTEGER NOT NULL,
+     read_at INTEGER
+   )`,
+  `CREATE INDEX IF NOT EXISTS notifications_user ON notifications (user_id, created_at)`,
 ];
+
+// ---------- notifications ----------
+
+async function notify(env, recipients, actorId, type, ideaId, detail = '') {
+  const now = Date.now();
+  const to = [...new Set(recipients)].filter(id => id && id !== actorId);   // never notify yourself
+  if (!to.length) return;
+  await env.DB.batch(to.map(uid => env.DB.prepare('INSERT INTO notifications (user_id, actor_id, type, idea_id, detail, created_at) VALUES (?, ?, ?, ?, ?, ?)')
+    .bind(uid, actorId, type, ideaId, String(detail).slice(0, 140), now)));
+}
+
+export async function handleNotifications(request, env, url, user) {
+  if (request.method === 'GET') {
+    const rows = await env.DB.prepare(
+      `SELECT n.id, n.type, n.idea_id, n.detail, n.created_at, n.read_at, a.name AS actor, i.title AS idea_title
+       FROM notifications n LEFT JOIN users a ON a.id = n.actor_id LEFT JOIN ideas i ON i.id = n.idea_id
+       WHERE n.user_id = ? ORDER BY n.created_at DESC LIMIT 30`).bind(user.id).all();
+    const unread = await env.DB.prepare('SELECT COUNT(*) AS n FROM notifications WHERE user_id = ? AND read_at IS NULL').bind(user.id).first();
+    return json({ unread: unread.n, items: rows.results.map(r => ({ ...r, read: !!r.read_at })) });
+  }
+  if (request.method !== 'POST') return new Response('Method not allowed', { status: 405 });
+  if (!sameOrigin(request, url)) return json({ error: 'Bad request.' }, 403);
+  const body = await readJson(request), now = Date.now();
+  if (body.id) await env.DB.prepare('UPDATE notifications SET read_at = ? WHERE id = ? AND user_id = ? AND read_at IS NULL').bind(now, Number(body.id), user.id).run();
+  else await env.DB.batch([
+    env.DB.prepare('UPDATE notifications SET read_at = ? WHERE user_id = ? AND read_at IS NULL').bind(now, user.id),
+    env.DB.prepare('DELETE FROM notifications WHERE created_at < ?').bind(now - 90 * 864e5),
+  ]);
+  return json({ ok: true });
+}
 
 const STATUSES = ['new', 'planned', 'in-progress', 'done', 'declined'];
 const clean = (v, max) => String(v || '').replace(/\r/g, '').replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim().slice(0, max);
@@ -68,6 +109,8 @@ export async function handleIdeas(request, env, url, user) {
     if (!title) return json({ error: 'Give your idea a title.' }, 400);
     const res = await env.DB.prepare('INSERT INTO ideas (user_id, title, body, created_at) VALUES (?, ?, ?, ?)').bind(user.id, title, text, Date.now()).run();
     await env.DB.prepare('INSERT OR IGNORE INTO idea_votes (idea_id, user_id) VALUES (?, ?)').bind(res.meta.last_row_id, user.id).run();   // your own idea starts with your vote
+    const admins = await env.DB.prepare("SELECT id FROM users WHERE is_admin = 1 AND status = 'approved'").all();
+    await notify(env, admins.results.map(a => a.id), user.id, 'idea', res.meta.last_row_id);
     return json({ ok: true, id: res.meta.last_row_id });
   }
 
@@ -77,8 +120,16 @@ export async function handleIdeas(request, env, url, user) {
 
     if (action === 'vote') {
       const had = await env.DB.prepare('SELECT 1 FROM idea_votes WHERE idea_id = ? AND user_id = ?').bind(id, user.id).first();
-      if (had) await env.DB.prepare('DELETE FROM idea_votes WHERE idea_id = ? AND user_id = ?').bind(id, user.id).run();
-      else await env.DB.prepare('INSERT INTO idea_votes (idea_id, user_id) VALUES (?, ?)').bind(id, user.id).run();
+      if (had) {
+        await env.DB.batch([
+          env.DB.prepare('DELETE FROM idea_votes WHERE idea_id = ? AND user_id = ?').bind(id, user.id),
+          // a vote taken back also takes back its unread notification
+          env.DB.prepare("DELETE FROM notifications WHERE type = 'vote' AND idea_id = ? AND actor_id = ? AND read_at IS NULL").bind(id, user.id),
+        ]);
+      } else {
+        await env.DB.prepare('INSERT INTO idea_votes (idea_id, user_id) VALUES (?, ?)').bind(id, user.id).run();
+        await notify(env, [idea.user_id], user.id, 'vote', id);
+      }
       const n = await env.DB.prepare('SELECT COUNT(*) AS n FROM idea_votes WHERE idea_id = ?').bind(id).first();
       return json({ ok: true, voted: !had, votes: n.n });
     }
@@ -86,13 +137,18 @@ export async function handleIdeas(request, env, url, user) {
       if (!(await allow(env, 'comment:' + user.id, 30, 60))) return json({ error: 'You commented a lot in a short time. Try again in an hour.' }, 429);
       const text = clean(body.body, 1000);
       if (!text) return json({ error: 'Write a comment first.' }, 400);
+      const earlier = await env.DB.prepare('SELECT DISTINCT user_id FROM idea_comments WHERE idea_id = ?').bind(id).all();
       await env.DB.prepare('INSERT INTO idea_comments (idea_id, user_id, body, created_at) VALUES (?, ?, ?, ?)').bind(id, user.id, text, Date.now()).run();
+      // the author hears about every comment; earlier commenters hear about replies after theirs
+      await notify(env, [idea.user_id], user.id, 'comment', id, text);
+      await notify(env, earlier.results.map(r => r.user_id).filter(u => u !== idea.user_id), user.id, 'reply', id, text);
       return json({ ok: true });
     }
     if (action === 'status') {
       if (!user.is_admin) return json({ error: 'Only the admin can change the status.' }, 403);
       if (!STATUSES.includes(body.status)) return json({ error: 'Unknown status.' }, 400);
       await env.DB.prepare('UPDATE ideas SET status = ? WHERE id = ?').bind(body.status, id).run();
+      await notify(env, [idea.user_id], user.id, 'status', id, body.status);
       return json({ ok: true });
     }
     if (action === 'delete') {
@@ -100,6 +156,7 @@ export async function handleIdeas(request, env, url, user) {
       await env.DB.batch([
         env.DB.prepare('DELETE FROM idea_votes WHERE idea_id = ?').bind(id),
         env.DB.prepare('DELETE FROM idea_comments WHERE idea_id = ?').bind(id),
+        env.DB.prepare('DELETE FROM notifications WHERE idea_id = ?').bind(id),
         env.DB.prepare('DELETE FROM ideas WHERE id = ?').bind(id),
       ]);
       return json({ ok: true });

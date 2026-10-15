@@ -6,7 +6,7 @@
 // ADMIN_EMAIL secret (set in the Cloudflare dashboard, never in this repo).
 
 import { loginPage, adminPage, accountPage } from './pages.js';
-import { IDEAS_SCHEMA, handleIdeas } from './ideas.js';
+import { IDEAS_SCHEMA, handleIdeas, handleNotifications } from './ideas.js';
 
 const SESSION_COOKIE = '__Host-tb_session';
 const SESSION_DAYS = 30;
@@ -109,6 +109,7 @@ export default {
       return html(adminPage({ me: user.email }));
     }
     if (path.startsWith('/api/ideas') || path.startsWith('/api/comments/')) return handleIdeas(request, env, url, user);
+    if (path === '/api/notifications' || path === '/api/notifications/read') return handleNotifications(request, env, url, user);
 
     if (path.startsWith('/admin/api/')) {
       if (!user.is_admin) return json({ error: 'Not allowed.' }, 403);

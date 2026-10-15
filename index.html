@@ -191,7 +191,7 @@
 
   /* signed-in person (only when served by the Toolbox server) */
   .top{ display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-  .account{ display: flex; align-items: center; gap: 8px; flex-wrap: wrap; animation: rise .5s ease both; }
+  .account{ position: relative; z-index: 20; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; animation: rise .5s ease both; }   /* above the cards, for the notifications panel */
   .account[hidden]{ display: none; }
   .account .who{ font-size: 13px; color: var(--text-faint); margin-right: 4px; }
   .pill{
@@ -214,6 +214,7 @@
     <h1>Toolbox</h1>
     <div class="account" id="account" hidden>
       <span class="who" id="accountName"></span>
+      <span id="notify"></span>
       <a class="pill" href="/account">Account</a>
       <a class="pill" id="adminLink" href="/admin" hidden>Access</a>
       <button class="pill" id="signOut" type="button">Sign out</button>
@@ -330,6 +331,8 @@
     document.getElementById('adminLink').hidden = !me.isAdmin;
     document.getElementById('account').hidden = false;
   }).catch(() => {});
+  // the bell only shows when the Toolbox server answers
+  if (location.protocol !== 'file:') { const s = document.createElement('script'); s.src = 'shared/notify.js'; document.body.appendChild(s); }
   document.getElementById('signOut').addEventListener('click', async () => {
     try { await fetch('/auth/logout', { method: 'POST' }); } catch (e) {}
     location.href = '/login';

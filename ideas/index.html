@@ -60,7 +60,8 @@
     .side{ position: static; }
   }
 
-  .card{ background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 24px; }
+  .card{ background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 24px; transition: border-color .4s ease; }
+  .idea{ scroll-margin-top: 24px; }
   .card-label{ font-size: 14px; font-weight: 600; margin: 0 0 4px; }
   .note{ font-size: 13px; line-height: 1.5; color: var(--text-faint); margin: 0; }
 
@@ -146,6 +147,7 @@
 <div class="app-header">
   <a class="back-link" href="../"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 19l-7-7 7-7"/></svg>Toolbox</a>
   <h1>Ideas</h1>
+  <span id="notify" style="margin-left:auto"></span>
 </div>
 <p class="lead">Missing a tool, or a feature in one? Share it here. Vote for the ideas you want most, so we know what to build next.</p>
 
@@ -205,8 +207,18 @@
     return j;
   }
 
+  // #idea-12 (from a notification): show that idea with its comments open
+  function focusFromHash() {
+    const m = location.hash.match(/^#idea-(\d+)$/); if (!m) return;
+    const id = Number(m[1]); if (!data.ideas.some(i => i.id === id)) return;
+    filter = 'all'; open.add(id); render();
+    const card = document.getElementById('idea-' + id);
+    if (card) { card.scrollIntoView({ behavior: 'smooth', block: 'start' }); card.style.borderColor = 'var(--accent)'; setTimeout(() => card.style.borderColor = '', 2500); }
+  }
+  window.addEventListener('hashchange', () => load());
+
   async function load() {
-    try { data = await api('/api/ideas'); $('listMsg').textContent = ''; render(); }
+    try { data = await api('/api/ideas'); $('listMsg').textContent = ''; render(); focusFromHash(); }
     catch (e) { $('listMsg').textContent = location.protocol === 'file:' ? 'Ideas only work in the online Toolbox.' : e.message; }
   }
 
@@ -237,7 +249,7 @@
   }
 
   function ideaCard(i) {
-    const card = el('article', 'card idea');
+    const card = el('article', 'card idea'); card.id = 'idea-' + i.id;
     const vote = el('button', 'vote' + (i.voted ? ' on' : ''));
     vote.type = 'button';
     vote.setAttribute('aria-pressed', i.voted);
@@ -358,5 +370,6 @@
   load();
 })();
 </script>
+<script src="../shared/notify.js"></script>
 </body>
 </html>
