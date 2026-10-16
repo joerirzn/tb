@@ -269,7 +269,9 @@
     setM(wt, s);
     const chars = Array.from(str), xs = [];
     let pre = '';
-    chars.forEach((ch, i) => { xs.push(mctx.measureText(pre).width + i * tr); pre += ch; });
+    // a glyph sits where the text up to and including it ends, minus its own width: so a kerning pair
+    // (T+e) moves the e itself, not only the letters after it
+    chars.forEach((ch, i) => { pre += ch; xs.push(mctx.measureText(pre).width - mctx.measureText(ch).width + i * tr); });
     return { chars, xs };
   }
   function wrap(wt, s, text, maxW) {
