@@ -438,13 +438,13 @@
     $('noFavs').hidden = !(showFavs && !shown);
     $('cAll').textContent = tiles.filter(t => t.querySelector('a.card')).length;
     $('cFav').textContent = favs.filter(p => tiles.some(t => t.dataset.tool === p)).length || '';
-    // close the last row like a calendar month: a "Share an idea" cell (not among favourites), then empty cells
+    // close the last row like a calendar month: a "Suggest a tool" cell (not among favourites), then empty cells
     if (shown) {
       const cols = getComputedStyle(grid).gridTemplateColumns.split(' ').length;
       let used = shown;
       if (!showFavs) {
         const sg = document.createElement('a'); sg.className = 'suggest'; sg.href = shell.page('ideas/') + '#new';   // opens the form on Ideas
-        sg.innerHTML = '<span><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span>Share an idea<small>for a new tool, or a better one</small>';
+        sg.innerHTML = '<span><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span>Suggest a tool<small>or an improvement to an existing one</small>';
         grid.appendChild(sg); used++;
       }
       const rest = (cols - used % cols) % cols;

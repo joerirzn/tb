@@ -77,7 +77,7 @@
         '<a href="' + page('ideas/') + '" data-key="ideas" data-tip="Ideas">' + svg('idea') + '<span class="tb-t">Ideas</span><span class="tb-badge" id="tbIdeas" hidden></span></a>' +
         '<a href="/admin" data-key="admin" id="tbAdmin" data-tip="Access" hidden>' + svg('shield') + '<span class="tb-t">Access</span></a>' +
       '</nav>' +
-      '<a class="tb-create" href="' + page('ideas/') + '#new" data-tip="Share an idea">' + svg('plus') + '<span class="tb-t">Share an idea</span></a>' +
+      '<a class="tb-create" href="' + page('ideas/') + '#new" data-tip="Suggest a tool">' + svg('plus') + '<span class="tb-t">Suggest a tool</span></a>' +
       '<div class="tb-group" id="tbFavGroup" hidden><div class="tb-label">Favourites</div><nav class="tb-links" id="tbFavs" aria-label="Favourite tools"></nav></div>' +
       '<div class="tb-group" id="tbToolGroup"><div class="tb-label" id="tbToolsLabel">Tools</div><nav class="tb-links" id="tbTools" aria-label="Tools"></nav></div>' +
     '</div>' +
@@ -218,7 +218,7 @@
     list.push({ label: 'Home', kind: 'Page', href: page('') + '#home', icon: I.home });
     list.push({ label: 'Time saved', kind: 'Page', href: page('') + '#time-saved', icon: I.clock });
     list.push({ label: 'Ideas', kind: 'Page', href: page('ideas/'), icon: I.idea });
-    list.push({ label: 'Share an idea', kind: 'Ideas', href: page('ideas/') + '#new', icon: I.plus });
+    list.push({ label: 'Suggest a tool', kind: 'Ideas', href: page('ideas/') + '#new', icon: I.plus });
     list.push({ label: 'Account and password', kind: 'Page', href: '/account', icon: I.user });
     if (user.isAdmin) list.push({ label: 'Access requests', kind: 'Admin', href: '/admin', icon: I.shield });
     return list;

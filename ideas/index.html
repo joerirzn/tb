@@ -87,13 +87,13 @@
 <div class="board">
 
 <div class="app-header">
-  <h1>Ideas <span>· share your idea or vote for what gets built next</span></h1>
-  <button class="btn" type="button" id="shareBtn" aria-expanded="false" aria-controls="composer"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Share an idea</button>
+  <h1>Ideas <span>· suggest a tool or vote for what gets built next</span></h1>
+  <button class="btn" type="button" id="shareBtn" aria-expanded="false" aria-controls="composer"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Suggest a tool</button>
 </div>
 
 <!-- sharing an idea opens above the list -->
-<section class="composer" id="composer" hidden aria-label="Share an idea">
-  <div class="section-label plain">Share an idea<span class="end"><button class="btn-ghost small" type="button" id="closeComposer">Cancel</button></span></div>
+<section class="composer" id="composer" hidden aria-label="Suggest a tool">
+  <div class="section-label plain">Suggest a tool<span class="end"><button class="btn-ghost small" type="button" id="closeComposer">Cancel</button></span></div>
   <p class="note" style="margin:0 0 14px">Missing a tool, or a feature in one? What should it do, and what would it save you?</p>
   <form id="ideaForm" novalidate>
     <div class="field">
@@ -101,17 +101,17 @@
       <input id="title" type="text" maxlength="120" placeholder="e.g. Story maker for releases" autocomplete="off">
     </div>
     <div class="field">
-      <label for="body">Explain your idea <span class="opt">optional</span></label>
+      <label for="body">Explain your suggestion <span class="opt">optional</span></label>
       <textarea id="body" maxlength="2000" placeholder="Who uses it, what goes in, what comes out?"></textarea>
       <p class="count" id="bodyCount">0 / 2000</p>
     </div>
     <div class="composer-actions">
-      <button class="btn" type="submit">Share idea</button>
+      <button class="btn" type="submit">Send suggestion</button>
       <p class="msg" id="formMsg" role="alert"></p>
     </div>
   </form>
 </section>
-<p class="msg ok" id="sharedMsg" role="status" hidden style="margin-bottom:12px">Thanks! Your idea is on the board.</p>
+<p class="msg ok" id="sharedMsg" role="status" hidden style="margin-bottom:12px">Thanks! Your suggestion is on the board.</p>
 
 <main>
     <div class="toolbar">
@@ -160,7 +160,7 @@
     return j;
   }
 
-  // #new (Share an idea in the sidebar): straight to the form
+  // #new (Suggest a tool in the sidebar): straight to the form
   // #idea-12 (from a notification): show that idea with its comments open
   function focusFromHash() {
     if (location.hash === '#new') { openComposer(); return; }
