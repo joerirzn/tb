@@ -357,7 +357,7 @@ ${BASE_CSS}
   .sub{ font-size: 12.5px; line-height: 1.5; color: var(--faint); margin: -6px 0 14px; }
   .signed{ display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
   .signed .tb-avatar{ width: 46px; height: 46px; }
-  .signed .tb-avatar span{ width: 42px; height: 42px; font-size: 13px; }
+  .signed .tb-avatar span{ font-size: 14px; }
   .signed .who{ flex: 1; min-width: 0; }
   .signed .who b{ display: block; font-size: 15px; font-weight: 700; }
   .signed .who span{ display: block; font-size: 12.5px; color: var(--muted); word-break: break-all; }
