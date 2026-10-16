@@ -492,7 +492,7 @@
         for (const [k, v] of Object.entries(PREVIEW_DAYS)) if (k.startsWith(dayKey(d).slice(0, 7))) t += v; return [d.toLocaleString('en-US', { month: 'short' }), t]; });
     }
     const top = minutes * 0.29;
-    return { preview: true, period, unit, series, total: { minutes, spent: Math.round(minutes / 3), exports: Math.round(minutes / 3.9), since: 'March 2026' },
+    return { preview: true, period, unit, series, total: { minutes, spent: Math.round(minutes / 4), exports: Math.round(minutes / 3.9), since: 'March 2026' },
       previous: period === 'all' ? null : { minutes: period === '24h' ? 160 : sum(back(2 * N), back(N)) || Math.round(minutes * 0.85) },
       byTool: { '/sessions-radio-maker/': Math.round(top) }, allTime: { minutes: all }, days: PREVIEW_DAYS, months: series.length };
   }
@@ -521,7 +521,7 @@
     $('sTime').innerHTML = fmt(data.total.minutes, true);
     $('sTimeSub').textContent = data.total.minutes >= 480 ? '≈ ' + Math.round(data.total.minutes / 480) + ' working days ' + when : when;
     $('sSpent').innerHTML = fmt(data.total.spent || 0, true);
-    $('sSpentSub').textContent = 'active in the tools · saves 3× as much';
+    $('sSpentSub').textContent = 'active in the tools · saves 4× as much';
     $('sExports').textContent = data.total.exports.toLocaleString('en-GB');
     $('sExportsSub').textContent = when;
     const top = Object.entries(data.byTool).sort((a, b) => b[1] - a[1])[0];

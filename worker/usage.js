@@ -1,6 +1,6 @@
 // Time saved: every tool reports a successful export (how many files, how long someone actively worked).
-// Rule of thumb: the Toolbox is about four times as fast as Photoshop, so every minute of active work
-// in a tool saves three. At most 30 minutes of work count per export.
+// Rule of thumb: every minute of active work in a tool counts as four minutes saved.
+// At most 30 minutes of work count per export.
 
 import { json, readJson, sameOrigin, allow } from './index.js';
 import { notify } from './ideas.js';
@@ -24,7 +24,7 @@ export const USAGE_SCHEMA = [
 // hours of time saved that are celebrated with a notification for everyone
 export const MILESTONES = [10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 25000];
 
-const FACTOR = 3;              // minutes saved per minute in the tool
+const FACTOR = 4;              // minutes saved per minute in the tool
 const MAX_SECONDS = 30 * 60;   // per export
 
 export const TOOLS = {
