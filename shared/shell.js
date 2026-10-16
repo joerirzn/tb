@@ -75,7 +75,6 @@
         '<a href="' + page('') + '#home" data-key="home" data-tip="Home">' + svg('home') + '<span class="tb-t">Home</span></a>' +
         '<a href="' + page('') + '#time-saved" data-key="time" data-tip="Time saved">' + svg('clock') + '<span class="tb-t">Time saved</span></a>' +
         '<a href="' + page('ideas/') + '" data-key="ideas" data-tip="Ideas">' + svg('idea') + '<span class="tb-t">Ideas</span><span class="tb-badge" id="tbIdeas" hidden></span></a>' +
-        '<a href="/admin" data-key="admin" id="tbAdmin" data-tip="Access" hidden>' + svg('shield') + '<span class="tb-t">Access</span></a>' +
       '</nav>' +
       '<a class="tb-create" href="' + page('ideas/') + '#new" data-tip="Suggest a tool">' + svg('plus') + '<span class="tb-t">Suggest a tool</span></a>' +
       '<div class="tb-group" id="tbFavGroup" hidden><div class="tb-label">Favourites</div><nav class="tb-links" id="tbFavs" aria-label="Favourite tools"></nav></div>' +
@@ -83,6 +82,7 @@
     '</div>' +
     '<div class="tb-me">' +
       '<div class="tb-menu" id="tbMenu" hidden>' +
+        '<a href="/admin" id="tbAdmin" hidden>' + svg('shield') + 'Access</a>' +
         '<a href="/account">' + svg('user') + 'Account and password</a>' +
         '<button type="button" id="tbSignOut">' + svg('out') + 'Sign out</button>' +
       '</div>' +
@@ -127,7 +127,7 @@
 
   // which page we are on: Home and Time saved are two views of the launcher
   function markMain() {
-    const launcher = here === ROOT, key = launcher ? (location.hash === '#time-saved' ? 'time' : 'home') : here === ROOT + 'ideas/' ? 'ideas' : /\/admin\/?$/.test(here) ? 'admin' : '';
+    const launcher = here === ROOT, key = launcher ? (location.hash === '#time-saved' ? 'time' : 'home') : here === ROOT + 'ideas/' ? 'ideas' : '';
     nav.querySelectorAll('.tb-links a[data-key]').forEach(a => { a.classList.toggle('tb-on', a.dataset.key === key); if (a.dataset.key === key) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
     glide();
   }
