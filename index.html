@@ -97,6 +97,7 @@
   .suggest{ display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: var(--panel); color: var(--faint); font-weight: 600; font-size: 13px; min-height: 160px; transition: color .15s ease, background-color .15s ease; }
   .suggest:hover{ color: var(--text); background: #191919; }
   .suggest span{ width: 40px; height: 40px; border-radius: 9999px; border: 1px dashed var(--line-3); display: grid; place-items: center; }
+  .suggest small{ display: block; margin-top: -6px; font-size: 12px; font-weight: 500; color: var(--faint); }
   .empty{ color: var(--faint); font-size: 13px; padding: 18px 2px; margin: 0; }
 
   /* time saved view */
@@ -437,13 +438,13 @@
     $('noFavs').hidden = !(showFavs && !shown);
     $('cAll').textContent = tiles.filter(t => t.querySelector('a.card')).length;
     $('cFav').textContent = favs.filter(p => tiles.some(t => t.dataset.tool === p)).length || '';
-    // close the last row like a calendar month: a "suggest a tool" cell (not among favourites), then empty cells
+    // close the last row like a calendar month: a "Share an idea" cell (not among favourites), then empty cells
     if (shown) {
       const cols = getComputedStyle(grid).gridTemplateColumns.split(' ').length;
       let used = shown;
       if (!showFavs) {
-        const sg = document.createElement('a'); sg.className = 'suggest'; sg.href = 'ideas/';
-        sg.innerHTML = '<span><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span>Suggest a tool';
+        const sg = document.createElement('a'); sg.className = 'suggest'; sg.href = shell.page('ideas/') + '#new';   // opens the form on Ideas
+        sg.innerHTML = '<span><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span>Share an idea<small>for a new tool, or a better one</small>';
         grid.appendChild(sg); used++;
       }
       const rest = (cols - used % cols) % cols;
