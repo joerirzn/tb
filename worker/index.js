@@ -275,7 +275,8 @@ async function handleAdmin(request, env, url, me) {
 
   if (action === 'users' && request.method === 'GET') {
     const users = await env.DB.prepare('SELECT id, email, name, job_title, note, status, is_admin, created_at, decided_at, last_login_at, last_seen_at FROM users ORDER BY created_at DESC').all();
-    const activity = await env.DB.prepare('SELECT a.path, a.at, u.name, u.email FROM activity a JOIN users u ON u.id = a.user_id ORDER BY a.at DESC LIMIT 100').all();
+    // recent activity of everyone else: the admin's own clicks are left out
+    const activity = await env.DB.prepare('SELECT a.path, a.at, u.name, u.email FROM activity a JOIN users u ON u.id = a.user_id WHERE a.user_id != ? ORDER BY a.at DESC LIMIT 100').bind(me.id).all();
     return json({ users: users.results, activity: activity.results });
   }
 
