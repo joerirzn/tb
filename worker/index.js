@@ -14,7 +14,7 @@ const SESSION_DAYS = 30;
 const PBKDF2_ITERATIONS = 100000;          // the maximum Workers allows
 const MIN_PASSWORD = 10;
 // tools still in the making: only the admin can open them (pages and files)
-const ADMIN_ONLY = ['/general-briefing'];
+const ADMIN_ONLY = [];   // e.g. '/general-briefing' while it was being built
 function adminOnly(path) {
   // compare a normalised path, so /General-Briefing, %2D or // variants are caught too
   let p = path;

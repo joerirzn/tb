@@ -10,14 +10,14 @@
   const page = p => ROOT + p + (served || !p || p.endsWith('.html') || p.startsWith('#') ? '' : 'index.html');   // file previews need index.html
   const here = location.href.split(/[?#]/)[0].replace(/index\.html$/, '');
 
-  // the tools, in launcher order. General Briefing is only for the admin while it is being built.
+  // the tools, in launcher order. A tool still being built gets admin: true (only the admin sees it).
   const TOOLS = [
     { path: 'banner-generator/', name: 'Social Banner Creator', img: 'banner-generator/thumbnail.jpg' },
     { path: 'cover-converter/', name: 'Cover Converter', img: 'cover-converter/thumbnail.jpg' },
     { path: 'sessions-radio-maker/', name: 'Sessions Asset Generator', img: 'sessions-radio-maker/thumbnail.jpg' },
     { path: 'thumbnail-maker/', name: 'Thumbnail Maker', img: 'thumbnail-maker/thumbnail.jpg' },
     { path: 'song-briefing/', name: 'Song Briefing', img: 'song-briefing/thumbnail.jpg' },
-    { path: 'general-briefing/', name: 'General Briefing', admin: true },
+    { path: 'general-briefing/', name: 'General Briefing' },   // its thumbnail is still to come
   ];
 
   const I = {
@@ -113,7 +113,7 @@
     const a = document.createElement('a');
     a.href = page(t.path); a.dataset.tip = t.name;
     if (here === ROOT + t.path) { a.classList.add('tb-on'); a.setAttribute('aria-current', 'page'); }
-    a.innerHTML = (t.img ? '<img class="tb-thumb" src="' + ROOT + t.img + '" alt="">' : svg('lock')) + '<span class="tb-t">' + esc(t.name) + '</span>';
+    a.innerHTML = (t.img ? '<img class="tb-thumb" src="' + ROOT + t.img + '" alt="">' : (t.admin ? svg('lock') : svg('page'))) + '<span class="tb-t">' + esc(t.name) + '</span>';
     return a;
   }
   function renderTools() {

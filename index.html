@@ -249,24 +249,15 @@
           </a>
         </div>
 
-        <!-- the Toolbox server keeps one of these two: data-admin-only for the admin, data-not-admin for everyone else -->
-        <div class="tile-wrap" data-tool="/general-briefing/" data-admin-only>
-          <a class="card" href="general-briefing/" data-admin-only>
-            <div class="card-image"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+        <!-- a tool still being built gets data-admin-only (only the admin sees it) plus a data-not-admin "Coming soon" tile for everyone else -->
+        <div class="tile-wrap" data-tool="/general-briefing/">
+          <a class="card" href="general-briefing/">
+            <div class="card-image"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="13" rx="2"/><path d="M8 21h8M12 18v3M8 10h8M8 13h5"/></svg></div>
             <div class="card-content">
-              <p class="card-title">General Briefing<span class="card-badge">Testing</span></p>
+              <p class="card-title">General Briefing</p>
               <p class="card-desc">Builds the Spinnin' Records genre and trend briefing: label logos and genre pages with tracks pulled from Spotify links. Exports as a multi-page vector PDF.</p>
             </div>
           </a>
-        </div>
-        <div class="tile-wrap" data-not-admin>
-          <div class="card soon" aria-disabled="true">
-            <div class="card-image"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
-            <div class="card-content">
-              <p class="card-title">General Briefing<span class="card-badge">Coming soon</span></p>
-              <p class="card-desc">Builds the Spinnin' Records genre and trend briefing: label logos and genre pages with tracks pulled from Spotify links.</p>
-            </div>
-          </div>
         </div>
 
         <div class="tile-wrap" data-tool="/ideas/">
