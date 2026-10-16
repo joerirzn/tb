@@ -25,30 +25,18 @@
   #listMsg:empty { display: none; }
   #listMsg { margin-bottom: 12px; }
 
-  /* filters and sorting above the ideas */
+  /* filters above the ideas */
   .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
   .filters { display: flex; gap: 2px; flex-wrap: wrap; padding: 3px; border-radius: var(--radius-pill); background: var(--surface); border: 1px solid var(--border-hover); }
   button.chip { height: 30px; border: none; background: none; color: var(--faint); font: 600 12px var(--font); padding: 0 12px; cursor: pointer; transition: color .15s ease, background-color .15s ease; }
   button.chip:hover { color: var(--muted); }
   button.chip .n { color: var(--faint); margin-left: 5px; font-weight: 500; }
   button.chip.on { background: var(--surface-3); color: var(--text); box-shadow: inset 0 0 0 1px var(--border-hover); }
-  .sort { width: auto; height: 38px; padding: 0 34px 0 14px; font-size: 12.5px; font-weight: 600; border-radius: var(--radius-pill); background-color: var(--surface); }
 
   /* the ideas: one hairline sheet, like the settings */
   .idea-list { display: flex; flex-direction: column; gap: 1px; background: var(--hairline); border: 1px solid var(--hairline); border-radius: var(--radius-lg); overflow: hidden; }
   .idea { display: flex; gap: 16px; padding: 18px; background: var(--surface); scroll-margin-top: 24px; transition: background-color .4s ease; }
   .idea.flash { background: #1a1625; }
-  .vote {
-    flex: none; width: 52px; height: 60px; border-radius: 12px; cursor: pointer;
-    background: var(--field); border: 1px solid var(--border-hover); color: var(--text);
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
-    font: 700 15px var(--font); transition: transform .1s ease, border-color .15s ease, color .15s ease;
-  }
-  .vote svg { width: 16px; height: 16px; stroke: currentColor; fill: none; }
-  .vote:hover { border-color: rgba(255, 255, 255, 0.3); }
-  .vote:active { transform: scale(0.96); }
-  .vote.on { border-color: var(--accent); color: #fff; background: rgba(139, 92, 246, 0.14); }
-  .vote.on svg { color: var(--accent); }
   .idea-body { flex: 1; min-width: 0; }
   .idea-top { display: flex; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
   .idea-title { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; margin: 0; flex: 1; min-width: 200px; overflow-wrap: anywhere; }
@@ -76,7 +64,6 @@
 
   @media (max-width: 560px) {
     .idea { gap: 12px; padding: 14px; }
-    .vote { width: 46px; height: 54px; }
     .comment-form { flex-direction: column; align-items: stretch; }
   }
 </style>
@@ -87,14 +74,14 @@
 <div class="board">
 
 <div class="app-header">
-  <h1>Ideas <span>· suggest a tool or vote for what gets built next</span></h1>
+  <h1>Ideas <span id="lead">· suggest a tool; only the admin sees your suggestions</span></h1>
   <button class="btn" type="button" id="shareBtn" aria-expanded="false" aria-controls="composer"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Suggest a tool</button>
 </div>
 
 <!-- sharing an idea opens above the list -->
 <section class="composer" id="composer" hidden aria-label="Suggest a tool">
   <div class="section-label plain">Suggest a tool<span class="end"><button class="btn-ghost small" type="button" id="closeComposer">Cancel</button></span></div>
-  <p class="note" style="margin:0 0 14px">Missing a tool, or a feature in one? What should it do, and what would it save you?</p>
+  <p class="note" style="margin:0 0 14px">Missing a tool, or a feature in one? What should it do, and what would it save you? Only the admin sees your suggestion.</p>
   <form id="ideaForm" novalidate>
     <div class="field">
       <label for="title">Title</label>
@@ -111,15 +98,11 @@
     </div>
   </form>
 </section>
-<p class="msg ok" id="sharedMsg" role="status" hidden style="margin-bottom:12px">Thanks! Your suggestion is on the board.</p>
+<p class="msg ok" id="sharedMsg" role="status" hidden style="margin-bottom:12px">Thanks! Your suggestion has been sent.</p>
 
 <main>
     <div class="toolbar">
       <div class="filters" id="filters" role="tablist" aria-label="Filter by status"></div>
-      <select class="sort" id="sort" aria-label="Sort">
-        <option value="votes">Most votes</option>
-        <option value="new">Newest</option>
-      </select>
     </div>
     <p class="msg err" id="listMsg" role="alert"></p>
     <div class="idea-list" id="list"></div>
@@ -131,14 +114,14 @@
 (function () {
   const STATUS = { 'new': 'New', 'planned': 'Planned', 'in-progress': 'In progress', 'done': 'Done', 'declined': 'Declined' };
   const $ = id => document.getElementById(id);
-  let data = { ideas: [], isAdmin: false }, filter = 'all', sort = 'votes';
+  let data = { ideas: [], isAdmin: false }, filter = 'all';
   const open = new Set();   // ideas with their comments shown
-  // motion: only what is new moves; a vote or a re-sort does not make everything fly in again
+  // motion: only what is new moves; a status change or a new comment does not make everything fly in again
   const seen = new Set();            // ideas already on screen
   const justOpened = new Set();      // comment boxes opened by a click
   const commentCache = {};           // idea id -> comments, so a re-render shows them at once
   const stale = new Set();           // ideas whose comments need fetching
-  let animateAll = true;             // first render, filter or sort change
+  let animateAll = true;             // first render or a filter change
   let postedTo = 0;                  // idea that just got a comment from you
 
   function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
@@ -179,10 +162,10 @@
       // opened as a file: sample ideas to see the design
       const now = Date.now(), h = 36e5;
       data = { isAdmin: true, ideas: [
-        { id: 1, title: 'Story maker for releases', body: 'Instagram stories for a new release: artwork, artist and "Out now" in our templates.', status: 'planned', votes: 9, voted: true, comments: 3, author: 'Sam de Vries', author_job: 'Social', created_at: now - 50 * h, mine: false },
-        { id: 2, title: 'Batch export for the Cover Converter', body: 'Drop a whole folder and get one zip back.', status: 'new', votes: 4, voted: false, comments: 0, author: 'Joeri Roozen', author_job: 'Designer', created_at: now - 5 * h, mine: true },
-        { id: 3, title: 'Lyric video template', body: '', status: 'in-progress', votes: 3, voted: false, comments: 1, author: 'Lisa Bakker', author_job: 'Video', created_at: now - 200 * h, mine: false },
-        { id: 4, title: 'Spotify Canvas cropper', body: 'Crop a video to 9:16 and 8 seconds.', status: 'done', votes: 2, voted: false, comments: 0, author: 'Tom', author_job: '', created_at: now - 600 * h, mine: false },
+        { id: 1, title: 'Story maker for releases', body: 'Instagram stories for a new release: artwork, artist and "Out now" in our templates.', status: 'planned', comments: 3, author: 'Sam de Vries', author_job: 'Social', created_at: now - 50 * h, mine: false },
+        { id: 2, title: 'Batch export for the Cover Converter', body: 'Drop a whole folder and get one zip back.', status: 'new', comments: 0, author: 'Joeri Roozen', author_job: 'Designer', created_at: now - 5 * h, mine: true },
+        { id: 3, title: 'Lyric video template', body: '', status: 'in-progress', comments: 1, author: 'Lisa Bakker', author_job: 'Video', created_at: now - 200 * h, mine: false },
+        { id: 4, title: 'Spotify Canvas cropper', body: 'Crop a video to 9:16 and 8 seconds.', status: 'done', comments: 0, author: 'Tom', author_job: '', created_at: now - 600 * h, mine: false },
       ] };
       render(); focusFromHash();
     }
@@ -206,9 +189,11 @@
     renderFilters();
     const list = $('list'); list.innerHTML = '';
     let ideas = data.ideas.filter(i => filter === 'all' || i.status === filter);
-    ideas.sort(sort === 'new' ? (a, b) => b.created_at - a.created_at : (a, b) => b.votes - a.votes || b.created_at - a.created_at);
+    ideas.sort((a, b) => b.created_at - a.created_at);   // newest first
+    $('lead').textContent = data.isAdmin ? '· every suggestion from the team' : '· suggest a tool; only the admin sees your suggestions';
     if (!ideas.length) {
-      list.appendChild(el('div', 'empty', data.ideas.length ? 'No ideas with this status.' : 'No ideas yet. Be the first to share one.'));
+      list.appendChild(el('div', 'empty', data.ideas.length ? 'No suggestions with this status.'
+        : data.isAdmin ? 'No suggestions yet.' : 'You have not suggested anything yet. Your suggestions and their status show up here; only you and the admin see them.'));
       return;
     }
     ideas.forEach((i, k) => {
@@ -222,19 +207,6 @@
 
   function ideaCard(i) {
     const card = el('article', 'idea'); card.id = 'idea-' + i.id;
-    const vote = el('button', 'vote' + (i.voted ? ' on' : ''));
-    vote.type = 'button';
-    vote.setAttribute('aria-pressed', i.voted);
-    vote.setAttribute('aria-label', (i.voted ? 'Remove your vote' : 'Vote') + ' (' + i.votes + ' votes)');
-    vote.innerHTML = '<svg viewBox="0 0 24 24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>';
-    vote.appendChild(el('span', null, String(i.votes)));
-    vote.addEventListener('click', async () => {
-      try {
-        const r = await api('/api/ideas/' + i.id + '/vote', {}); i.voted = r.voted; i.votes = r.votes; render();
-        if (r.voted && window.tbBump) tbBump(document.querySelector('#idea-' + i.id + ' .vote'));   // a small hop for your vote
-      }
-      catch (e) { $('listMsg').textContent = e.message; }
-    });
 
     const body = el('div', 'idea-body');
     const top = el('div', 'idea-top');
@@ -266,7 +238,7 @@
       const del = el('button', 'btn-ghost small danger', 'Delete');
       del.type = 'button';
       del.addEventListener('click', async () => {
-        if (!confirm('Delete the idea "' + i.title + '" with its votes and comments?')) return;
+        if (!confirm('Delete the suggestion "' + i.title + '" with its comments?')) return;
         try { await api('/api/ideas/' + i.id + '/delete', {}); load(); }
         catch (e) { $('listMsg').textContent = e.message; }
       });
@@ -275,7 +247,7 @@
     body.appendChild(actions);
     if (open.has(i.id)) body.appendChild(commentsBox(i));
 
-    card.appendChild(vote); card.appendChild(body);
+    card.appendChild(body);
     return card;
   }
 
@@ -359,12 +331,11 @@
       await api('/api/ideas', { title, body: $('body').value.trim() });
       e.target.reset(); $('bodyCount').textContent = '0 / 2000';
       closeComposer(); $('sharedMsg').hidden = false;
-      filter = 'all'; sort = 'new'; $('sort').value = 'new';
+      filter = 'all';
       await load();
     } catch (err) { msg.className = 'msg err'; msg.textContent = err.message; }
     btn.disabled = false;
   });
-  $('sort').addEventListener('change', () => { sort = $('sort').value; animateAll = true; render(); });
 
   load();
 })();

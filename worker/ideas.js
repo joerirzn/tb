@@ -1,4 +1,5 @@
-// Ideas board: people share ideas for new tools, vote on them and comment.
+// Ideas: people suggest a tool (or an improvement) to the admin. A suggestion is private:
+// only its author and the admin see it, and its comments are a conversation between the two.
 // Only the admin sets the status; authors can delete their own ideas and comments.
 
 import { json, readJson, sameOrigin, allow } from './index.js';
@@ -165,10 +166,13 @@ export async function handleIdeas(request, env, url, user) {
                 (SELECT COUNT(*) FROM idea_votes v WHERE v.idea_id = i.id AND v.user_id = ?) AS voted,
                 (SELECT COUNT(*) FROM idea_comments c WHERE c.idea_id = i.id) AS comments
          FROM ideas i LEFT JOIN users u ON u.id = i.user_id
-         ORDER BY i.created_at DESC`).bind(user.id).all();
+         WHERE ? = 1 OR i.user_id = ?
+         ORDER BY i.created_at DESC`).bind(user.id, user.is_admin ? 1 : 0, user.id).all();
       return json({ me: user.id, isAdmin: !!user.is_admin, ideas: rows.results.map(r => ({ ...r, voted: !!r.voted, mine: r.user_id === user.id })) });
     }
     if (kind === 'ideas' && id && action === 'comments') {
+      const idea = await env.DB.prepare('SELECT user_id FROM ideas WHERE id = ?').bind(id).first();
+      if (!idea || (!user.is_admin && idea.user_id !== user.id)) return json({ error: 'This idea no longer exists.' }, 404);
       const rows = await env.DB.prepare(
         `SELECT c.id, c.body, c.created_at, c.user_id, u.name AS author, u.job_title AS author_job
          FROM idea_comments c LEFT JOIN users u ON u.id = c.user_id
@@ -196,7 +200,8 @@ export async function handleIdeas(request, env, url, user) {
 
   if (kind === 'ideas' && id) {
     const idea = await env.DB.prepare('SELECT id, user_id FROM ideas WHERE id = ?').bind(id).first();
-    if (!idea) return json({ error: 'This idea no longer exists.' }, 404);
+    // someone else's suggestion does not exist for you (the admin sees them all)
+    if (!idea || (!user.is_admin && idea.user_id !== user.id)) return json({ error: 'This idea no longer exists.' }, 404);
 
     if (action === 'vote') {
       const had = await env.DB.prepare('SELECT 1 FROM idea_votes WHERE idea_id = ? AND user_id = ?').bind(id, user.id).first();
@@ -217,11 +222,10 @@ export async function handleIdeas(request, env, url, user) {
       if (!(await allow(env, 'comment:' + user.id, 30, 60))) return json({ error: 'You commented a lot in a short time. Try again in an hour.' }, 429);
       const text = clean(body.body, 1000);
       if (!text) return json({ error: 'Write a comment first.' }, 400);
-      const earlier = await env.DB.prepare('SELECT DISTINCT user_id FROM idea_comments WHERE idea_id = ?').bind(id).all();
       await env.DB.prepare('INSERT INTO idea_comments (idea_id, user_id, body, created_at) VALUES (?, ?, ?, ?)').bind(id, user.id, text, Date.now()).run();
-      // the author hears about every comment; earlier commenters hear about replies after theirs
-      await notify(env, [idea.user_id], user.id, 'comment', id, text);
-      await notify(env, earlier.results.map(r => r.user_id).filter(u => u !== idea.user_id), user.id, 'reply', id, text);
+      // a conversation between the author and the admin: the other side hears about it
+      const admins = await env.DB.prepare("SELECT id FROM users WHERE is_admin = 1 AND status = 'approved'").all();
+      await notify(env, [idea.user_id, ...admins.results.map(a => a.id)], user.id, 'comment', id, text);
       return json({ ok: true });
     }
     if (action === 'status') {

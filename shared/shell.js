@@ -157,7 +157,8 @@
   // online: the full details (name changes etc.), new ideas, and the bell
   if (served) {
     if (!user.name && !user.email) fetch('/auth/me').then(r => r.ok ? r.json() : null).then(me => { if (me) { user = me; showUser(); renderTools(); } }).catch(() => { });
-    fetch('/api/ideas').then(r => r.ok ? r.json() : Promise.reject()).then(d => {
+    // new suggestions waiting for the admin (suggestions are private, so only the admin gets this count)
+    if (user.isAdmin) fetch('/api/ideas').then(r => r.ok ? r.json() : Promise.reject()).then(d => {
       const fresh = d.ideas.filter(i => i.status === 'new').length;
       if (fresh) { $('tbIdeas').textContent = fresh; $('tbIdeas').hidden = false; }
     }).catch(() => { });
