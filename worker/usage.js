@@ -15,14 +15,20 @@ export const USAGE_SCHEMA = [
      at INTEGER NOT NULL
    )`,
   `CREATE INDEX IF NOT EXISTS usage_at ON usage (at)`,
-  `CREATE TABLE IF NOT EXISTS milestones (
-     hours INTEGER PRIMARY KEY,
+  // milestones reached, in tenths of an hour (2.5 h = 25), so each is announced once
+  `CREATE TABLE IF NOT EXISTS milestones_reached (
+     tenths INTEGER PRIMARY KEY,
      at INTEGER NOT NULL
    )`,
 ];
 
-// hours of time saved that are celebrated with a notification for everyone
-export const MILESTONES = [10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 25000];
+// hours of time saved that are celebrated with a notification for everyone:
+// 1, 2.5, 5, then every 5 hours (10, 15, 20, ...)
+export function milestonesUpTo(hours) {
+  const list = [1, 2.5, 5];
+  for (let m = 10; m <= hours; m += 5) list.push(m);
+  return list.filter(m => m <= hours);
+}
 
 const FACTOR = 4;              // minutes saved per minute in the tool
 const MAX_SECONDS = 30 * 60;   // per export
@@ -60,12 +66,15 @@ const savedMinutes = row => spentMinutes(row) * FACTOR;
 async function checkMilestones(env) {
   const r = await env.DB.prepare('SELECT SUM(MIN(seconds, ?)) AS s FROM usage').bind(MAX_SECONDS).first();
   const savedHours = (r.s || 0) / 3600 * FACTOR;
-  for (const h of MILESTONES.filter(h => h <= savedHours)) {
-    const ins = await env.DB.prepare('INSERT OR IGNORE INTO milestones (hours, at) VALUES (?, ?)').bind(h, Date.now()).run();
-    if (ins.meta.changes === 1) {
-      const people = await env.DB.prepare("SELECT id FROM users WHERE status = 'approved'").all();
-      await notify(env, people.results.map(p => p.id), 0, 'milestone', 0, String(h));
-    }
+  // all milestones passed are remembered; only the highest new one is announced (one big export can pass several)
+  let newest = 0;
+  for (const h of milestonesUpTo(savedHours)) {
+    const ins = await env.DB.prepare('INSERT OR IGNORE INTO milestones_reached (tenths, at) VALUES (?, ?)').bind(Math.round(h * 10), Date.now()).run();
+    if (ins.meta.changes === 1) newest = h;
+  }
+  if (newest) {
+    const people = await env.DB.prepare("SELECT id FROM users WHERE status = 'approved'").all();
+    await notify(env, people.results.map(p => p.id), 0, 'milestone', 0, String(newest));
   }
 }
 

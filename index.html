@@ -646,14 +646,16 @@
 
 
   // ---------- milestone ----------
-  const MILESTONES = [10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 25000];
+  // 1, 2.5, 5 hours, then every 5 hours (the same list as worker/usage.js)
+  const milestones = h => { const l = [1, 2.5, 5]; for (let m = 10; m <= h + 5; m += 5) l.push(m); return l; };
   let milestoneFor = null;   // the total it was last drawn for, so new numbers arriving for the same total do not replay it
   function renderMilestone() {
     const all = data.allTime ? data.allTime.minutes : 0;
     if (all === milestoneFor && $('gaugeSvg').childElementCount) return;
     milestoneFor = all;
-    const h = all / 60, next = MILESTONES.find(m => m > h) || MILESTONES[MILESTONES.length - 1];
-    const pct = Math.min(100, h / next * 100), left = Math.max(0, next * 60 - all);
+    const h = all / 60, list = milestones(h), next = list.find(m => m > h), prev = list.filter(m => m <= h).pop() || 0;
+    // the ring shows the way from the last milestone to the next one
+    const pct = Math.min(100, (h - prev) / (next - prev) * 100), left = Math.max(0, next * 60 - all);
     $('msGoal').innerHTML = next.toLocaleString('en-GB') + '<small>h</small>';
     $('msPct').textContent = h ? fmt(all) + ' · ' + Math.floor(pct) + '%' : 'the first goal';
     $('msLeft').textContent = fmt(left) + ' to go';
@@ -675,14 +677,14 @@
     if (perDay > 0 && left > 0) {
       const days = Math.ceil(left / perDay), when = new Date(today); when.setDate(today.getDate() + days);
       const part = when.getDate() <= 10 ? 'early' : when.getDate() <= 20 ? 'mid' : 'late';
-      $('paceMain').textContent = 'At this pace: ≈ ' + (days < 14 ? days + ' days' : Math.round(days / 7) + ' weeks');
+      $('paceMain').textContent = 'At this pace: ≈ ' + (days < 14 ? days + (days === 1 ? ' day' : ' days') : Math.round(days / 7) + ' weeks');
       $('paceSub').textContent = part + ' ' + when.toLocaleString('en-US', { month: 'short' }) + ' · ' + fmt(perDay * 7) + ' saved a week lately';
     } else {
       $('paceMain').textContent = h ? 'No exports in the last 30 days' : 'Every export counts';
       $('paceSub').textContent = 'Use a tool to get closer to ' + next + 'h';
     }
     const done = $('msDone'); done.innerHTML = '';
-    MILESTONES.filter(m => m <= h).slice(-4).forEach(m => {
+    list.filter(m => m <= h).slice(-4).forEach(m => {
       const c = document.createElement('span'); c.innerHTML = '<svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg>'; c.appendChild(document.createTextNode(m.toLocaleString('en-GB') + 'h')); done.appendChild(c);
     });
   }
