@@ -6,7 +6,7 @@
 // ADMIN_EMAIL secret (set in the Cloudflare dashboard, never in this repo).
 
 import { loginPage, adminPage, accountPage } from './pages.js';
-import { IDEAS_SCHEMA, handleIdeas, handleNotifications, listAnnouncements, deleteAnnouncement, syncTools } from './ideas.js';
+import { IDEAS_SCHEMA, handleIdeas, handleNotifications, listAnnouncements, deleteAnnouncement, syncTools, announce } from './ideas.js';
 import { USAGE_SCHEMA, handleUsage, handleStats } from './usage.js';
 
 const SESSION_COOKIE = '__Host-tb_session';
@@ -285,6 +285,12 @@ async function handleAdmin(request, env, url, me) {
   if (request.method !== 'POST') return new Response('Method not allowed', { status: 405 });
   if (!sameOrigin(request, url)) return json({ error: 'Bad request.' }, 403);
   const body = await readJson(request);
+
+  // a message from the admin to everyone with access, e.g. about an update
+  if (action === 'announcements/create') {
+    const r = await announce(env, me, { kind: 'update', title: body.title, body: body.body, link: body.link });
+    return r.error ? json(r, 400) : json(r);
+  }
 
   if (action === 'announcements/delete') {
     await deleteAnnouncement(env, Number(body.id) || 0);

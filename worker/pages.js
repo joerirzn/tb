@@ -237,6 +237,21 @@ ${BASE_CSS}
   .card .actions .btn, .card .actions .btn-utility{ height: 34px; font-size: 12.5px; padding: 0 16px; }
 
   .intro{ font-size: 12.5px; line-height: 1.5; color: var(--faint); margin: 0 0 12px; max-width: 80ch; }
+  /* write a message to everyone */
+  .ann-grid{ display: grid; grid-template-columns: minmax(320px, 440px) minmax(0, 1fr); gap: 16px; align-items: start; }
+  @media (max-width: 1000px){ .ann-grid{ grid-template-columns: 1fr; } }
+  .composer{ background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--radius-lg); padding: 18px; }
+  .composer h3{ font-size: 13px; font-weight: 700; margin: 0 0 4px; }
+  .composer .sub{ font-size: 12px; color: var(--faint); margin: 0 0 14px; line-height: 1.5; }
+  .composer textarea{ min-height: 110px; }
+  .composer .count{ font-size: 11px; color: var(--faint); text-align: right; margin-top: 4px; }
+  .composer .btn{ width: auto; padding: 0 20px; }
+  .composer .msg{ margin: 10px 0 0; }
+  .kind{ font-size: 10px; font-weight: 700; border-radius: 5px; padding: 1px 6px; margin-right: 6px; vertical-align: 1px; }
+  .kind.update{ color: #fff; background: var(--accent); }
+  .kind.tool{ color: #002616; background: var(--success); }
+  .ann-body{ font-size: 12.5px; color: var(--muted); white-space: pre-wrap; margin-top: 3px; line-height: 1.5; }
+  #announcements .row{ white-space: normal; }
 </style>
 </head>
 ${shellBody({ me, name, jobTitle, isAdmin: true })}
@@ -269,8 +284,20 @@ ${shellBody({ me, name, jobTitle, isAdmin: true })}
 <section data-panel="declined" hidden><div class="table people" id="denied"></div></section>
 <section data-panel="activity" hidden><div class="table acts" id="activity"></div></section>
 <section data-panel="announcements" hidden>
-  <p class="intro">When a new tool appears on the Creative Toolbox home, everyone with access gets a notification automatically. Admin-only tools are announced once they are opened up to everyone.</p>
-  <div class="table" id="announcements"></div>
+  <div class="ann-grid">
+    <form class="composer" id="annForm" novalidate>
+      <h3>Send a message to everyone</h3>
+      <p class="sub">Everyone with access gets it in their notifications, e.g. about an update or a new feature. New tools are announced automatically.</p>
+      <div class="field"><label for="annTitle">Title</label><input id="annTitle" type="text" maxlength="80" placeholder="e.g. Banner Creator: TikTok size added" autocomplete="off"></div>
+      <div class="field"><label for="annBody">Message <span class="opt">optional</span></label><textarea id="annBody" maxlength="600" placeholder="What changed, and what does it mean for them?"></textarea><div class="count" id="annCount">0 / 600</div></div>
+      <div class="field"><label for="annLink">Opens <span class="opt">when they click it</span></label><select id="annLink"></select></div>
+      <button class="btn" type="submit">Send to everyone</button>
+      <p class="msg" id="annMsg" role="alert"></p>
+    </form>
+    <div>
+      <div class="table" id="announcements"></div>
+    </div>
+  </div>
 </section>
 <script>
 (function () {
@@ -430,18 +457,48 @@ ${shellBody({ me, name, jobTitle, isAdmin: true })}
       show(document.querySelector('[data-panel="' + want + '"]') ? want : (users.some(function (u) { return u.status === 'pending'; }) ? 'requests' : 'people'));
     }
   }
+  // the message composer
+  (function () {
+    var sel = $('annLink');
+    [['/', 'Nothing, just the message'], ['/#time-saved', 'Time saved']].concat(Object.keys(TOOLS).filter(function (k) { return k.length > 1 && k.charAt(k.length - 1) === '/' && k !== '/ideas/'; }).map(function (k) { return [k, TOOLS[k]]; }))
+      .forEach(function (o) { var e = el('option', null, o[1]); e.value = o[0]; sel.appendChild(e); });
+    $('annBody').addEventListener('input', function () { $('annCount').textContent = this.value.length + ' / 600'; });
+    $('annForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      var msg = $('annMsg'), btn = this.querySelector('.btn'), title = $('annTitle').value.trim();
+      msg.className = 'msg'; msg.textContent = '';
+      if (!title) { msg.className = 'msg err'; msg.textContent = 'Give the message a title.'; $('annTitle').focus(); return; }
+      var people = users.filter(function (u) { return u.status === 'approved' && u.email !== mine; }).length;
+      if (!confirm('Send "' + title + '" to ' + people + (people === 1 ? ' person' : ' people') + '?')) return;
+      btn.disabled = true;
+      try {
+        var r = await fetch('/admin/api/announcements/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: title, body: $('annBody').value.trim(), link: $('annLink').value }) });
+        var j = {}; try { j = await r.json(); } catch (x) {}
+        if (!r.ok) throw new Error(j.error || 'Sending failed. Try again.');
+        this.reset(); $('annCount').textContent = '0 / 600';
+        msg.className = 'msg ok'; msg.textContent = 'Sent to ' + j.sent + (j.sent === 1 ? ' person.' : ' people.');
+        loadAnnouncements();
+      } catch (err) { msg.className = 'msg err'; msg.textContent = err.message; }
+      btn.disabled = false;
+    });
+  })();
+
   async function loadAnnouncements() {
     var r = await fetch('/admin/api/announcements'); if (!r.ok) return;
     var list = (await r.json()).announcements, box = $('announcements'); box.innerHTML = '';
-    if (!list.length) { box.appendChild(el('div', 'empty', 'No tools have been announced yet.')); return; }
+    var head = el('div', 'row head'); head.style.gridTemplateColumns = 'minmax(0, 1fr) auto'; head.appendChild(el('div', null, 'Sent')); head.appendChild(el('div')); box.appendChild(head);
+    if (!list.length) { box.appendChild(el('div', 'empty', 'Nothing sent yet.')); return; }
     list.forEach(function (a) {
       var row = el('div', 'row'); row.style.gridTemplateColumns = 'minmax(0, 1fr) auto';
       var who = el('div'); who.style.whiteSpace = 'normal';
-      who.appendChild(el('b', null, 'New tool: ' + a.title));
-      who.appendChild(el('div', 'faint', when(a.created_at) + ' · opens ' + (TOOLS[a.link] || a.link) + ' · sent to ' + a.sent + ', opened by ' + a.opened));
+      var t = el('div'); t.appendChild(el('span', 'kind ' + (a.kind === 'update' ? 'update' : 'tool'), a.kind === 'update' ? 'Message' : 'New tool'));
+      t.appendChild(el('b', null, a.title)); who.appendChild(t);
+      if (a.kind === 'update' && a.body) who.appendChild(el('div', 'ann-body', a.body));
+      var opens = a.link === '/' ? '' : ' · opens ' + (a.link === '/#time-saved' ? 'Time saved' : (TOOLS[a.link] || a.link));
+      who.appendChild(el('div', 'faint', when(a.created_at) + opens + ' · sent to ' + a.sent + ', read by ' + a.opened));
       var acts = el('div', 'actions');
       acts.appendChild(button('Delete', 'btn-utility danger', async function () {
-        if (!confirm('Delete this announcement? It also disappears from the notifications of everyone.')) return;
+        if (!confirm('Delete "' + a.title + '"? It also disappears from the notifications of everyone.')) return;
         var x = await fetch('/admin/api/announcements/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: a.id }) });
         if (x.ok) { status('Announcement deleted.'); loadAnnouncements(); } else status('Deleting failed. Reload and try again.', true);
       }));

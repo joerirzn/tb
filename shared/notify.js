@@ -30,6 +30,8 @@
     .nt-what{ font-size: 13.5px; line-height: 1.4; color: #cccccc; }
     .nt-what b{ color: #fff; font-weight: 600; }
     .nt-snip{ font-size: 13px; line-height: 1.4; color: #86868b; margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .nt-msg{ font-size: 13px; line-height: 1.45; color: #b5b5b5; margin-top: 4px; white-space: pre-wrap; overflow-wrap: anywhere;
+      display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
     .nt-time{ font-size: 12px; color: #86868b; margin-top: 3px; }
     .nt-empty{ font-size: 13px; color: #86868b; padding: 16px 10px 18px; }
   `;
@@ -55,13 +57,13 @@
   }
   // one line of text per notification; names and titles always as text, never as HTML
   function line(n) {
-    const what = el('div', 'nt-what'), actor = el('b', null, n.actor || 'Someone'), title = el('b', null, '“' + (n.idea_title || 'a deleted idea') + '”');
+    const what = el('div', 'nt-what'), actor = el('b', null, n.actor || 'Someone'), title = el('b', null, '“' + (n.idea_title || 'a deleted suggestion') + '”');
     const t = s => document.createTextNode(s);
-    if (n.type === 'vote') what.append(actor, t(' upvoted your idea '), title);
-    else if (n.type === 'comment') what.append(actor, t(' commented on your idea '), title);
-    else if (n.type === 'reply') what.append(actor, t(' also commented on '), title);
-    else if (n.type === 'status') what.append(t('Your idea '), title, t(' is now '), el('b', null, STATUS[n.detail] || n.detail));
-    else if (n.type === 'idea') what.append(actor, t(' shared a new idea '), title);
+    if (n.type === 'vote') what.append(actor, t(' upvoted your suggestion '), title);
+    else if (n.type === 'comment' || n.type === 'reply') what.append(actor, t(' replied on '), title);
+    else if (n.type === 'status') what.append(t('Your suggestion '), title, t(' is now '), el('b', null, STATUS[n.detail] || n.detail));
+    else if (n.type === 'idea') what.append(actor, t(' suggested '), title);
+    else if (n.type === 'announce' && n.ann_kind === 'update') what.append(el('b', null, n.ann_title || 'Update'));
     else if (n.type === 'announce') what.append(t('New tool: '), el('b', null, n.ann_title || 'a tool'));
     else if (n.type === 'milestone') what.append(t('Milestone: the team saved '), el('b', null, n.detail + 'h'), t(' with the Creative Toolbox'));
     return what;
@@ -79,17 +81,17 @@
     }
     panel.appendChild(head);
     const list = el('div', 'nt-list');
-    if (!items.length) list.appendChild(el('div', 'nt-empty', 'Nothing yet. You hear here about new tools, and when people vote on or reply to your ideas.'));
+    if (!items.length) list.appendChild(el('div', 'nt-empty', 'Nothing yet. You hear here about new tools, updates, and replies to your suggestions.'));
     items.forEach(n => {
       const it = el('button', 'nt-item' + (n.read ? '' : ' unread')); it.type = 'button';
       it.appendChild(line(n));
       if ((n.type === 'comment' || n.type === 'reply') && n.detail) it.appendChild(el('div', 'nt-snip', n.detail));
-      if (n.type === 'announce' && n.ann_body) it.appendChild(el('div', 'nt-snip', n.ann_body));
+      if (n.type === 'announce' && n.ann_body) it.appendChild(el('div', n.ann_kind === 'update' ? 'nt-msg' : 'nt-snip', n.ann_body));
       it.appendChild(el('div', 'nt-time', ago(n.created_at)));
       it.addEventListener('click', async () => {
         if (!n.read) { await post({ id: n.id }); n.read = true; unread = Math.max(0, unread - 1); }
         close();
-        if (n.type === 'announce') { location.href = n.ann_link || '/'; return; }
+        if (n.type === 'announce') { if (n.ann_kind !== 'update' || (n.ann_link && n.ann_link !== '/')) location.href = n.ann_link || '/'; else paint(); return; }
         if (n.type === 'milestone') { location.href = '/#time-saved'; return; }
         const target = '/ideas/#idea-' + n.idea_id;
         if (location.pathname === '/ideas/' || location.pathname === '/ideas') { location.hash = 'idea-' + n.idea_id; paint(); }

@@ -96,10 +96,11 @@ export async function listAnnouncements(env) {
 
 export async function announce(env, me, body) {
   const kind = body.kind === 'update' ? 'update' : 'tool';
-  const title = clean(body.title, 80).replace(/\n/g, ' '), text = clean(body.body, 200).replace(/\n/g, ' ');
+  // a new tool gets a one-line description; an update from the admin can be a short message with line breaks
+  const title = clean(body.title, 80).replace(/\n/g, ' '), text = kind === 'update' ? clean(body.body, 600) : clean(body.body, 200).replace(/\n/g, ' ');
   let link = String(body.link || '/').trim();
   if (!link.startsWith('/') || link.startsWith('//')) link = '/';
-  if (!title) return { error: 'Give the announcement a title, e.g. the name of the tool.' };
+  if (!title) return { error: kind === 'update' ? 'Give the message a title.' : 'Give the announcement a title, e.g. the name of the tool.' };
   const now = Date.now();
   const res = await env.DB.prepare('INSERT INTO announcements (kind, title, body, link, created_at) VALUES (?, ?, ?, ?, ?)').bind(kind, title, text, link.slice(0, 200), now).run();
   const people = await env.DB.prepare("SELECT id FROM users WHERE status = 'approved'").all();
