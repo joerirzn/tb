@@ -23,11 +23,11 @@ export const USAGE_SCHEMA = [
 ];
 
 // hours of time saved that are celebrated with a notification for everyone:
-// 1, 2.5, 5, then every 5 hours (10, 15, 20, ...)
+// 1, 2.5, 5, 10, 25, 50, 100, 250, ... (1, 2.5 and 5 times a power of ten)
 export function milestonesUpTo(hours) {
-  const list = [1, 2.5, 5];
-  for (let m = 10; m <= hours; m += 5) list.push(m);
-  return list.filter(m => m <= hours);
+  const list = [];
+  for (let p = 1; p <= hours; p *= 10) [1, 2.5, 5].forEach(f => { if (p * f <= hours) list.push(p * f); });
+  return list;
 }
 
 const FACTOR = 4;              // minutes saved per minute in the tool

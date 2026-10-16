@@ -648,16 +648,15 @@
 
 
   // ---------- milestone ----------
-  // 1, 2.5, 5 hours, then every 5 hours (the same list as worker/usage.js)
-  const milestones = h => { const l = [1, 2.5, 5]; for (let m = 10; m <= h + 5; m += 5) l.push(m); return l; };
+  // 1, 2.5, 5, 10, 25, 50, 100, 250, ... hours (the same list as worker/usage.js), up to the first one still ahead
+  const milestones = h => { const l = []; for (let p = 1; !l.length || l[l.length - 1] <= h; p *= 10) l.push(p, p * 2.5, p * 5); return l; };
   let milestoneFor = null;   // the total it was last drawn for, so new numbers arriving for the same total do not replay it
   function renderMilestone() {
     const all = data.allTime ? data.allTime.minutes : 0;
     if (all === milestoneFor && $('gaugeSvg').childElementCount) return;
     milestoneFor = all;
-    const h = all / 60, list = milestones(h), next = list.find(m => m > h), prev = list.filter(m => m <= h).pop() || 0;
-    // the ring shows the way from the last milestone to the next one
-    const pct = Math.min(100, (h - prev) / (next - prev) * 100), left = Math.max(0, next * 60 - all);
+    const h = all / 60, list = milestones(h), next = list.find(m => m > h);
+    const pct = Math.min(100, h / next * 100), left = Math.max(0, next * 60 - all);   // the ring: how far the team is towards the next one
     $('msGoal').innerHTML = next.toLocaleString('en-GB') + '<small>h</small>';
     $('msPct').textContent = h ? fmt(all) + ' · ' + Math.floor(pct) + '%' : 'the first goal';
     $('msLeft').textContent = fmt(left) + ' to go';
