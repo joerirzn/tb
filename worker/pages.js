@@ -350,11 +350,18 @@ ${SHELL_HEAD}
 <title>Creative Toolbox · Account</title>
 <style>
 ${BASE_CSS}
-  .sheet{ max-width: 560px; }
+  /* you across the top, then profile and password side by side */
+  .sheet.account{ display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sheet.account > .wide{ grid-column: 1 / -1; }
+  @media (max-width: 1000px){ .sheet.account{ grid-template-columns: 1fr; } }
   .sub{ font-size: 12.5px; line-height: 1.5; color: var(--faint); margin: -6px 0 14px; }
-  .signed{ display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-  .signed .who{ flex: 1; min-width: 0; font-size: 13.5px; font-weight: 600; word-break: break-all; }
-  form .btn{ margin-top: 4px; }
+  .signed{ display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .signed .tb-avatar{ width: 46px; height: 46px; }
+  .signed .tb-avatar span{ width: 42px; height: 42px; font-size: 13px; }
+  .signed .who{ flex: 1; min-width: 0; }
+  .signed .who b{ display: block; font-size: 15px; font-weight: 700; }
+  .signed .who span{ display: block; font-size: 12.5px; color: var(--muted); word-break: break-all; }
+  form .btn{ margin-top: 4px; width: auto; padding: 0 22px; }
 </style>
 </head>
 ${shellBody({ me, name, jobTitle, isAdmin })}
@@ -362,10 +369,13 @@ ${shellBody({ me, name, jobTitle, isAdmin })}
   <h1>Account <span>· your profile and password</span></h1>
 </div>
 
-<div class="sheet">
-  <section class="sb-section">
-    <div class="section-label plain">Signed in as</div>
-    <div class="signed"><span class="who" id="me"></span><button class="btn-utility" type="button" id="signOut">Sign out</button></div>
+<div class="sheet account">
+  <section class="sb-section wide">
+    <div class="signed">
+      <span class="tb-avatar"><span id="ini"></span></span>
+      <span class="who"><b id="meName"></b><span id="me"></span></span>
+      <button class="btn-utility" type="button" id="signOut">Sign out</button>
+    </div>
   </section>
 
   <section class="sb-section">
@@ -399,7 +409,11 @@ ${shellBody({ me, name, jobTitle, isAdmin })}
 (function () {
   var $ = function (id) { return document.getElementById(id); };
   var me = ${jsStr(me)}, name = ${jsStr(name || '')}, job = ${jsStr(jobTitle || '')};
-  function showMe() { $('me').textContent = name ? name + ' · ' + me : me; }
+  function showMe() {
+    $('meName').textContent = name || me;
+    $('me').textContent = (job ? job + ' · ' : '') + me;
+    $('ini').textContent = (name || me).split(/[\\s@.]+/).filter(Boolean).slice(0, 2).map(function (w) { return w[0].toUpperCase(); }).join('');
+  }
   showMe(); $('user').value = me;
   // the name is stored as "First Last": everything after the first space is the last name
   var cut = name.indexOf(' ');
