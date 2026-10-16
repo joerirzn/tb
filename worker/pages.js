@@ -1,4 +1,5 @@
-// Login and admin pages, in the Toolbox style (see STYLE_GUIDE.md).
+// The sign-in, account and admin pages, in the Creative Toolbox design (shared/tool.css, like the tools).
+// Account and admin also get the sidebar (shared/shell.js); the sign-in page has none, you are not signed in yet.
 // Everything people type is put on the page with textContent, never as HTML.
 
 // a JS string literal that is safe inside <script>: no "</script>" or "<!--" can break out
@@ -8,40 +9,30 @@ const HEAD = `<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" type="image/png" href="/favicon.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/shared/motion.css">
+<link rel="stylesheet" href="/shared/tool.css">
 <script src="/shared/motion.js" defer></script>`;
 
+// pages with the sidebar: who is signed in goes on <body>, the same way the server does it for the tools
+const SHELL_HEAD = HEAD + '\n<link rel="stylesheet" href="/shared/shell.css">';
+const enc = v => encodeURIComponent(v || '');   // no quotes or brackets left, so safe inside an attribute
+const shellBody = u => `<body data-tb-name="${enc(u.name)}" data-tb-job="${enc(u.jobTitle)}" data-tb-email="${enc(u.me)}" data-tb-admin="${u.isAdmin ? '1' : '0'}">
+<script src="/shared/shell.js"></script>`;
+
 const BASE_CSS = `
-  :root{
-    --bg: #000000; --surface: #272729; --surface-2: #2a2a2c; --surface-3: #252527;
-    --border: rgba(255,255,255,0.08); --border-hover: rgba(255,255,255,0.16);
-    --text: #ffffff; --text-muted: #cccccc; --text-faint: #86868b;
-    --accent: #2997ff; --accent-focus: #0071e3; --on-accent: #ffffff;
-    --success: #30d158; --warning: #ffd60a; --error: #ff453a;
-    --font: 'Inter', -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  }
-  *{ box-sizing: border-box; }
-  html, body{ margin: 0; padding: 0; }
-  body{ background: var(--bg); color: var(--text); font-family: var(--font); -webkit-font-smoothing: antialiased; min-height: 100vh; }
-  ::selection{ background: var(--accent); color: #fff; }
-  a{ color: var(--accent); text-decoration: none; }
-  button{ font-family: inherit; cursor: pointer; }
-  button:active{ transform: scale(0.95); }
-  button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible{ outline: 2px solid var(--accent-focus); outline-offset: 3px; }
-  .card{ background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 24px; }
-  .btn{ background: var(--accent); color: var(--on-accent); border: none; border-radius: 9999px; font: 400 17px var(--font); padding: 11px 22px; transition: transform .1s ease; }
-  .btn:disabled{ background: var(--surface-2); color: var(--text-faint); cursor: default; transform: none; }
-  .btn-utility{ background: transparent; color: var(--text); border: 1px solid var(--border-hover); border-radius: 9999px; padding: 8px 15px; font: 400 14px var(--font); transition: transform .1s ease, border-color .15s ease; }
-  .btn-utility:hover{ border-color: var(--text-faint); }
-  .btn-utility.danger:hover{ color: #e55; border-color: #e55; }
-  input, textarea{ width: 100%; background: var(--surface-3); border: 1px solid var(--border); color: var(--text); border-radius: 9999px; padding: 12px 20px; font: 400 17px var(--font); }
-  textarea{ border-radius: 18px; resize: vertical; min-height: 84px; line-height: 1.47; }
-  input:focus, textarea:focus{ outline: none; border-color: var(--accent); }
-  input::placeholder, textarea::placeholder{ color: var(--text-faint); }
-  @media (prefers-reduced-motion: reduce){ *{ animation-duration: .001s !important; transition-duration: .001s !important; } }
+  .msg{ min-height: 1.5em; margin-top: 10px; }
+  .msg:empty{ min-height: 0; margin: 0; }
+  /* small actions, the same as .btn-ghost */
+  .btn-utility{ display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 34px; padding: 0 14px; white-space: nowrap;
+    background: var(--surface); border: 1px solid var(--border-hover); color: var(--muted); border-radius: var(--radius-pill);
+    font: 600 12.5px var(--font); cursor: pointer; transition: border-color .15s, color .15s, transform .1s; }
+  .btn-utility:hover{ border-color: var(--text); color: var(--text); }
+  .btn-utility:active{ transform: scale(.97); }
+  .btn-utility.danger:hover{ color: var(--error); border-color: var(--error); }
+  .two{ display: flex; gap: 8px; }
+  .two .field{ flex: 1; min-width: 0; }
+  /* a column of sections divided by hairlines, like the settings of a tool */
+  .sheet{ display: flex; flex-direction: column; gap: 1px; background: var(--hairline); border: 1px solid var(--hairline); border-radius: var(--radius-lg); overflow: hidden; }
 `;
 
 export function loginPage({ next }) {
@@ -49,39 +40,32 @@ export function loginPage({ next }) {
 <html lang="en">
 <head>
 ${HEAD}
-<title>Toolbox · Sign in</title>
+<title>Creative Toolbox · Sign in</title>
 <style>
 ${BASE_CSS}
-  body{ display: flex; align-items: center; justify-content: center; padding: 40px 16px; }
-  .box{ width: 100%; max-width: 420px; animation: rise .5s ease both; }
-  @keyframes rise{ from{ opacity: 0; transform: translateY(10px); } to{ opacity: 1; transform: none; } }
-  .brand{ display: flex; align-items: center; gap: 14px; margin-bottom: 28px; }
-  .brand img{ width: 44px; height: 44px; border-radius: 10px; }
-  h1{ font-size: 32px; font-weight: 600; letter-spacing: -0.03em; margin: 0; }
-  .lead{ font-size: 17px; line-height: 1.47; color: var(--text-muted); margin: 0 0 24px; }
-  .tabs{ display: flex; gap: 4px; background: var(--surface-3); border: 1px solid var(--border); border-radius: 9999px; padding: 4px; margin-bottom: 20px; }
-  .tab{ flex: 1; background: transparent; border: none; color: var(--text-faint); font: 400 14px var(--font); padding: 8px 12px; border-radius: 9999px; }
-  .tab.on{ background: var(--surface-2); color: var(--text); }
-  .tab:active{ transform: none; }
-  form{ display: flex; flex-direction: column; gap: 12px; }
-  label{ font-size: 13px; color: var(--text-muted); margin: 4px 0 -4px 20px; }
-  .two{ display: flex; gap: 10px; }
-  .two .col{ flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
-  .hint{ font-size: 12px; color: var(--text-faint); margin: -4px 0 0 20px; }
-  .btn{ margin-top: 8px; }
-  .msg{ font-size: 14px; line-height: 1.5; margin: 4px 0 0; min-height: 1.5em; }
-  .msg.err{ color: var(--error); }
-  .msg.ok{ color: var(--success); }
-  .done{ text-align: center; padding: 8px 0; }
-  .done h2{ font-size: 22px; font-weight: 600; letter-spacing: -0.02em; margin: 0 0 8px; }
-  .done p{ font-size: 15px; line-height: 1.5; color: var(--text-muted); margin: 0 0 20px; }
-  .foot{ font-size: 12px; color: var(--text-faint); text-align: center; margin-top: 20px; }
-  [hidden]{ display: none !important; }
+  body{ align-items: center; justify-content: center; padding: 40px 16px; }
+  .box{ width: 100%; max-width: 400px; }
+  .brand{ display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+  .brand img{ width: 40px; height: 40px; border-radius: 11px; box-shadow: 0 0 0 1px var(--border-hover); }
+  .brand h1{ font-size: 22px; font-weight: 700; letter-spacing: -0.02em; margin: 0; }
+  .lead{ font-size: 13.5px; line-height: 1.5; color: var(--muted); margin: 0 0 18px; min-height: 2.6em; }
+  .card{ background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--radius-lg); padding: 20px; }
+  /* Sign in / Request access: one pill, the chosen side filled */
+  .tabs{ display: flex; gap: 2px; padding: 3px; border-radius: var(--radius-pill); background: var(--field); border: 1px solid var(--border-hover); margin-bottom: 18px; }
+  .tab{ flex: 1; height: 32px; border: none; background: none; border-radius: var(--radius-pill); color: var(--faint); font: 600 12.5px var(--font); cursor: pointer; transition: color .15s, background-color .15s; }
+  .tab:hover{ color: var(--muted); }
+  .tab.on{ background: var(--surface-3); color: var(--text); box-shadow: inset 0 0 0 1px var(--border-hover); }
+  form .btn{ margin-top: 6px; }
+  .done{ text-align: center; padding: 8px 0 4px; }
+  .done .ic{ width: 44px; height: 44px; margin: 0 auto 12px; border-radius: 9999px; background: rgba(52, 211, 153, 0.12); color: var(--success); display: grid; place-items: center; }
+  .done .ic svg{ width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+  .done h2{ font-size: 17px; font-weight: 700; margin: 0 0 6px; }
+  .done p{ font-size: 13px; line-height: 1.55; color: var(--muted); margin: 0 0 16px; }
 </style>
 </head>
 <body>
 <main class="box">
-  <div class="brand"><img src="/favicon.png" alt=""><h1>Toolbox</h1></div>
+  <div class="brand"><img src="/favicon.png" alt=""><h1>Creative Toolbox</h1></div>
   <p class="lead" id="lead">Sign in to open the tools.</p>
   <div class="card">
     <div class="tabs" role="tablist">
@@ -90,39 +74,32 @@ ${BASE_CSS}
     </div>
 
     <form id="loginForm" novalidate>
-      <label for="li-email">Email</label>
-      <input id="li-email" type="email" autocomplete="username" required>
-      <label for="li-pw">Password</label>
-      <input id="li-pw" type="password" autocomplete="current-password" required>
+      <div class="field"><label for="li-email">Email</label><input id="li-email" type="email" autocomplete="username" required></div>
+      <div class="field"><label for="li-pw">Password</label><input id="li-pw" type="password" autocomplete="current-password" required></div>
       <button class="btn" type="submit">Sign in</button>
       <p class="msg" id="loginMsg" role="alert"></p>
     </form>
 
     <form id="registerForm" novalidate hidden>
       <div class="two">
-        <div class="col"><label for="rg-first">First name</label><input id="rg-first" type="text" autocomplete="given-name" maxlength="40" required></div>
-        <div class="col"><label for="rg-last">Last name</label><input id="rg-last" type="text" autocomplete="family-name" maxlength="40" required></div>
+        <div class="field"><label for="rg-first">First name</label><input id="rg-first" type="text" autocomplete="given-name" maxlength="40" required></div>
+        <div class="field"><label for="rg-last">Last name</label><input id="rg-last" type="text" autocomplete="family-name" maxlength="40" required></div>
       </div>
-      <label for="rg-job">Job title</label>
-      <input id="rg-job" type="text" autocomplete="organization-title" maxlength="80" required>
-      <label for="rg-email">Email</label>
-      <input id="rg-email" type="email" autocomplete="email" required>
-      <label for="rg-pw">Password</label>
-      <input id="rg-pw" type="password" autocomplete="new-password" minlength="10" required>
-      <p class="hint">At least 10 characters.</p>
-      <label for="rg-note">What do you need the Toolbox for? <span style="color:var(--text-faint)">(optional)</span></label>
-      <textarea id="rg-note" maxlength="500"></textarea>
+      <div class="field"><label for="rg-job">Job title</label><input id="rg-job" type="text" autocomplete="organization-title" maxlength="80" required></div>
+      <div class="field"><label for="rg-email">Email</label><input id="rg-email" type="email" autocomplete="email" required></div>
+      <div class="field"><label for="rg-pw">Password <span class="opt">at least 10 characters</span></label><input id="rg-pw" type="password" autocomplete="new-password" minlength="10" required></div>
+      <div class="field"><label for="rg-note">What do you need the Creative Toolbox for? <span class="opt">optional</span></label><textarea id="rg-note" maxlength="500"></textarea></div>
       <button class="btn" type="submit">Request access</button>
       <p class="msg" id="registerMsg" role="alert"></p>
     </form>
 
     <div class="done" id="done" hidden>
+      <div class="ic"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
       <h2>Request sent</h2>
       <p>Your request is waiting for approval. Once it has been accepted, you can sign in with this email and password.</p>
       <button class="btn-utility" type="button" id="backToLogin">Back to sign in</button>
     </div>
   </div>
-  <p class="foot">Internal use only.</p>
 </main>
 <script>
 (function () {
@@ -173,7 +150,7 @@ ${BASE_CSS}
     busy(this, true);
     try {
       var r = await post('/auth/register', data);
-      if (r.ok && r.data.pending) { this.hidden = true; $('done').hidden = false; $('li-email').value = data.email; this.reset(); }
+      if (r.ok && r.data.pending) { this.hidden = true; $('done').hidden = false; if (window.tbIn) tbIn($('done')); $('li-email').value = data.email; this.reset(); }
       else if (r.ok) { location.href = r.data.next || '/'; return; }
       else { msg.className = 'msg err'; msg.textContent = r.data.error || 'Sending the request failed. Try again.'; }
     } catch (err) { msg.className = 'msg err'; msg.textContent = 'No connection. Try again.'; }
@@ -187,77 +164,63 @@ ${BASE_CSS}
 </html>`;
 }
 
-export function adminPage({ me }) {
+export function adminPage({ me, name, jobTitle }) {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
-${HEAD}
-<title>Toolbox · Admin</title>
+${SHELL_HEAD}
+<title>Creative Toolbox · Access</title>
 <style>
 ${BASE_CSS}
-  .wrap{ max-width: 1100px; margin: 0 auto; padding: 40px 40px 80px; }
-  @media (max-width: 600px){ .wrap{ padding: 24px 16px 60px; } }
-  header{ display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 32px; }
-  .left{ display: flex; align-items: center; gap: 16px; }
-  .back{ display: inline-flex; align-items: center; gap: 6px; color: var(--text); border: 1px solid var(--border-hover); border-radius: 9999px; padding: 8px 15px; font-size: 14px; }
-  .back svg{ width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; }
-  h1{ font-size: 26px; font-weight: 600; letter-spacing: -0.02em; margin: 0; }
-  .me{ font-size: 13px; color: var(--text-faint); }
-  section{ margin-bottom: 20px; }
-  .card-head{ display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px; }
-  h2{ font-size: 17px; font-weight: 600; margin: 0; }
-  .count{ font-size: 13px; color: var(--text-faint); }
-  .empty{ font-size: 14px; color: var(--text-faint); margin: 12px 0 0; }
-  .row{ display: flex; align-items: center; gap: 16px; padding: 14px 0; border-top: 1px solid var(--border); flex-wrap: wrap; }
-  .row:first-of-type{ border-top: none; }
-  .who{ flex: 1; min-width: 220px; }
-  .name{ font-size: 15px; font-weight: 600; }
-  .badge{ font-size: 11px; font-weight: 400; color: var(--text-faint); border: 1px solid var(--border-hover); border-radius: 9999px; padding: 1px 8px; margin-left: 8px; vertical-align: 1px; }
-  .job{ font-weight: 400; color: var(--text-muted); }
-  .email{ font-size: 13px; color: var(--text-muted); margin-top: 2px; word-break: break-all; }
-  .note{ font-size: 13px; color: var(--text-muted); margin-top: 6px; line-height: 1.5; white-space: pre-wrap; }
-  .meta{ font-size: 12px; color: var(--text-faint); margin-top: 4px; }
-  .actions{ display: flex; gap: 8px; flex-wrap: wrap; }
-  .actions .btn{ font-size: 14px; padding: 8px 16px; }
-  .pw{ font-size: 13px; color: var(--warning); margin-top: 6px; }
-  .pw code{ font-size: 14px; color: var(--text); background: var(--surface-3); border: 1px solid var(--border); border-radius: 8px; padding: 2px 8px; user-select: all; }
-  .act{ display: grid; grid-template-columns: 150px 1fr auto; gap: 12px; padding: 9px 0; border-top: 1px solid var(--border); font-size: 13px; }
-  .act:first-of-type{ border-top: none; }
-  .act .t{ color: var(--text-faint); }
-  .act .p{ color: var(--text-muted); }
-  @media (max-width: 600px){ .act{ grid-template-columns: 1fr; gap: 2px; } }
-  .status{ font-size: 13px; color: var(--text-faint); min-height: 1.4em; margin: 0 0 16px; }
-  .ann-item{ display: flex; align-items: center; gap: 16px; padding: 12px 0; border-top: 1px solid var(--border); flex-wrap: wrap; }
-  .ann-item .who{ min-width: 220px; }
+  .status{ font-size: 12.5px; color: var(--muted); min-height: 1.4em; margin: -4px 0 12px; }
+  .status:empty{ display: none; }
   .status.err{ color: var(--error); }
+  .count{ font-weight: 500; color: var(--faint); margin-left: 6px; }
+  .intro{ font-size: 12.5px; line-height: 1.5; color: var(--faint); margin: -6px 0 12px; max-width: 80ch; }
+  .empty{ font-size: 12.5px; color: var(--faint); margin: 0; }
+  /* one person (or announcement) per row */
+  .person{ display: flex; align-items: center; gap: 16px; padding: 12px 0; border-top: 1px solid var(--border); flex-wrap: wrap; }
+  .person:first-child{ border-top: none; padding-top: 0; }
+  .who{ flex: 1; min-width: 220px; }
+  .name{ font-size: 13.5px; font-weight: 700; }
+  .badge{ font-size: 10.5px; font-weight: 700; color: #fff; background: var(--accent); border-radius: 5px; padding: 1px 7px; margin-left: 8px; vertical-align: 1px; }
+  .job{ font-weight: 500; color: var(--muted); }
+  .email{ font-size: 12.5px; color: var(--muted); margin-top: 1px; word-break: break-all; }
+  .who .note{ font-size: 12.5px; color: var(--muted); margin-top: 6px; line-height: 1.5; white-space: pre-wrap; max-width: 80ch; }
+  .meta{ font-size: 11.5px; color: var(--faint); margin-top: 4px; }
+  .actions{ display: flex; gap: 6px; flex-wrap: wrap; }
+  .actions .btn{ width: auto; height: 34px; font-size: 12.5px; padding: 0 16px; }
+  .pw{ font-size: 12.5px; color: var(--warning); margin-top: 8px; }
+  .pw code{ font-size: 13px; color: var(--text); background: var(--field); border: 1px solid var(--border-hover); border-radius: 8px; padding: 2px 8px; user-select: all; }
+  /* recent activity */
+  .act{ display: grid; grid-template-columns: 160px minmax(0, 1fr) 220px; gap: 12px; padding: 8px 0; border-top: 1px solid var(--border); font-size: 12.5px; }
+  .act:first-child{ border-top: none; padding-top: 0; }
+  .act .t{ color: var(--faint); }
+  .act .p{ color: var(--muted); }
+  @media (max-width: 700px){ .act{ grid-template-columns: 1fr; gap: 2px; } }
 </style>
 </head>
-<body>
-<div class="wrap">
-  <header>
-    <div class="left">
-      <a class="back" href="/"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M15 19l-7-7 7-7"/></svg>Toolbox</a>
-      <h1>Access</h1>
-    </div>
-    <span class="me" id="me"></span>
-  </header>
-  <p class="status" id="status" role="status"></p>
+${shellBody({ me, name, jobTitle, isAdmin: true })}
+<div class="app-header">
+  <h1>Access <span>· requests and people with access</span></h1>
+</div>
+<p class="status" id="status" role="status"></p>
 
-  <section class="card"><div class="card-head"><h2>Requests</h2><span class="count" id="c-pending"></span></div><div id="pending"></div></section>
-  <section class="card">
-    <div class="card-head"><h2>New tool announcements</h2><span class="count">sent automatically</span></div>
-    <p class="note" style="margin:4px 0 12px">When a new tool appears on the Toolbox home, everyone with access gets a notification. Admin-only tools are announced once they are opened up to everyone.</p>
+<div class="sheet">
+  <section class="sb-section"><div class="section-label plain">Requests<span class="count" id="c-pending"></span></div><div id="pending"></div></section>
+  <section class="sb-section"><div class="section-label plain">People with access<span class="count" id="c-approved"></span></div><div id="approved"></div></section>
+  <section class="sb-section"><div class="section-label plain">Declined or removed<span class="count" id="c-denied"></span></div><div id="denied"></div></section>
+  <section class="sb-section">
+    <div class="section-label plain">New tool announcements<span class="end">sent automatically</span></div>
+    <p class="intro">When a new tool appears on the Creative Toolbox home, everyone with access gets a notification. Admin-only tools are announced once they are opened up to everyone.</p>
     <div id="announcements"></div>
   </section>
-  <section class="card"><div class="card-head"><h2>People with access</h2><span class="count" id="c-approved"></span></div><div id="approved"></div></section>
-  <section class="card"><div class="card-head"><h2>Declined or removed</h2><span class="count" id="c-denied"></span></div><div id="denied"></div></section>
-  <section class="card"><div class="card-head"><h2>Recent activity</h2><span class="count">last 100 opened pages</span></div><div id="activity"></div></section>
+  <section class="sb-section"><div class="section-label plain">Recent activity<span class="end">last 100 opened pages</span></div><div id="activity"></div></section>
 </div>
 <script>
 (function () {
   var $ = function (id) { return document.getElementById(id); };
-  $('me').textContent = 'Signed in as ' + ${jsStr(me)};
-  var TOOLS = { '/': 'Toolbox home', '/admin': 'Admin', '/banner-generator/': 'Social Banner Creator', '/cover-converter/': 'Cover Converter',
+  var TOOLS = { '/': 'Home', '/admin': 'Admin', '/banner-generator/': 'Social Banner Creator', '/cover-converter/': 'Cover Converter',
     '/sessions-radio-maker/': 'Sessions Asset Generator', '/thumbnail-maker/': 'Thumbnail Maker', '/song-briefing/': 'Song Briefing', '/general-briefing/': 'General Briefing', '/ideas/': 'Ideas' };
 
   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
@@ -281,7 +244,7 @@ ${BASE_CSS}
   function button(text, cls, onClick) { var b = el('button', cls, text); b.type = 'button'; b.addEventListener('click', onClick); return b; }
 
   function person(u, buttons, metaText) {
-    var row = el('div', 'row'), who = el('div', 'who');
+    var row = el('div', 'person'), who = el('div', 'who');
     var name = el('div', 'name', u.name || '(no name)');
     if (u.job_title) name.appendChild(el('span', 'job', ' · ' + u.job_title));
     if (u.is_admin) name.appendChild(el('span', 'badge', 'Admin'));
@@ -350,7 +313,7 @@ ${BASE_CSS}
       act.appendChild(row);
     });
     // the lists come in one after the other the first time; later updates stay still
-    if (firstLoad && window.tbIn) document.querySelectorAll('section.card').forEach(function (c, i) { tbIn(c, i * 50); });
+    if (firstLoad && window.tbStagger) tbStagger(document.querySelectorAll('.sheet > section'), 45);
     firstLoad = false;
   }
   // ---- announcements ----
@@ -358,7 +321,7 @@ ${BASE_CSS}
     var r = await fetch('/admin/api/announcements'); if (!r.ok) return;
     var list = (await r.json()).announcements, box = $('announcements'); box.innerHTML = '';
     list.forEach(function (a) {
-      var row = el('div', 'ann-item'), who = el('div', 'who');
+      var row = el('div', 'person'), who = el('div', 'who');
       who.appendChild(el('div', 'name', 'New tool: ' + a.title));
       if (a.body) who.appendChild(el('div', 'note', a.body));
       who.appendChild(el('div', 'meta', when(a.created_at) + ' · opens ' + (TOOLS[a.link] || a.link) + ' · sent to ' + a.sent + ', opened by ' + a.opened));
@@ -379,74 +342,54 @@ ${BASE_CSS}
 </html>`;
 }
 
-export function accountPage({ me, name, jobTitle }) {
+export function accountPage({ me, name, jobTitle, isAdmin }) {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
-${HEAD}
-<title>Toolbox · Account</title>
+${SHELL_HEAD}
+<title>Creative Toolbox · Account</title>
 <style>
 ${BASE_CSS}
-  .wrap{ max-width: 520px; margin: 0 auto; padding: 40px 40px 80px; }
-  @media (max-width: 600px){ .wrap{ padding: 24px 16px 60px; } }
-  header{ display: flex; align-items: center; gap: 16px; margin-bottom: 32px; }
-  .back{ display: inline-flex; align-items: center; gap: 6px; color: var(--text); border: 1px solid var(--border-hover); border-radius: 9999px; padding: 8px 15px; font-size: 14px; }
-  .back svg{ width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; }
-  h1{ font-size: 26px; font-weight: 600; letter-spacing: -0.02em; margin: 0; }
-  section{ margin-bottom: 20px; }
-  h2{ font-size: 17px; font-weight: 600; margin: 0 0 4px; }
-  .sub{ font-size: 14px; color: var(--text-muted); margin: 0 0 16px; line-height: 1.5; word-break: break-all; }
-  form{ display: flex; flex-direction: column; gap: 12px; }
-  label{ font-size: 13px; color: var(--text-muted); margin: 4px 0 -4px 20px; }
-  .hint{ font-size: 12px; color: var(--text-faint); margin: -4px 0 0 20px; }
-  .btn{ margin-top: 8px; }
-  .msg{ font-size: 14px; line-height: 1.5; margin: 4px 0 0; min-height: 1.5em; }
-  .msg.err{ color: var(--error); }
-  .msg.ok{ color: var(--success); }
-  .two{ display: flex; gap: 10px; }
-  .two .col{ flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+  .sheet{ max-width: 560px; }
+  .sub{ font-size: 12.5px; line-height: 1.5; color: var(--faint); margin: -6px 0 14px; }
+  .signed{ display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .signed .who{ flex: 1; min-width: 0; font-size: 13.5px; font-weight: 600; word-break: break-all; }
+  form .btn{ margin-top: 4px; }
 </style>
 </head>
-<body>
-<div class="wrap">
-  <header>
-    <a class="back" href="/"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M15 19l-7-7 7-7"/></svg>Toolbox</a>
-    <h1>Account</h1>
-  </header>
+${shellBody({ me, name, jobTitle, isAdmin })}
+<div class="app-header">
+  <h1>Account <span>· your profile and password</span></h1>
+</div>
 
-  <section class="card">
-    <h2>Signed in as</h2>
-    <p class="sub" id="me"></p>
-    <button class="btn-utility" type="button" id="signOut">Sign out</button>
+<div class="sheet">
+  <section class="sb-section">
+    <div class="section-label plain">Signed in as</div>
+    <div class="signed"><span class="who" id="me"></span><button class="btn-utility" type="button" id="signOut">Sign out</button></div>
   </section>
 
-  <section class="card">
-    <h2>Profile</h2>
-    <p class="sub">Shown on the Toolbox and to the admin.</p>
+  <section class="sb-section">
+    <div class="section-label plain">Profile</div>
+    <p class="sub">Shown in the Creative Toolbox and to the admin.</p>
     <form id="nameForm" novalidate>
       <div class="two">
-        <div class="col"><label for="nm-first">First name</label><input id="nm-first" type="text" autocomplete="given-name" maxlength="40" required></div>
-        <div class="col"><label for="nm-last">Last name</label><input id="nm-last" type="text" autocomplete="family-name" maxlength="40" required></div>
+        <div class="field"><label for="nm-first">First name</label><input id="nm-first" type="text" autocomplete="given-name" maxlength="40" required></div>
+        <div class="field"><label for="nm-last">Last name</label><input id="nm-last" type="text" autocomplete="family-name" maxlength="40" required></div>
       </div>
-      <label for="nm-job">Job title</label>
-      <input id="nm-job" type="text" autocomplete="organization-title" maxlength="80" required>
+      <div class="field"><label for="nm-job">Job title</label><input id="nm-job" type="text" autocomplete="organization-title" maxlength="80" required></div>
       <button class="btn" type="submit">Save profile</button>
       <p class="msg" id="nameMsg" role="alert"></p>
     </form>
   </section>
 
-  <section class="card">
-    <h2>Change password</h2>
+  <section class="sb-section">
+    <div class="section-label plain">Change password</div>
     <p class="sub">You stay signed in here; other devices are signed out.</p>
     <form id="pwForm" novalidate>
       <input type="email" autocomplete="username" id="user" hidden>
-      <label for="cur">Current password</label>
-      <input id="cur" type="password" autocomplete="current-password" required>
-      <label for="pw1">New password</label>
-      <input id="pw1" type="password" autocomplete="new-password" minlength="10" required>
-      <p class="hint">At least 10 characters.</p>
-      <label for="pw2">New password again</label>
-      <input id="pw2" type="password" autocomplete="new-password" minlength="10" required>
+      <div class="field"><label for="cur">Current password</label><input id="cur" type="password" autocomplete="current-password" required></div>
+      <div class="field"><label for="pw1">New password <span class="opt">at least 10 characters</span></label><input id="pw1" type="password" autocomplete="new-password" minlength="10" required></div>
+      <div class="field"><label for="pw2">New password again</label><input id="pw2" type="password" autocomplete="new-password" minlength="10" required></div>
       <button class="btn" type="submit">Change password</button>
       <p class="msg" id="msg" role="alert"></p>
     </form>

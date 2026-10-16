@@ -5,536 +5,99 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cover Converter</title>
 <link rel="icon" type="image/png" href="../favicon.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../shared/motion.css">
+<link rel="stylesheet" href="../shared/shell.css">
+<link rel="stylesheet" href="../shared/tool.css">
 <script src="../shared/motion.js" defer></script>
+<script src="../shared/track.js" defer></script>
 <style>
-  @view-transition{ navigation: auto; }
+  /* the shared tool design is in shared/tool.css; this is only what is the converter's own */
+  .main { display: flex; align-self: stretch; }
+  .drop-zone { flex: 1; min-height: 520px; }
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  :root {
-    --bg: #000000;
-    --surface: #272729;
-    --surface-2: #2a2a2c;
-    --border: rgba(255, 255, 255, 0.08);
-    --border-hover: rgba(255, 255, 255, 0.16);
-    --text: #ffffff;
-    --muted: #86868b;
-    --warning: #ffd60a;
-    --error: #ff453a;
-    --accent: #2997ff;
-    --accent-focus: #0071e3;
-    --on-accent: #ffffff;
-    --success: #30d158;
-    --success-glow: rgba(48, 209, 88, 0.10);
-    --font-display: 'Inter', -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  }
-
-  html { height: 100%; }
-
-  html {
-    overflow-y: auto;
-    scrollbar-gutter: stable;
-  }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--font-display);
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    padding: 32px 40px 40px;
-  }
-
-  header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 32px;
-    flex-wrap: wrap;
-    gap: 16px;
-  }
-
-  .header-left {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    flex-wrap: wrap;
-  }
-
-  .back-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--text);
-    text-decoration: none;
-    border-radius: 9999px;
-    padding: 7px 14px 7px 10px;
-    font-size: 12px;
-    font-weight: 400;
-    transition: border-color 0.15s ease, background 0.15s ease;
-  }
-  .back-link:hover { border-color: var(--border-hover); background: rgba(255,255,255,0.04); }
-  .back-link svg { width: 14px; height: 14px; stroke: currentColor; flex-shrink: 0; }
-
-  h1 {
-    font-size: 26px;
-    font-weight: 600;
-    letter-spacing: -0.02em;
-    line-height: 1.1;
-  }
-
-  .specs {
-    display: flex;
-    gap: 6px;
-    align-items: center;
-  }
-
-  .spec-tag {
-    font-size: 12px;
-    font-weight: 400;
-    color: var(--muted);
-    background: transparent;
-    border: 1px solid var(--border);
-    padding: 4px 12px;
-    border-radius: 9999px;
-  }
-
-  /* Main layout */
-  .main {
-    display: grid;
-    grid-template-columns: 380px 1fr;
-    gap: 20px;
-    flex: 1;
-    min-height: 0;
-    align-items: stretch;
-  }
-
-  /* Drop zone */
-  .drop-zone {
-    width: 100%;
-    height: 100%;
-    min-height: 320px;
-    border: 1.5px dashed var(--border-hover);
-    border-radius: 18px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: border-color 0.2s, background 0.2s;
-    background: #000;
-    position: relative;
-    overflow: hidden;
-    padding: 40px;
-  }
-
-  .drop-zone:hover,
-  .drop-zone.drag-over {
-    border-color: var(--accent);
-    background: rgba(41, 151, 255, 0.08);
-  }
-
-  .drop-zone input[type="file"] {
-    position: absolute;
-    inset: 0;
-    opacity: 0;
-    cursor: pointer;
-    width: 100%;
-    height: 100%;
-  }
-
-  .drop-placeholder {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    pointer-events: none;
-    gap: 0;
-  }
-
-  .drop-icon {
-    width: 40px;
-    height: 40px;
-    margin-bottom: 14px;
-    opacity: 0.25;
-  }
-
-  .drop-label {
-    font-size: 16px;
-    font-weight: 400;
-    color: var(--text);
-    margin-bottom: 6px;
-  }
-
-  .drop-sub {
-    font-size: 13px;
-    color: var(--muted);
-  }
-
-  /* Sidebar */
-  .sidebar {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    height: 100%;
-    overflow: hidden;
-  }
-
-  /* Folder picker */
-  .folder-picker {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 18px;
-    padding: 20px;
-  }
-
-  .folder-picker-label {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text);
-    margin-bottom: 10px;
-  }
-
-  .folder-picker-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
+  /* export folder */
+  .folder-picker-row { display: flex; align-items: center; gap: 8px; }
   .folder-path {
-    flex: 1;
-    font-size: 12px;
-    color: var(--muted);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 8px 12px;
-    min-width: 0;
+    flex: 1; min-width: 0; font-size: 12.5px; color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    background: var(--field); border: 1px solid var(--border-hover); border-radius: var(--radius-sm); padding: 9px 12px;
   }
+  .folder-path.selected { color: var(--text); }
 
-  .folder-path.selected {
-    color: var(--text);
-  }
-
-  .btn-folder {
-    flex-shrink: 0;
-    background: var(--accent);
-    color: var(--on-accent);
-    border: none;
-    border-radius: 9999px;
-    padding: 8px 16px;
-    font-size: 12px;
-    font-weight: 400;
-    cursor: pointer;
-    transition: transform 0.1s ease;
-    white-space: nowrap;
-  }
-
-  .btn-folder:active { transform: scale(0.96); }
-
-  .folder-note {
-    font-size: 11px;
-    color: var(--muted);
-    margin-top: 8px;
-    line-height: 1.5;
-  }
-
-  .folder-warning {
-    font-size: 11px;
-    color: var(--muted);
-    margin-top: 10px;
-    padding-top: 10px;
-    border-top: 1px solid var(--border);
-    line-height: 1.5;
-  }
-
-  /* Info cards */
-  .info-row {
-    display: flex;
-    gap: 8px;
-  }
-
-  .info-card {
-    flex: 1;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 18px;
-    padding: 12px 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  .info-card-label {
-    font-size: 12px;
-    font-weight: 400;
-    color: var(--muted);
-  }
-
-  .info-card-value {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text);
-  }
-
-  /* Queue */
-  .queue-wrap {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 18px;
-    overflow: hidden;
-    display: none;
-    flex: 1;
-    min-height: 0;
-    flex-direction: column;
-  }
-
-  .queue-wrap.visible {
-    display: flex;
-  }
-
-
-  .queue-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .queue-title {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text);
-  }
-
-  .queue-count {
-    font-size: 12px;
-    color: var(--muted);
-  }
-
-  .btn-clear {
-    background: none;
-    border: 1px solid var(--border-hover);
-    color: var(--muted);
-    border-radius: 9999px;
-    padding: 4px 12px;
-    font-size: 12px;
-    font-weight: 400;
-    cursor: pointer;
-    transition: border-color 0.15s, color 0.15s;
-  }
-
-  .btn-clear:hover {
-    border-color: #e55;
-    color: #e55;
-  }
-
-  .queue-list {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    overflow-y: auto;
-    min-height: 0;
-  }
-
-  .queue-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 16px;
-    border-bottom: 1px solid var(--border);
-  }
-
+  /* the files being converted */
+  .queue-wrap { display: none; }
+  .queue-wrap.visible { display: block; }
+  .queue-list { display: flex; flex-direction: column; max-height: 52vh; overflow-y: auto; border: 1px solid var(--border); border-radius: 12px; background: var(--field); }
+  .queue-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-bottom: 1px solid var(--border); }
   .queue-item:last-child { border-bottom: none; }
-
-  .queue-item-thumb {
-    width: 34px;
-    height: 34px;
-    border-radius: 6px;
-    object-fit: cover;
-    background: var(--border);
-    flex-shrink: 0;
-  }
-
-  .queue-item-info {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .queue-item-name {
-    font-size: 12px;
-    font-weight: 400;
-    color: var(--text);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    margin-bottom: 5px;
-  }
-
-  .progress-bar-track {
-    height: 2px;
-    background: var(--border-hover);
-    border-radius: 2px;
-    overflow: hidden;
-  }
-
-  .progress-bar-fill {
-    height: 100%;
-    width: 0%;
-    border-radius: 2px;
-    background: var(--accent);
-    transition: width 0.25s ease;
-  }
-
-  .queue-item-status {
-    font-size: 12px;
-    font-weight: 400;
-    flex-shrink: 0;
-    color: var(--muted);
-    min-width: 52px;
-    text-align: right;
-  }
-
+  .queue-item-thumb { width: 34px; height: 34px; border-radius: 7px; object-fit: cover; background: var(--surface-3); flex-shrink: 0; }
+  .queue-item-info { flex: 1; min-width: 0; }
+  .queue-item-name { font-size: 12.5px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 6px; }
+  .queue-item-status { font-size: 11.5px; font-weight: 600; flex-shrink: 0; color: var(--faint); min-width: 52px; text-align: right; }
   .queue-item-status.active { color: var(--accent); }
   .queue-item-status.done { color: var(--success); }
   .queue-item-status.warn { color: var(--warning); }
   .queue-item-status.error { color: var(--error); }
-
-  .queue-item-note {
-    font-size: 11px;
-    line-height: 1.4;
-    color: var(--warning);
-    margin-top: 5px;
-  }
+  .queue-item-note { font-size: 11px; line-height: 1.4; color: var(--warning); margin-top: 5px; }
   .queue-item-note.error { color: var(--error); }
+  .queue-count { font-weight: 500; color: var(--faint); }
+  .queue-list::-webkit-scrollbar { width: 4px; }
+  .queue-list::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 2px; }
 
-  /* Summary */
-  .summary {
-    display: none;
-    background: var(--success-glow);
-    border: 1px solid rgba(48, 209, 88, 0.2);
-    border-radius: 9999px;
-    padding: 12px 16px;
-    font-size: 13px;
-    font-weight: 400;
-    color: var(--success);
-    text-align: center;
-  }
-
+  .summary { display: none; margin-top: 12px; padding: 10px 14px; border-radius: var(--radius-sm); background: rgba(52, 211, 153, 0.08); border: 1px solid rgba(52, 211, 153, 0.2); color: var(--success); font-size: 12.5px; font-weight: 600; text-align: center; }
   .summary.visible { display: block; }
 
-
-  .queue-list::-webkit-scrollbar { width: 4px; }
-  .queue-list::-webkit-scrollbar-track { background: transparent; }
-  .queue-list::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 2px; }
-  .queue-list::-webkit-scrollbar-thumb:hover { background: #3a3a3a; }
-
   canvas { display: none; }
-
-  @media (max-width: 800px) {
-    html, body { height: 100%; }
-
-  body { padding: 24px 20px 48px; }
-    .main { grid-template-columns: 1fr; }
-    header { flex-direction: column; align-items: flex-start; }
-  }
-
-  a:focus-visible, button:focus-visible, input:focus-visible {
-    outline: 2px solid var(--accent-focus);
-    outline-offset: 2px;
-  }
-
-  @media (prefers-reduced-motion: reduce){
-    *{ animation-duration: .001s !important; transition-duration: .001s !important; }
-  }
-
-  /* wide screens: the tool stops growing at 1680 px and stays centred */
-  html { background: var(--bg); }
-  body { max-width: 1680px; margin-left: auto; margin-right: auto; }
+  @media (max-width: 900px) { .drop-zone { min-height: 260px; } }
 </style>
 </head>
 <body>
+<script src="../shared/shell.js"></script>
 
-<header>
-  <div class="header-left">
-    <a class="back-link" href="../"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 19l-7-7 7-7"/></svg>Toolbox</a>
-    <div>
-      <h1>Cover Converter</h1>
+<div class="app-header">
+  <h1>Cover Converter <span>· any cover to a standard JPG</span></h1>
+  <div class="header-actions">
+    <span class="chip">2000×2000</span>
+    <span class="chip">72 DPI</span>
+    <span class="chip">JPG 100%</span>
+  </div>
+</div>
+
+<div class="layout">
+
+  <!-- the result area: drop the covers here -->
+  <div class="main">
+    <div class="drop-zone" id="dropZone">
+      <input type="file" id="fileInput" accept="image/*,.psd,.tif,.tiff" multiple>
+      <div class="uz-icon"><svg viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></svg></div>
+      <div class="uz-text">Drop your artwork here</div>
+      <div class="uz-sub">or click to choose files · JPG, PNG, PSD and TIFF, several at once</div>
     </div>
   </div>
-</header>
 
-<div class="main">
+  <aside class="sidebar">
 
-  <!-- Sidebar -->
-  <div class="sidebar">
-
-    <!-- Folder picker -->
-    <div class="folder-picker">
-      <div class="folder-picker-label">Export folder</div>
+    <div class="sb-section">
+      <div class="section-label">Export folder</div>
       <div class="folder-picker-row">
         <div class="folder-path" id="folderPath">Downloads folder</div>
-        <button class="btn-folder" id="btnFolder">Choose</button>
+        <button class="btn-ghost" id="btnFolder">Choose</button>
       </div>
-      <div class="folder-note" id="folderNote">No folder selected — exports go to your Downloads folder automatically.</div>
+      <div class="note" id="folderNote">No folder selected — exports go to your Downloads folder automatically.</div>
       <div class="folder-warning">Can't pick Desktop, Downloads or Documents directly — choose a subfolder inside them, or a location like Box, instead.</div>
     </div>
 
-    <!-- Info cards -->
-    <div class="info-row">
-      <div class="info-card">
-        <span class="info-card-label">Output</span>
-        <span class="info-card-value">2000×2000</span>
-      </div>
-      <div class="info-card">
-        <span class="info-card-label">DPI</span>
-        <span class="info-card-value">72</span>
-      </div>
-      <div class="info-card">
-        <span class="info-card-label">Quality</span>
-        <span class="info-card-value">100%</span>
-      </div>
+    <div class="sb-section">
+      <div class="section-label">Drop your covers<span class="sub">centred on a black square</span></div>
+      <p class="note" style="margin-top:0">Every cover becomes a 2000×2000 JPG at 72 DPI, saved in the export folder as soon as it is ready.</p>
     </div>
 
-    <!-- Queue -->
-    <div class="queue-wrap" id="queueWrap">
-      <div class="queue-header">
-        <span class="queue-title">Files</span>
-        <span class="queue-count" id="queueCount"></span>
-        <button class="btn-clear" id="btnClear">Clear</button>
-      </div>
+    <div class="sb-section queue-wrap" id="queueWrap">
+      <div class="section-label plain">Files <span class="queue-count" id="queueCount"></span><span class="end"><button class="btn-ghost small danger" id="btnClear">Clear</button></span></div>
       <div class="queue-list" id="queueList"></div>
+      <div class="summary" id="summary"></div>
     </div>
 
-    <!-- Summary -->
-    <div class="summary" id="summary"></div>
-
-  </div>
-
-  <!-- Drop zone -->
-  <div class="drop-zone" id="dropZone">
-    <input type="file" id="fileInput" accept="image/*,.psd,.tif,.tiff" multiple>
-    <div class="drop-placeholder">
-      <svg class="drop-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="6" y="6" width="36" height="36" rx="6" stroke="white" stroke-width="2"/>
-        <path d="M24 16v16M16 24l8-8 8 8" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      <div class="drop-label">Drop your artwork here</div>
-      <div class="drop-sub">or click to choose files — JPG, PNG, PSD, TIFF, multiple supported</div>
-    </div>
-  </div>
+  </aside>
 </div>
 
 <canvas id="canvas" width="2000" height="2000"></canvas>
@@ -672,6 +235,7 @@
       if (await processItem(item)) n++; else failed++;
     }
     isProcessing = false;
+    if (n && window.tbTrack) tbTrack(n);   // time saved
     summaryEl.textContent = `✓ ${n} cover${n !== 1 ? 's' : ''} exported as 2000×2000 JPG`
       + (failed ? ` · ${failed} failed` : '');
     summaryEl.classList.add('visible');

@@ -7,6 +7,7 @@
 
 import { loginPage, adminPage, accountPage } from './pages.js';
 import { IDEAS_SCHEMA, handleIdeas, handleNotifications, listAnnouncements, deleteAnnouncement, syncTools } from './ideas.js';
+import { USAGE_SCHEMA, handleUsage, handleStats } from './usage.js';
 
 const SESSION_COOKIE = '__Host-tb_session';
 const SESSION_DAYS = 30;
@@ -64,7 +65,7 @@ const ADDED_COLUMNS = { users: { job_title: "TEXT NOT NULL DEFAULT ''" } };
 let schemaReady = null;
 function ensureSchema(env) {
   if (!schemaReady) schemaReady = (async () => {
-    await env.DB.batch(SCHEMA.concat(IDEAS_SCHEMA).map(s => env.DB.prepare(s)));
+    await env.DB.batch(SCHEMA.concat(IDEAS_SCHEMA, USAGE_SCHEMA).map(s => env.DB.prepare(s)));
     for (const [table, cols] of Object.entries(ADDED_COLUMNS)) {
       const have = new Set((await env.DB.prepare('PRAGMA table_info(' + table + ')').all()).results.map(c => c.name));
       for (const [col, def] of Object.entries(cols)) {
@@ -90,7 +91,7 @@ export default {
       return html(loginPage({ next: safeNext(url.searchParams.get('next')) }));
     }
     // the login page needs these before anyone is signed in; nothing private in them
-    if (path === '/favicon.png' || path === '/shared/motion.css' || path === '/shared/motion.js') return env.ASSETS.fetch(request);
+    if (path === '/favicon.png' || path === '/shared/motion.css' || path === '/shared/motion.js' || path === '/shared/tool.css') return env.ASSETS.fetch(request);
     if (path.startsWith('/auth/')) return handleAuth(request, env, url, user);
 
     // ---- everything below needs an accepted account ----
@@ -99,7 +100,7 @@ export default {
       return new Response('Sign in required', { status: 401, headers: { 'Cache-Control': 'no-store' } });
     }
 
-    if (path === '/account' || path === '/account/') return html(accountPage({ me: user.email, name: user.name, jobTitle: user.job_title }));
+    if (path === '/account' || path === '/account/') return html(accountPage({ me: user.email, name: user.name, jobTitle: user.job_title, isAdmin: !!user.is_admin }));
     if (adminOnly(path) && !user.is_admin) {
       if (isNavigation(request)) return redirect('/');
       return new Response('Not available', { status: 403, headers: { 'Cache-Control': 'no-store' } });
@@ -107,10 +108,12 @@ export default {
 
     if (path === '/admin' || path === '/admin/') {
       if (!user.is_admin) return redirect('/');
-      return html(adminPage({ me: user.email }));
+      return html(adminPage({ me: user.email, name: user.name, jobTitle: user.job_title }));
     }
     if (path.startsWith('/api/ideas') || path.startsWith('/api/comments/')) return handleIdeas(request, env, url, user);
     if (path === '/api/notifications' || path === '/api/notifications/read') return handleNotifications(request, env, url, user);
+    if (path === '/api/usage') return handleUsage(request, env, url, user);
+    if (path === '/api/stats' && request.method === 'GET') return handleStats(env, url);
 
     if (path.startsWith('/admin/api/')) {
       if (!user.is_admin) return json({ error: 'Not allowed.' }, 403);
@@ -123,20 +126,33 @@ export default {
       ctx.waitUntil(syncTools(env, url.origin).catch(e => console.error('syncTools', e)));
     }
 
-    const res = await env.ASSETS.fetch(request);
+    // pages are made per person (name, admin tools), so a page is never answered with "not modified":
+    // otherwise a browser could show the page of whoever was signed in before
+    let assetRequest = request;
+    if (isNavigation(request)) {
+      const h = new Headers(request.headers); h.delete('If-None-Match'); h.delete('If-Modified-Since');
+      assetRequest = new Request(request, { headers: h });
+    }
+    const res = await env.ASSETS.fetch(assetRequest);
     const out = new Response(res.body, res);
     out.headers.set('Cache-Control', 'private, no-cache');
     // pages and scripts are UTF-8; without this, "—" or "×" can show up as "â€"" in some browsers
     const type = out.headers.get('Content-Type') || '';
     if (/^(text\/|application\/javascript)/.test(type) && !/charset/i.test(type)) out.headers.set('Content-Type', type + '; charset=utf-8');
     // the launcher shows an admin-only tool as a link to the admin and as "coming soon" to everyone else,
-    // and gets the signed-in person filled in right away, so nothing pops in after the page has loaded
+    // and every page gets the signed-in person on <body> for the sidebar (shared/shell.js), so nothing pops in
     if ((out.headers.get('Content-Type') || '').includes('text/html')) {
+      out.headers.set('Cache-Control', 'private, no-store');
+      out.headers.delete('ETag'); out.headers.delete('Last-Modified');
+      const enc = s => encodeURIComponent(s || '');
       return new HTMLRewriter()
         .on(user.is_admin ? '[data-not-admin]' : '[data-admin-only]', { element(e) { e.remove(); } })
-        .on('#account', { element(e) { e.removeAttribute('hidden'); } })
-        .on('#accountName', { element(e) { e.setInnerContent(user.name || user.email); } })
-        .on('#adminLink', { element(e) { if (user.is_admin) e.removeAttribute('hidden'); } })
+        .on('body', { element(e) {
+          e.setAttribute('data-tb-name', enc(user.name));
+          e.setAttribute('data-tb-job', enc(user.job_title));
+          e.setAttribute('data-tb-email', enc(user.email));
+          e.setAttribute('data-tb-admin', user.is_admin ? '1' : '0');
+        } })
         .transform(out);
     }
     return out;

@@ -115,7 +115,7 @@ export async function deleteAnnouncement(env, id) {
 
 // ---------- notifications ----------
 
-async function notify(env, recipients, actorId, type, ideaId, detail = '') {
+export async function notify(env, recipients, actorId, type, ideaId, detail = '') {
   const now = Date.now();
   const to = [...new Set(recipients)].filter(id => id && id !== actorId);   // never notify yourself
   if (!to.length) return;

@@ -1,342 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Toolbox</title>
+<title>Creative Toolbox</title>
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared/motion.css">
+<link rel="stylesheet" href="shared/shell.css">
 <script src="shared/motion.js" defer></script>
 <style>
-  @view-transition{ navigation: auto; }
-
+  /* ---------- Toolbox design system ----------
+     An app on black: navigation left, the work on the right.
+     Panels are dark grey, grids are divided by hairlines. Colour is small and meaningful:
+     purple = selected, orange = a count or a favourite. */
   :root{
-    --bg: #000000;
-    --surface: #272729;
-    --surface-2: #2a2a2c;
-    --border: rgba(255, 255, 255, 0.08);
-    --border-hover: rgba(255, 255, 255, 0.16);
-    --text: #ffffff;
-    --text-muted: #cccccc;
-    --text-faint: #86868b;
-    --accent: #2997ff;
-    --accent-focus: #0071e3;
-    --on-accent: #ffffff;
-    --font: 'Inter', -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --bg: #000;
+    --panel: #141414;
+    --panel-2: #1b1b1b;
+    --panel-3: #232323;
+    --line: rgba(255,255,255,0.07);
+    --line-2: rgba(255,255,255,0.12);
+    --line-3: rgba(255,255,255,0.2);
+    --text: #f5f5f5;
+    --muted: #a6a6a6;
+    --faint: #7b7b7b;
+    --purple: #8b5cf6;
+    --orange: #f97316;
+    --green: #34d399;
+    --red: #f87171;
+    --font: 'Plus Jakarta Sans', 'Inter', -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --r: 16px;
+    --r-sm: 10px;
   }
-
   *{ box-sizing: border-box; }
-  html, body{ margin: 0; padding: 0; }
-  body{
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--font);
-    -webkit-font-smoothing: antialiased;
-    min-height: 100vh;
-  }
-  ::selection{ background: var(--accent); color: #fff; }
+  html{ background: var(--bg); }
+  body{ margin: 0; background: var(--bg); color: var(--text); font: 500 13.5px/1.5 var(--font); -webkit-font-smoothing: antialiased; }
+  ::selection{ background: var(--purple); color: #fff; }
   a{ color: inherit; text-decoration: none; }
+  button{ font: inherit; color: inherit; cursor: pointer; }
+  :focus-visible{ outline: 2px solid var(--purple); outline-offset: 2px; }
+  [hidden]{ display: none !important; }
+  svg.i{ width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; flex: none; }
 
-  .wrap{
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 64px 40px 80px;
-  }
+  /* ---------- middle: the work ---------- */
+  .center{ min-width: 0; padding: 18px 20px 28px; }
+  .bar{ display: flex; align-items: center; gap: 14px; height: 42px; margin-bottom: 14px; }
+  .bar h1{ font-size: 18px; font-weight: 700; letter-spacing: -0.01em; margin: 0; }
+  .bar h1 span{ font-weight: 500; color: var(--muted); }
+  .tabs{ margin-left: auto; display: flex; gap: 22px; }
+  .tabs button{ background: none; border: none; padding: 8px 0; font-weight: 600; font-size: 13px; color: var(--faint); border-bottom: 2px solid transparent; transition: color .15s ease, border-color .15s ease; }
+  .tabs button:hover{ color: var(--muted); }
+  .tabs button.on{ color: var(--text); border-bottom-color: var(--text); }
 
-  h1{
-    font-size: clamp(32px, 5vw, 48px);
-    font-weight: 600;
-    letter-spacing: -0.03em;
-    margin: 0 0 12px;
-    text-wrap: balance;
-  }
-  .sub{
-    font-size: 17px;
-    line-height: 1.47;
-    color: var(--text-muted);
-    max-width: 46ch;
-    margin: 0 0 48px;
-  }
+  /* All / Favourites: a pill that slides to the chosen side */
+  .seg{ position: relative; margin-left: auto; display: inline-flex; padding: 4px; border-radius: 9999px; background: var(--panel); border: 1px solid var(--line); }
+  .bar-end{ margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .bar-end .seg{ margin-left: 0; }
+  .seg-thumb{ position: absolute; top: 4px; bottom: 4px; left: 4px; width: 0; border-radius: 9999px; background: var(--panel-3); box-shadow: inset 0 0 0 1px var(--line-2); transition: left .28s cubic-bezier(.2,.8,.2,1), width .28s cubic-bezier(.2,.8,.2,1); }
+  .seg button{ position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 14px; border: none; background: none; border-radius: 9999px; color: var(--faint); font-weight: 600; font-size: 12.5px; transition: color .2s ease; }
+  .seg button:hover{ color: var(--muted); }
+  .seg button.on{ color: var(--text); }
+  .seg button span{ font-weight: 600; color: var(--faint); font-size: 11.5px; }
+  .seg svg{ width: 13px; height: 13px; fill: currentColor; }
+  .seg button.on svg{ color: var(--orange); }
+  .no-favs{ display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; padding: 70px 20px; border: 1px dashed var(--line-2); border-radius: var(--r); color: var(--muted); }
+  .no-favs span{ width: 48px; height: 48px; border-radius: 9999px; background: var(--panel); display: grid; place-items: center; color: var(--orange); margin-bottom: 6px; }
+  .no-favs svg{ width: 20px; height: 20px; fill: currentColor; }
+  .no-favs b{ color: var(--text); font-size: 15px; }
+  .no-favs p{ margin: 0; font-size: 13px; max-width: 34ch; color: var(--faint); }
 
-  .grid{
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
-  }
-  @media (max-width: 980px){
-    .grid{ grid-template-columns: repeat(2, 1fr); }
-  }
-  @media (max-width: 480px){
-    .grid{ grid-template-columns: 1fr; }
-  }
+  /* tools in a hairline grid, like a calendar month */
+  .board{ display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: #262626; border-radius: var(--r); overflow: hidden; border: 1px solid #262626; }
+  .tile-wrap{ position: relative; background: var(--panel); min-height: 100%; }
+  .card{ display: flex; flex-direction: column; height: 100%; padding: 14px; transition: background-color .15s ease; }
+  a.card:hover{ background: #191919; }
+  .card-image{ aspect-ratio: 1 / 1; border-radius: 12px; overflow: hidden; background: #000; display: grid; place-items: center; color: var(--faint); box-shadow: inset 0 0 0 1px var(--line); }
+  .card-image img{ width: 100%; height: 100%; object-fit: cover; object-position: top; transition: transform .5s cubic-bezier(.2,.8,.2,1); }
+  a.card:hover .card-image img{ transform: scale(1.04); }
+  .card-image svg{ width: 34px; height: 34px; stroke: currentColor; fill: none; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+  .card-content{ padding-top: 12px; }
+  .card-title{ font-size: 14px; font-weight: 700; margin: 0 0 3px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .card-desc{ font-size: 12px; font-weight: 500; line-height: 1.5; color: var(--faint); margin: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .card-badge{ font-size: 10.5px; font-weight: 700; color: #fff; background: var(--purple); border-radius: 5px; padding: 1px 7px; }
+  .card.soon .card-badge{ background: var(--panel-3); color: var(--muted); }
+  .card.soon{ opacity: .6; }
+  /* favourite: a star on the thumbnail, top right */
+  .fav{ position: absolute; top: 22px; right: 22px; width: 32px; height: 32px; border-radius: 9999px; border: none; background: rgba(0,0,0,0.55); backdrop-filter: blur(8px); color: rgba(255,255,255,0.8); display: grid; place-items: center; transition: color .15s ease, background-color .15s ease; }
+  .fav:hover{ color: #fff; background: rgba(0,0,0,0.8); }
+  .fav svg{ width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linejoin: round; }
+  .fav.on{ color: var(--orange); }
+  .fav.on svg{ fill: currentColor; }
+  .filler{ background: var(--panel); min-height: 160px; }
+  .suggest{ display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: var(--panel); color: var(--faint); font-weight: 600; font-size: 13px; min-height: 160px; transition: color .15s ease, background-color .15s ease; }
+  .suggest:hover{ color: var(--text); background: #191919; }
+  .suggest span{ width: 40px; height: 40px; border-radius: 9999px; border: 1px dashed var(--line-3); display: grid; place-items: center; }
+  .empty{ color: var(--faint); font-size: 13px; padding: 18px 2px; margin: 0; }
 
-  .card{
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 18px;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    transition: border-color .15s ease, transform .12s ease;
-  }
-  .card:hover{
-    border-color: var(--border-hover);
-    transform: translateY(-2px);
-  }
-  .card:active{ transform: scale(0.98); }
-  .card:focus-visible{
-    outline: 2px solid var(--accent-focus);
-    outline-offset: 3px;
-  }
+  /* time saved view */
+  .sheet{ display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 1px; background: #262626; border-radius: var(--r); overflow: hidden; border: 1px solid #262626; }
+  .cell{ grid-column: span 12; background: var(--panel); padding: 18px 20px 20px; min-width: 0; }
+  .c3{ grid-column: span 3; } .c4{ grid-column: span 4; } .c5{ grid-column: span 5; } .c7{ grid-column: span 7; } .c8{ grid-column: span 8; }
+  .cell-head{ display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--faint); margin-bottom: 12px; }
+  .cell-head .end{ margin-left: auto; text-transform: none; letter-spacing: 0; font-size: 12px; font-weight: 500; }
+  .num{ font-size: 30px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; }
+  .num small{ font-size: 17px; color: var(--muted); font-weight: 600; }
+  .num-sub{ font-size: 12.5px; color: var(--muted); margin-top: 4px; font-weight: 500; }
+  .up{ display: inline-grid; place-items: center; width: 15px; height: 15px; border-radius: 9999px; background: var(--green); color: #032015; margin-right: 4px; vertical-align: -2px; }
+  .up svg{ width: 9px; height: 9px; stroke: currentColor; stroke-width: 3; fill: none; }
+  .chart{ position: relative; height: 260px; margin-top: 16px; }
+  .chart svg{ width: 100%; height: 100%; display: block; overflow: visible; }
+  .chart .axis{ fill: var(--faint); font: 500 11px var(--font); }
+  .chart .gl{ stroke: rgba(255,255,255,0.06); }
+  .tip{ position: absolute; transform: translate(-50%, calc(-100% - 12px)); background: var(--panel-3); border: 1px solid var(--line-2); border-radius: 10px; padding: 7px 11px; pointer-events: none; white-space: nowrap; font-size: 12px; box-shadow: 0 12px 30px rgba(0,0,0,0.5); }
+  .tip span{ color: var(--muted); display: block; margin-bottom: 1px; }
+  .tip b{ font-weight: 700; font-size: 13px; }
+  .xpill{ position: absolute; bottom: -3px; transform: translateX(-50%); white-space: nowrap; background: var(--purple); color: #fff; border-radius: 6px; padding: 2px 9px; font-size: 11.5px; font-weight: 700; pointer-events: none; }
 
-  .card-image{
-    aspect-ratio: 1 / 1;
-    background: #000;
-    border-bottom: 1px solid var(--border);
-    overflow: hidden;
-  }
-  .card-image img{
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: top;
-    display: block;
-    transition: transform .4s ease;
-  }
-  .card:hover .card-image img{ transform: scale(1.05); }
-  /* tool in testing: no preview image, just a lock */
-  .card-locked{ display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: var(--muted, #86868b); font-size: 14px; }
-  .card-locked svg{ width: 40px; height: 40px; stroke: currentColor; }
-  /* ideas board: an icon instead of a preview image */
-  .card-icon{ display: flex; align-items: center; justify-content: center; color: var(--text); }
-  .card-icon svg{ width: 56px; height: 56px; stroke: currentColor; transition: transform .4s ease, color .15s ease; }
-  .card:hover .card-icon svg{ transform: scale(1.08); color: var(--accent); }
-  /* tool in the making, shown to everyone without access: not clickable */
-  .card.soon{ cursor: default; }
-  .card.soon:hover{ border-color: var(--border); transform: none; }
-  .card.soon:active{ transform: none; }
-  .card.soon .card-title, .card.soon .card-desc{ color: var(--text-faint); }
+  /* milestone */
+  .milestone{ display: flex; flex-direction: column; }
+  /* a ring of ticks, filled up to where the team is */
+  .gauge{ position: relative; width: 210px; max-width: 100%; aspect-ratio: 1; margin: 0 auto; }
+  .gauge svg{ width: 100%; height: 100%; display: block; }
+  .gauge line{ stroke-linecap: round; stroke-width: 3.2; transition: stroke .25s ease; }
+  .gauge-in{ position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+  .gauge-goal{ font-size: 36px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
+  .gauge-goal small{ font-size: 18px; color: var(--muted); font-weight: 600; }
+  .gauge-pct{ font-size: 12px; color: var(--muted); font-weight: 600; margin-top: 6px; }
+  .pace{ display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 12px; background: var(--panel-2); border: 1px solid var(--line); margin-top: 14px; }
+  .pace-ic{ width: 32px; height: 32px; border-radius: 9999px; background: rgba(139,92,246,0.22); color: #ddd6fe; display: grid; place-items: center; flex: none; }
+  .pace-ic svg{ width: 15px; height: 15px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .pace b{ display: block; font-size: 13.5px; font-weight: 700; }
+  .pace div span{ display: block; font-size: 12px; color: var(--faint); font-weight: 500; }
+  .ms-done{ display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; min-height: 22px; }
+  .ms-done span{ display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; border-radius: 6px; padding: 2px 8px; background: var(--panel-3); color: var(--muted); }
+  .ms-done svg{ width: 11px; height: 11px; stroke: var(--green); stroke-width: 3; fill: none; }
 
-  .card-content{
-    padding: 16px 20px 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
+  /* calendar: one square per day, weeks as columns */
+  .cal-top{ display: flex; align-items: flex-end; gap: 36px; margin-bottom: 18px; flex-wrap: wrap; }
+  .cal-legend{ margin-left: auto; display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--faint); font-weight: 600; }
+  .cal-legend i{ width: 12px; height: 12px; border-radius: 3px; }
+  .cal{ position: relative; display: grid; grid-auto-flow: column; grid-template-rows: auto repeat(7, 1fr); gap: 4px; }
+  .cal .m{ font-size: 11px; color: var(--faint); font-weight: 600; height: 16px; white-space: nowrap; }
+  .cal .d{ font-size: 10.5px; color: var(--faint); font-weight: 600; display: flex; align-items: center; padding-right: 6px; }
+  .cal .c{ aspect-ratio: 1; border-radius: 5px; min-width: 0; }
+  .cal .c.future{ background: transparent; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04); }
+  .l0{ background: var(--panel-3); }
+  .l1{ background: rgba(139,92,246,0.3); }
+  .l2{ background: rgba(139,92,246,0.55); }
+  .l3{ background: rgba(139,92,246,0.8); }
+  .l4{ background: #a78bfa; }
+  .cal .c.today{ box-shadow: 0 0 0 1.5px #fff; }
 
-  .card-top{
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-  }
+  .tag{ font-size: 11px; font-weight: 600; color: var(--orange); border: 1px solid rgba(249,115,22,0.4); border-radius: 6px; padding: 2px 8px; }
 
-  .arrow{
-    width: 28px; height: 28px;
-    border-radius: 9999px;
-    border: 1px solid var(--border-hover);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex: none;
-    transition: background .15s ease, border-color .15s ease;
+  /* ---------- responsive ---------- */
+  /* wide and very wide screens: more tools per row, so a tile keeps a normal size */
+  @media (min-width: 1900px){ .board{ grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+  @media (min-width: 2500px){ .board{ grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+  @media (max-width: 1180px){
+    .board{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
   }
-  .arrow svg{ width: 13px; height: 13px; stroke: var(--text); transition: stroke .15s ease; }
-  .card:hover .arrow{
-    border-color: var(--accent);
-    background: var(--accent);
+  @media (max-width: 1100px){
+    .c4, .c5, .c7, .c8{ grid-column: span 12; }
+    .c3{ grid-column: span 6; }
   }
-  .card:hover .arrow svg{ stroke: var(--on-accent); }
-
-  .card-title{
-    font-size: 18px;
-    font-weight: 600;
-    letter-spacing: -0.01em;
-    margin: 0;
+  @media (max-width: 560px){
+    .c3{ grid-column: span 12; }
   }
-  .card-badge{
-    font-size: 12px;
-    font-weight: 400;
-    color: var(--muted, #86868b);
-    border: 1px solid rgba(255,255,255,0.16);
-    border-radius: 9999px;
-    padding: 2px 10px;
-    margin-left: 8px;
-    vertical-align: middle;
+  @media (max-width: 860px){
+    .center{ padding: 14px 12px 24px; }
+    .board{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .card-desc{ display: none; }
+    .tabs{ gap: 16px; }
   }
-  .card-desc{
-    font-size: 13.5px;
-    line-height: 1.5;
-    color: var(--text-muted);
-    margin: 0;
-  }
-
-  footer.foot{
-    margin-top: 56px;
-    padding-top: 20px;
-    border-top: 1px solid var(--border);
-    font-size: 12px;
-    color: var(--text-faint);
-  }
-
-  @keyframes rise{
-    from{ opacity: 0; transform: translateY(10px); }
-    to{ opacity: 1; transform: translateY(0); }
-  }
-  h1, .sub{ animation: rise .5s ease both; }
-  .sub{ animation-delay: .05s; }
-  .card{ animation: rise .5s ease both; }
-  .card:nth-child(1){ animation-delay: .08s; }
-  .card:nth-child(2){ animation-delay: .14s; }
-  .card:nth-child(3){ animation-delay: .2s; }
-  .card:nth-child(4){ animation-delay: .26s; }
-
-  /* signed-in person (only when served by the Toolbox server) */
-  .top{ display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-  .account{ position: relative; z-index: 20; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; animation: rise .5s ease both; }   /* above the cards, for the notifications panel */
-  .account[hidden]{ display: none; }
-  .account .who{ font-size: 13px; color: var(--text-faint); margin-right: 4px; }
-  .pill{
-    background: transparent; color: var(--text);
-    border: 1px solid var(--border-hover); border-radius: 9999px;
-    padding: 8px 15px; font: 400 14px var(--font); cursor: pointer;
-    transition: transform .1s ease, border-color .15s ease;
-  }
-  .pill:hover{ border-color: var(--text-faint); }
-  .pill:active{ transform: scale(0.95); }
-  .pill:focus-visible{ outline: 2px solid var(--accent-focus); outline-offset: 3px; }
-
-  @media (prefers-reduced-motion: reduce){
-    *{ animation-duration: .001s !important; transition-duration: .001s !important; }
-  }
+  @media (prefers-reduced-motion: reduce){ .gauge line{ transition: none; } }
 </style>
+</head>
+<body>
+<script src="shared/shell.js"></script>
+<div class="app" id="app">
 
-<div class="wrap">
-  <div class="top">
-    <h1>Toolbox</h1>
-    <div class="account" id="account" hidden>
-      <span class="who" id="accountName"></span>
-      <span id="notify"></span>
-      <a class="pill" href="/account">Account</a>
-      <a class="pill" id="adminLink" href="/admin" hidden>Access</a>
-      <button class="pill" id="signOut" type="button">Sign out</button>
-    </div>
-  </div>
-  <p class="sub">Every asset generator in one place. Pick a tool to open it.</p>
+  <!-- ===== middle: the work ===== -->
+  <main class="center">
 
-  <div class="grid">
-
-    <a class="card" href="banner-generator/">
-      <div class="card-image"><img src="banner-generator/thumbnail.jpg" alt="Social Banner Creator preview"></div>
-      <div class="card-content">
-        <div class="card-top">
-          <p class="card-title">Social Banner Creator</p>
-          <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M8 7h9v9"/></svg></div>
+    <!-- home: the tools -->
+    <section id="view-home" aria-labelledby="homeTitle">
+      <div class="bar">
+        <h1 id="homeTitle"><span id="greeting">Welcome back</span></h1>
+        <div class="seg" role="tablist" aria-label="Show" id="seg">
+          <span class="seg-thumb" aria-hidden="true"></span>
+          <button type="button" role="tab" class="on" aria-selected="true" data-show="all">All <span id="cAll"></span></button>
+          <button type="button" role="tab" aria-selected="false" data-show="fav"><svg viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg>Favourites <span id="cFav"></span></button>
         </div>
-        <p class="card-desc">Turns one piece of key art into banners for every platform. Label logo and colours applied automatically.</p>
       </div>
-    </a>
+      <div class="board" id="toolGrid">
 
-    <a class="card" href="cover-converter/">
-      <div class="card-image"><img src="cover-converter/thumbnail.jpg" alt="Cover Converter preview"></div>
-      <div class="card-content">
-        <div class="card-top">
-          <p class="card-title">Cover Converter</p>
-          <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M8 7h9v9"/></svg></div>
+        <div class="tile-wrap" data-tool="/banner-generator/">
+          <a class="card" href="banner-generator/">
+            <div class="card-image"><img src="banner-generator/thumbnail.jpg" alt=""></div>
+            <div class="card-content">
+              <p class="card-title">Social Banner Creator</p>
+              <p class="card-desc">Turns one piece of key art into banners for every platform. Label logo and colours applied automatically.</p>
+            </div>
+          </a>
         </div>
-        <p class="card-desc">Standardises any cover to a 2000×2000 JPG at 72 DPI. Centered on a black canvas.</p>
-      </div>
-    </a>
 
-    <a class="card" href="sessions-radio-maker/">
-      <div class="card-image"><img src="sessions-radio-maker/thumbnail.jpg" alt="Sessions Asset Generator preview"></div>
-      <div class="card-content">
-        <div class="card-top">
-          <p class="card-title">Sessions Asset Generator</p>
-          <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M8 7h9v9"/></svg></div>
+        <div class="tile-wrap" data-tool="/cover-converter/">
+          <a class="card" href="cover-converter/">
+            <div class="card-image"><img src="cover-converter/thumbnail.jpg" alt=""></div>
+            <div class="card-content">
+              <p class="card-title">Cover Converter</p>
+              <p class="card-desc">Standardises any cover to a 2000×2000 JPG at 72 DPI. Centered on a black canvas.</p>
+            </div>
+          </a>
         </div>
-        <p class="card-desc">Fills in artist and episode number for Spinnin' Sessions Radio. Draws them onto all 9 official templates.</p>
-      </div>
-    </a>
 
-    <a class="card" href="thumbnail-maker/">
-      <div class="card-image"><img src="thumbnail-maker/thumbnail.jpg" alt="Thumbnail Maker preview"></div>
-      <div class="card-content">
-        <div class="card-top">
-          <p class="card-title">Thumbnail Maker</p>
-          <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M8 7h9v9"/></svg></div>
+        <div class="tile-wrap" data-tool="/sessions-radio-maker/">
+          <a class="card" href="sessions-radio-maker/">
+            <div class="card-image"><img src="sessions-radio-maker/thumbnail.jpg" alt=""></div>
+            <div class="card-content">
+              <p class="card-title">Sessions Asset Generator</p>
+              <p class="card-desc">Fills in artist and episode number for Spinnin' Sessions Radio. Draws them onto all 9 official templates.</p>
+            </div>
+          </a>
         </div>
-        <p class="card-desc">Places a label overlay, logo included, on top of any background image. Exports as a 1920×1080 PNG thumbnail.</p>
-      </div>
-    </a>
 
-    <a class="card" href="song-briefing/">
-      <div class="card-image"><img src="song-briefing/thumbnail.jpg" alt="Song Briefing preview"></div>
-      <div class="card-content">
-        <div class="card-top">
-          <p class="card-title">Song Briefing</p>
-          <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M8 7h9v9"/></svg></div>
+        <div class="tile-wrap" data-tool="/thumbnail-maker/">
+          <a class="card" href="thumbnail-maker/">
+            <div class="card-image"><img src="thumbnail-maker/thumbnail.jpg" alt=""></div>
+            <div class="card-content">
+              <p class="card-title">Thumbnail Maker</p>
+              <p class="card-desc">Places a label overlay, logo included, on top of any background image. Exports as a 1920×1080 PNG thumbnail.</p>
+            </div>
+          </a>
         </div>
-        <p class="card-desc">Fills in a one-page song briefing for an artist, photo and Spotify playlist included. Exports as a 1920×1080 vector PDF.</p>
-      </div>
-    </a>
 
-    <!-- the Toolbox server keeps one of these two cards: data-admin-only for the admin, data-not-admin for everyone else -->
-    <a class="card" href="general-briefing/" data-admin-only>
-      <div class="card-image card-locked" aria-label="General Briefing is in testing">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
-        <span>Testing</span>
-      </div>
-      <div class="card-content">
-        <div class="card-top">
-          <p class="card-title">General Briefing<span class="card-badge">Testing</span></p>
-          <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M8 7h9v9"/></svg></div>
+        <div class="tile-wrap" data-tool="/song-briefing/">
+          <a class="card" href="song-briefing/">
+            <div class="card-image"><img src="song-briefing/thumbnail.jpg" alt=""></div>
+            <div class="card-content">
+              <p class="card-title">Song Briefing</p>
+              <p class="card-desc">Fills in a one-page song briefing for an artist, photo and Spotify playlist included. Exports as a 1920×1080 vector PDF.</p>
+            </div>
+          </a>
         </div>
-        <p class="card-desc">Builds the Spinnin' Records genre and trend briefing: label logos and genre pages with tracks pulled from Spotify links. Exports as a multi-page vector PDF.</p>
-      </div>
-    </a>
 
-    <div class="card soon" data-not-admin aria-disabled="true">
-      <div class="card-image card-locked" aria-label="General Briefing is coming soon">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
-      </div>
-      <div class="card-content">
-        <div class="card-top">
-          <p class="card-title">General Briefing<span class="card-badge">Coming soon</span></p>
+        <!-- the Toolbox server keeps one of these two: data-admin-only for the admin, data-not-admin for everyone else -->
+        <div class="tile-wrap" data-tool="/general-briefing/" data-admin-only>
+          <a class="card" href="general-briefing/" data-admin-only>
+            <div class="card-image"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+            <div class="card-content">
+              <p class="card-title">General Briefing<span class="card-badge">Testing</span></p>
+              <p class="card-desc">Builds the Spinnin' Records genre and trend briefing: label logos and genre pages with tracks pulled from Spotify links. Exports as a multi-page vector PDF.</p>
+            </div>
+          </a>
         </div>
-        <p class="card-desc">Builds the Spinnin' Records genre and trend briefing: label logos and genre pages with tracks pulled from Spotify links. Exports as a multi-page vector PDF.</p>
-      </div>
-    </div>
-
-    <a class="card" href="ideas/">
-      <div class="card-image card-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.6.5 1.1 1.3 1.1 2.2h5c0-.9.5-1.7 1.1-2.2A6 6 0 0 0 12 3z"/></svg>
-      </div>
-      <div class="card-content">
-        <div class="card-top">
-          <p class="card-title">Ideas</p>
-          <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M8 7h9v9"/></svg></div>
+        <div class="tile-wrap" data-not-admin>
+          <div class="card soon" aria-disabled="true">
+            <div class="card-image"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+            <div class="card-content">
+              <p class="card-title">General Briefing<span class="card-badge">Coming soon</span></p>
+              <p class="card-desc">Builds the Spinnin' Records genre and trend briefing: label logos and genre pages with tracks pulled from Spotify links.</p>
+            </div>
+          </div>
         </div>
-        <p class="card-desc">Have an idea for a new tool, or for a better one? Share it, vote on the ideas of others and see what gets built next.</p>
+
+        <div class="tile-wrap" data-tool="/ideas/">
+          <a class="card" href="ideas/">
+            <div class="card-image"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.6.5 1.1 1.3 1.1 2.2h5c0-.9.5-1.7 1.1-2.2A6 6 0 0 0 12 3z"/></svg></div>
+            <div class="card-content">
+              <p class="card-title">Ideas</p>
+              <p class="card-desc">Have an idea for a new tool, or for a better one? Share it, vote on the ideas of others and see what gets built next.</p>
+            </div>
+          </a>
+        </div>
+
       </div>
-    </a>
+      <div class="no-favs" id="noFavs" hidden>
+        <span><svg viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg></span>
+        <b>No favourites yet</b>
+        <p>Click the star on a tool to keep it here and at the top of the sidebar.</p>
+      </div>
+    </section>
 
-  </div>
+    <!-- time saved -->
+    <section id="view-time" hidden aria-labelledby="timeTitle">
+      <div class="bar">
+        <h1 id="timeTitle">Time saved <span>with the Creative Toolbox</span></h1>
+        <div class="bar-end">
+          <span class="tag" id="previewTag" hidden>Preview data</span>
+        </div>
+      </div>
+      <div class="sheet">
+        <div class="cell c3">
+          <div class="cell-head">Time saved</div>
+          <div class="num" id="sTime">–</div>
+          <div class="num-sub" id="sTimeSub"></div>
+        </div>
+        <div class="cell c3">
+          <div class="cell-head">Time spent</div>
+          <div class="num" id="sSpent">–</div>
+          <div class="num-sub" id="sSpentSub"></div>
+        </div>
+        <div class="cell c3">
+          <div class="cell-head">Assets exported</div>
+          <div class="num" id="sExports">–</div>
+          <div class="num-sub" id="sExportsSub"></div>
+        </div>
+        <div class="cell c3">
+          <div class="cell-head">Saves the most</div>
+          <div class="num" id="sTop">–</div>
+          <div class="num-sub" id="sTopSub"></div>
+        </div>
+        <div class="cell c8" id="chartCell">
+          <div class="cell-head"><span id="chartHead">Per month</span><span class="end" id="chartRange"></span></div>
+          <div class="num" id="chartBig">–</div>
+          <div class="num-sub" id="chartSub"></div>
+          <div class="chart" id="chartBox"></div>
+        </div>
+        <div class="cell c4 milestone">
+          <div class="cell-head">Next milestone<span class="end" id="msLeft"></span></div>
+          <div class="gauge" id="gauge">
+            <svg viewBox="0 0 200 200" id="gaugeSvg" aria-hidden="true"></svg>
+            <div class="gauge-in">
+              <span class="gauge-goal" id="msGoal">–</span>
+              <span class="gauge-pct" id="msPct"></span>
+            </div>
+          </div>
+          <div class="pace">
+            <span class="pace-ic"><svg viewBox="0 0 24 24"><path d="M3 17l5-5 4 4 8-8M15 8h5v5"/></svg></span>
+            <div><b id="paceMain">–</b><span id="paceSub"></span></div>
+          </div>
+          <div class="ms-done" id="msDone"></div>
+        </div>
+        <div class="cell">
+          <div class="cell-head">Every day<span class="end" id="calRange"></span></div>
+          <div class="cal-top">
+            <div><div class="num" id="calDays" style="font-size:24px">–</div><div class="num-sub" id="calDaysSub"></div></div>
+            <div><div class="num" id="calBest" style="font-size:24px">–</div><div class="num-sub" id="calBestSub"></div></div>
+            <div class="cal-legend">Less<i class="l0"></i><i class="l1"></i><i class="l2"></i><i class="l3"></i><i class="l4"></i>More</div>
+          </div>
+          <div class="cal" id="cal"></div>
+        </div>
+      </div>
+    </section>
+  </main>
 
-  <footer class="foot">Internal use only — do not share this link outside the company.</footer>
 </div>
+
 <script>
-  // shows who is signed in; stays hidden when the page is not served by the Toolbox server
-  fetch('/auth/me').then(r => r.ok ? r.json() : null).then(me => {
-    if (!me) return;
-    document.getElementById('accountName').textContent = me.name || me.email;
-    document.getElementById('adminLink').hidden = !me.isAdmin;
-    document.getElementById('account').hidden = false;
-  }).catch(() => {});
-  // the bell only shows when the Toolbox server answers
-  if (location.protocol !== 'file:') { const s = document.createElement('script'); s.src = 'shared/notify.js'; document.body.appendChild(s); }
-  document.getElementById('signOut').addEventListener('click', async () => {
-    try { await fetch('/auth/logout', { method: 'POST' }); } catch (e) {}
-    location.href = '/login';
+(function () {
+  const $ = id => document.getElementById(id);
+  const served = location.protocol !== 'file:';
+
+  const shell = window.tbShell;
+  // ---------- hello (the sidebar shows who is signed in) ----------
+  const hour = new Date().getHours();
+  const hello = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  const firstName = (shell.user.name || '').split(/\s+/)[0];
+  $('greeting').textContent = hello + (firstName ? ', ' + firstName : '');
+  if (!served) document.querySelectorAll('[data-not-admin]').forEach(e => e.remove());   // a file preview shows the admin's launcher
+
+  // ---------- views: Home and Time saved ----------
+  function showView() {
+    const time = location.hash === '#time-saved';
+    $('view-home').hidden = time; $('view-time').hidden = !time;
+    // the milestone ring fills again on every visit
+    if (time) { renderChart(); milestoneFor = null; renderMilestone(); renderCalendar(); }
+    playView(time);
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }
+  window.addEventListener('hashchange', showView);
+
+  // ---------- motion: what happens when a view opens (motion.js; it loads after this script) ----------
+  function playView(time) {
+    if (!window.tbStagger) return;
+    if (time) {
+      tbStagger($('view-time').querySelectorAll('.bar, .sheet > .cell'), 45);
+      playNumbers(); drawChartIn(); fillCalendarIn();
+    } else {
+      tbIn($('view-home').querySelector('.bar'));
+      tbStagger($('toolGrid').children, 35, 40);
+    }
+  }
+  // the numbers count up to their value
+  function playNumbers() {
+    if (!data.total.exports || !window.tbCount) return;
+    tbCount($('sTime'), data.total.minutes, v => fmt(v, true));
+    tbCount($('sSpent'), data.total.spent || 0, v => fmt(v, true));
+    tbCount($('sExports'), data.total.exports, v => Math.round(v).toLocaleString('en-GB'));
+    const top = Object.entries(data.byTool).sort((a, b) => b[1] - a[1])[0];
+    if (top) tbCount($('sTop'), top[1], v => fmt(v, true));
+    if (period === 'all') tbCount($('chartBig'), data.total.minutes / Math.max(1, data.months || data.series.length), v => fmt(v, true));
+  }
+  // the line draws itself from left to right, the area under it fades in
+  function drawChartIn() {
+    const svg = $('chartBox').querySelector('svg'); if (!svg || !svg.animate || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const line = svg.querySelector('path[stroke]'), area = svg.querySelector('path[fill^="url"]'), dot = svg.querySelector('circle');
+    const len = line.getTotalLength(), ease = 'cubic-bezier(.2,.8,.2,1)';
+    line.style.strokeDasharray = len;
+    line.animate([{ strokeDashoffset: len }, { strokeDashoffset: 0 }], { duration: 1100, easing: ease, delay: 150, fill: 'backwards' })
+      .finished.then(() => { line.style.strokeDasharray = ''; }).catch(() => { });
+    if (area) area.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 700, delay: 550, fill: 'backwards' });
+    if (dot) dot.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 300, delay: 1150, fill: 'backwards' });
+  }
+  // the calendar fills week by week
+  function fillCalendarIn() {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    $('cal').querySelectorAll('.c').forEach(c => {
+      if (c.animate) c.animate([{ opacity: 0, transform: 'scale(.4)' }, { opacity: 1, transform: 'none' }],
+        { duration: 320, delay: 200 + (+c.dataset.w || 0) * 14, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' });
+    });
+  }
+  addEventListener('DOMContentLoaded', () => playView(location.hash === '#time-saved'));
+
+  // ---------- favourites (the sidebar keeps them) ----------
+  let showFavs = false;
+  const STAR = '<svg viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg>';
+  const tileTitle = t => t.querySelector('.card-title').firstChild.textContent.trim();
+
+  function renderTools() {
+    const favs = shell.favourites();
+    const grid = $('toolGrid'), tiles = [...grid.querySelectorAll('.tile-wrap')];
+    grid.querySelectorAll('.filler, .suggest').forEach(e => e.remove());
+    tiles.sort((a, b) => (favs.includes(b.dataset.tool) - favs.includes(a.dataset.tool)) || (+a.dataset.order - +b.dataset.order));
+    tiles.forEach(t => {
+      grid.appendChild(t);
+      const on = favs.includes(t.dataset.tool), f = t.querySelector('.fav');
+      if (f) { f.classList.toggle('on', on); f.setAttribute('aria-pressed', on); f.setAttribute('aria-label', (on ? 'Remove ' : 'Add ') + tileTitle(t) + (on ? ' from' : ' to') + ' favourites'); }
+      t.hidden = showFavs && !on;
+    });
+    const shown = tiles.filter(t => !t.hidden).length;
+    $('noFavs').hidden = !(showFavs && !shown);
+    $('cAll').textContent = tiles.filter(t => t.querySelector('a.card')).length;
+    $('cFav').textContent = favs.filter(p => tiles.some(t => t.dataset.tool === p)).length || '';
+    // close the last row like a calendar month: a "suggest a tool" cell (not among favourites), then empty cells
+    if (shown) {
+      const cols = getComputedStyle(grid).gridTemplateColumns.split(' ').length;
+      let used = shown;
+      if (!showFavs) {
+        const sg = document.createElement('a'); sg.className = 'suggest'; sg.href = 'ideas/';
+        sg.innerHTML = '<span><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span>Suggest a tool';
+        grid.appendChild(sg); used++;
+      }
+      const rest = (cols - used % cols) % cols;
+      for (let i = 0; i < rest; i++) { const f = document.createElement('div'); f.className = 'filler'; f.setAttribute('aria-hidden', 'true'); grid.appendChild(f); }
+    }
+    grid.hidden = !shown;
+  }
+  [...document.querySelectorAll('#toolGrid .tile-wrap')].forEach((t, i) => {
+    t.dataset.order = i;
+    if (!t.dataset.tool) return;
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'fav'; b.innerHTML = STAR;
+    b.addEventListener('click', () => { shell.toggleFavourite(t.dataset.tool); if (window.tbIn) tbIn(t); });
+    t.appendChild(b);
   });
+  // the All / Favourites switch
+  function moveThumb(seg) {
+    seg = seg || $('seg');
+    const on = seg.querySelector('button.on'), th = seg.querySelector('.seg-thumb');
+    if (!on.offsetWidth) return;   // not visible yet
+    th.style.left = on.offsetLeft + 'px'; th.style.width = on.offsetWidth + 'px';
+  }
+  $('seg').querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+    if (b.classList.contains('on')) return;
+    $('seg').querySelectorAll('button').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-selected', x === b); });
+    showFavs = b.dataset.show === 'fav'; renderTools(); moveThumb();
+    if (showFavs && !shell.favourites().length) { if (window.tbIn) tbIn($('noFavs')); }
+    else if (window.tbStagger) tbStagger($('toolGrid').children, 30);
+  }));
+  document.fonts && document.fonts.ready.then(() => moveThumb($('seg')));
+  let rcols = 0;
+  window.addEventListener('resize', () => { const c = getComputedStyle($('toolGrid')).gridTemplateColumns.split(' ').length; if (c !== rcols) { rcols = c; renderTools(); } });
+
+  // ---------- numbers: from /api/stats online; sample numbers only when this file is opened on its own ----------
+  const TOOL_NAMES = { '/banner-generator/': 'Social Banner Creator', '/cover-converter/': 'Cover Converter', '/sessions-radio-maker/': 'Sessions Asset Generator',
+    '/thumbnail-maker/': 'Thumbnail Maker', '/song-briefing/': 'Song Briefing', '/general-briefing/': 'General Briefing' };
+  const PERIOD_TEXT = { '24h': 'in the last 24 hours', week: 'in the last 7 days', month: 'in the last 30 days', year: 'in the last 12 months' };
+  const PREV_TEXT = { '24h': 'the 24 hours before', week: 'the 7 days before', month: 'the 30 days before', year: 'the year before' };
+  const dayKey = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+
+  // a made-up year of use for the preview: busy on weekdays, quiet in weekends, growing over time
+  const PREVIEW_DAYS = (() => {
+    const out = {}, now = new Date();
+    for (let i = 0; i < 230; i++) {
+      const d = new Date(now); d.setDate(now.getDate() - i);
+      const wk = d.getDay() % 6 !== 0, seed = (i * 37 + d.getDate() * 11) % 10;
+      if (wk ? seed > 1 : seed > 7) out[dayKey(d)] = Math.round((wk ? 40 + seed * 18 : 20) * (1.4 - i / 300));
+    }
+    return out;
+  })();
+  function previewStats(period) {
+    const now = new Date(), sum = (from, to) => { let t = 0; for (const [k, v] of Object.entries(PREVIEW_DAYS)) { const d = new Date(k + 'T12:00'); if (d > from && d <= to) t += v; } return t; };
+    const back = n => { const d = new Date(now); d.setDate(d.getDate() - n); return d; };
+    const N = { '24h': 1, week: 7, month: 30, year: 365 }[period];
+    const all = Object.values(PREVIEW_DAYS).reduce((a, b) => a + b, 0);
+    const minutes = period === 'all' ? all : period === '24h' ? 190 : sum(back(N), now);
+    let series = [], unit = 'month';
+    if (period === '24h') { unit = 'hour'; series = Array.from({ length: 24 }, (_, i) => { const h = (now.getHours() - 23 + i + 24) % 24; return [String(h).padStart(2, '0') + ':00', h >= 9 && h <= 18 ? [8, 14, 22, 30, 12, 18, 26, 20, 16, 9][h - 9] : 0]; }); }
+    else if (period === 'week' || period === 'month') { unit = 'day'; series = Array.from({ length: N }, (_, i) => { const d = back(N - 1 - i); return [period === 'week' ? d.toLocaleDateString('en-GB', { weekday: 'short' }) : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }).replace('Sept', 'Sep'), PREVIEW_DAYS[dayKey(d)] || 0]; }); }
+    else {
+      const months = period === 'year' ? 12 : 8;
+      series = Array.from({ length: months }, (_, i) => { const d = new Date(now.getFullYear(), now.getMonth() - (months - 1 - i), 1); let t = 0;
+        for (const [k, v] of Object.entries(PREVIEW_DAYS)) if (k.startsWith(dayKey(d).slice(0, 7))) t += v; return [d.toLocaleString('en-US', { month: 'short' }), t]; });
+    }
+    const top = minutes * 0.29;
+    return { preview: true, period, unit, series, total: { minutes, spent: Math.round(minutes / 3), exports: Math.round(minutes / 3.9), since: 'March 2026' },
+      previous: period === 'all' ? null : { minutes: period === '24h' ? 160 : sum(back(2 * N), back(N)) || Math.round(minutes * 0.85) },
+      byTool: { '/sessions-radio-maker/': Math.round(top) }, allTime: { minutes: all }, days: PREVIEW_DAYS, months: series.length };
+  }
+
+  const EMPTY = { preview: false, period: 'all', unit: 'month', series: [], total: { minutes: 0, spent: 0, exports: 0, since: null }, previous: null, byTool: {}, allTime: { minutes: 0 }, days: {} };
+  let period = 'all', data = served ? EMPTY : previewStats('all');
+  const fmt = (min, small) => {
+    const h = Math.floor(min / 60), m = Math.round(min % 60), u = s => small ? '<small>' + s + '</small>' : s;
+    return h ? h.toLocaleString('en-GB') + u('h') + (h < 100 && m ? ' ' + m + u('m') : '') : m + u('m');
+  };
+
+  function renderStats() {
+    $('previewTag').hidden = !data.preview;
+    const when = period === 'all' ? (data.total.since ? 'since ' + data.total.since : '') : PERIOD_TEXT[period];
+    $('chartHead').textContent = data.unit === 'hour' ? 'Per hour' : data.unit === 'day' ? 'Per day' : 'Per month';
+    $('chartRange').textContent = when;
+    if (!data.total.exports) {   // nothing exported in this period
+      const none = period === 'all' ? 'Appears after the first export' : 'No exports ' + PERIOD_TEXT[period];
+      $('sTime').innerHTML = '0<small>h</small>'; $('sTimeSub').textContent = none;
+      $('sSpent').innerHTML = '0<small>h</small>'; $('sSpentSub').textContent = 'Active time in the tools';
+      $('sExports').textContent = '0'; $('sExportsSub').textContent = 'Every file made in a tool counts';
+      $('sTop').innerHTML = '–'; $('sTopSub').textContent = '';
+      $('chartBig').innerHTML = '–'; $('chartSub').textContent = '';
+      return;
+    }
+    $('sTime').innerHTML = fmt(data.total.minutes, true);
+    $('sTimeSub').textContent = data.total.minutes >= 480 ? '≈ ' + Math.round(data.total.minutes / 480) + ' working days ' + when : when;
+    $('sSpent').innerHTML = fmt(data.total.spent || 0, true);
+    $('sSpentSub').textContent = 'active in the tools · saves 3× as much';
+    $('sExports').textContent = data.total.exports.toLocaleString('en-GB');
+    $('sExportsSub').textContent = when;
+    const top = Object.entries(data.byTool).sort((a, b) => b[1] - a[1])[0];
+    $('sTop').innerHTML = top ? fmt(top[1], true) : '–';
+    $('sTopSub').textContent = top ? 'with ' + (TOOL_NAMES[top[0]] || top[0]) : '';
+    // the big number above the chart: compared with the period before, or the monthly average for all time
+    const UP = '<span class="up"><svg viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></svg></span>';
+    if (period === 'all') {
+      $('chartBig').innerHTML = fmt(data.total.minutes / Math.max(1, data.months || data.series.length), true);
+      $('chartSub').textContent = 'saved per month on average';
+    } else if (data.previous && data.previous.minutes) {
+      const pct = Math.round((data.total.minutes - data.previous.minutes) / data.previous.minutes * 100);
+      $('chartBig').innerHTML = (pct >= 0 ? '+' : '−') + Math.abs(pct) + '<small>%</small>';
+      $('chartSub').innerHTML = (pct >= 0 ? UP + 'more' : 'less') + ' saved than ' + PREV_TEXT[period];
+    } else {
+      $('chartBig').innerHTML = fmt(data.total.minutes, true);
+      $('chartSub').textContent = 'saved ' + PERIOD_TEXT[period] + ' · nothing to compare with yet';
+    }
+  }
+
+  // the numbers (all time); the API can also answer per period, the page uses all time
+  const cache = {};
+  async function loadPeriod(p) {
+    period = p;
+    if (!served) data = previewStats(p);
+    else if (cache[p]) data = cache[p];
+    else { try { const r = await fetch('/api/stats?period=' + p); if (r.ok) data = cache[p] = await r.json(); } catch (e) { } }
+    if (p !== period) return;   // a newer click won
+    renderStats(); renderChart(); renderMilestone(); renderCalendar();
+    // the real numbers arrive while Time saved is open: they count up and draw in, like on a visit
+    if (served && !$('view-time').hidden) { playNumbers(); drawChartIn(); fillCalendarIn(); }
+  }
+
+  // ---------- area chart ----------
+  const NS = 'http://www.w3.org/2000/svg';
+  const svgEl = (tag, attrs) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); return e; };
+  function smooth(pts) {
+    let d = 'M' + pts[0][0] + ',' + pts[0][1];
+    for (let i = 0; i < pts.length - 1; i++) { const [x0, y0] = pts[i], [x1, y1] = pts[i + 1], cx = (x1 - x0) / 2; d += ' C' + (x0 + cx) + ',' + y0 + ' ' + (x1 - cx) + ',' + y1 + ' ' + x1 + ',' + y1; }
+    return d;
+  }
+  let chartSize = '', calSize = 0;   // the size each was last drawn at, so a resize only redraws when it really changed
+  function renderChart() {
+    const box = $('chartBox'); if (!box.clientWidth) return; box.innerHTML = '';
+    chartSize = box.clientWidth + 'x' + box.clientHeight;
+    if (!data.series.length || !data.total.exports) { box.innerHTML = '<p class="empty">The chart fills up once the tools are used.</p>'; return; }
+    const rows = data.series, W = box.clientWidth, H = box.clientHeight || 260, L = 36, R = 14, T = 10, B = 30;
+    const maxH = Math.max(1, ...rows.map(r => r[1])) / 60;
+    const step = [0.25, 0.5, 1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500].find(s => s * 4 >= maxH * 1.08) || 500, top = step * 4;
+    const x = i => L + (W - L - R) * (rows.length === 1 ? 0.5 : i / (rows.length - 1)), y = v => T + (H - T - B) * (1 - v / 60 / top);
+    const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Hours saved per month' });
+    const defs = svgEl('defs', {}), grad = svgEl('linearGradient', { id: 'fillG', x1: 0, y1: 0, x2: 0, y2: 1 });
+    grad.appendChild(svgEl('stop', { offset: '0%', 'stop-color': '#8b5cf6', 'stop-opacity': 0.28 }));
+    grad.appendChild(svgEl('stop', { offset: '100%', 'stop-color': '#8b5cf6', 'stop-opacity': 0 }));
+    defs.appendChild(grad); svg.appendChild(defs);
+    for (let i = 0; i <= 4; i++) {
+      const yy = T + (H - T - B) * (1 - i / 4);
+      svg.appendChild(svgEl('line', { x1: L, x2: W - R, y1: yy, y2: yy, class: 'gl' }));
+      const t = svgEl('text', { x: L - 10, y: yy + 4, 'text-anchor': 'end', class: 'axis' }); t.textContent = step < 1 ? Math.round(step * i * 60) + 'm' : step * i + 'h'; svg.appendChild(t);
+    }
+    const pts = rows.map((r, i) => [x(i), y(r[1])]), line = smooth(pts);
+    const area = svgEl('path', { d: line + ` L${pts[pts.length - 1][0]},${H - B} L${pts[0][0]},${H - B} Z`, fill: 'url(#fillG)' });
+    const path = svgEl('path', { d: line, fill: 'none', stroke: '#a78bfa', 'stroke-width': 2, 'stroke-linejoin': 'round' });
+    svg.append(area, path);
+    // labels under the chart: every month of a year when there is room, otherwise about ten
+    const every = data.unit === 'month' && rows.length <= 12 && W >= 480 ? 1 : Math.ceil(rows.length / (W < 480 ? 6 : 10));
+    const labels = rows.map((r, i) => { const t = svgEl('text', { x: x(i), y: H - 8, 'text-anchor': 'middle', class: 'axis' }); t.textContent = (rows.length - 1 - i) % every ? '' : r[0]; svg.appendChild(t); return t; });
+    const guide = svgEl('line', { y1: T, y2: H - B, stroke: 'rgba(255,255,255,0.3)', 'stroke-width': 1, 'stroke-dasharray': '3 4' });
+    const dot = svgEl('circle', { r: 5, fill: '#fff', stroke: '#8b5cf6', 'stroke-width': 3 });
+    svg.append(guide, dot); box.appendChild(svg);
+    const tip = document.createElement('div'), pill = document.createElement('div'); tip.className = 'tip'; pill.className = 'xpill'; box.append(tip, pill);
+    // hover follows the mouse smoothly along the line; the numbers are those of the nearest point
+    const len0 = path.getTotalLength(), samples = [];
+    for (let k = 0; k <= 400; k++) { const q = path.getPointAtLength(len0 * k / 400); samples.push([q.x, q.y]); }
+    const yAt = xx => {   // the line's height at xx (the line runs left to right, so a binary search works)
+      let lo = 0, hi = samples.length - 1;
+      while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (samples[mid][0] < xx) lo = mid; else hi = mid; }
+      const [x0, y0] = samples[lo], [x1, y1] = samples[hi];
+      return x1 === x0 ? y0 : y0 + (y1 - y0) * (xx - x0) / (x1 - x0);
+    };
+    let shown = -1, cur = pts[rows.length - 1][0], anim = 0;
+    const tipLabel = document.createElement('span'), tipValue = document.createElement('b'); tip.append(tipLabel, tipValue);
+    const minutesAt = yy => Math.max(0, (1 - (yy - T) / (H - T - B)) * top * 60);   // the line's height, back in minutes
+    function place(xx) {
+      cur = xx = Math.min(Math.max(xx, pts[0][0]), pts[pts.length - 1][0]);
+      const yy = yAt(xx);
+      guide.setAttribute('x1', xx); guide.setAttribute('x2', xx); dot.setAttribute('cx', xx); dot.setAttribute('cy', yy);
+      let i = 0; pts.forEach((p, k) => { if (Math.abs(p[0] - xx) < Math.abs(pts[i][0] - xx)) i = k; });
+      if (i !== shown) {   // the label changes per point
+        shown = i;
+        const r = rows[i], prev = rows[i - 1], ch = prev && prev[1] ? Math.round((r[1] - prev[1]) / prev[1] * 100) : null;
+        tipLabel.textContent = r[0] + (ch === null ? '' : ' · ' + (ch >= 0 ? '+' : '') + ch + '%');
+        pill.textContent = r[0];
+      }
+      // the label under the chart slides along with the mouse; axis labels fade out where it passes
+      const pw = pill.offsetWidth / 2 || 22, px = Math.min(Math.max(xx, pw), W - pw);
+      pill.style.left = px + 'px';
+      labels.forEach(l => { const d = Math.abs(+l.getAttribute('x') - px); l.style.opacity = Math.min(1, Math.max(0, (d - pw) / 26)); });
+      // the time follows the line, so it counts along smoothly; on a point it is that point's exact number
+      const onPoint = Math.abs(pts[i][0] - xx) < 1.5;
+      tipValue.textContent = fmt(onPoint ? rows[i][1] : minutesAt(yy)) + ' saved';
+      const half = tip.offsetWidth / 2;
+      tip.style.left = Math.min(Math.max(xx, half), W - half) + 'px'; tip.style.top = yy + 'px';
+    }
+    function glideTo(target) {   // back to the newest point, gently
+      cancelAnimationFrame(anim);
+      const from = cur, t0 = performance.now();
+      const step = now => { const k = Math.min(1, (now - t0) / 350), e = 1 - Math.pow(1 - k, 3); place(from + (target - from) * e); if (k < 1) anim = requestAnimationFrame(step); };
+      anim = requestAnimationFrame(step);
+    }
+    svg.addEventListener('mousemove', e => {
+      cancelAnimationFrame(anim);
+      const rect = svg.getBoundingClientRect();
+      place((e.clientX - rect.left) / rect.width * W);
+    });
+    svg.addEventListener('mouseleave', () => glideTo(pts[rows.length - 1][0]));
+    place(cur);
+    const len = len0; path.style.strokeDasharray = len; path.style.strokeDashoffset = len; area.style.opacity = 0; area.style.transition = 'opacity .8s ease .3s';
+    requestAnimationFrame(() => { path.style.transition = 'stroke-dashoffset 1.1s cubic-bezier(.2,.8,.2,1)'; path.style.strokeDashoffset = 0; area.style.opacity = 1; });
+  }
+
+
+
+  // ---------- milestone ----------
+  const MILESTONES = [10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 25000];
+  let milestoneFor = null;   // the total it was last drawn for, so new numbers arriving for the same total do not replay it
+  function renderMilestone() {
+    const all = data.allTime ? data.allTime.minutes : 0;
+    if (all === milestoneFor && $('gaugeSvg').childElementCount) return;
+    milestoneFor = all;
+    const h = all / 60, next = MILESTONES.find(m => m > h) || MILESTONES[MILESTONES.length - 1];
+    const pct = Math.min(100, h / next * 100), left = Math.max(0, next * 60 - all);
+    $('msGoal').innerHTML = next.toLocaleString('en-GB') + '<small>h</small>';
+    $('msPct').textContent = h ? fmt(all) + ' · ' + Math.floor(pct) + '%' : 'the first goal';
+    $('msLeft').textContent = fmt(left) + ' to go';
+    // the ring: 60 ticks over three quarters of a circle, opening at the bottom
+    const svg = $('gaugeSvg'), N = 60, on = Math.round(pct / 100 * N); svg.innerHTML = '';
+    for (let i = 0; i < N; i++) {
+      const a = (135 + i / (N - 1) * 270) * Math.PI / 180, r1 = 82, r2 = i % 5 ? 92 : 96;
+      const l = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      l.setAttribute('x1', 100 + r1 * Math.cos(a)); l.setAttribute('y1', 100 + r1 * Math.sin(a));
+      l.setAttribute('x2', 100 + r2 * Math.cos(a)); l.setAttribute('y2', 100 + r2 * Math.sin(a));
+      l.setAttribute('stroke', 'rgba(255,255,255,0.12)');
+      if (i < on) setTimeout(() => l.setAttribute('stroke', i === on - 1 ? '#fff' : '#8b5cf6'), 200 + i * 14);
+      svg.appendChild(l);
+    }
+    // the pace of the last 30 days
+    const today = new Date(); let recent = 0;
+    for (let i = 0; i < 30; i++) { const d = new Date(today); d.setDate(today.getDate() - i); recent += (data.days || {})[dayKey(d)] || 0; }
+    const perDay = recent / 30;
+    if (perDay > 0 && left > 0) {
+      const days = Math.ceil(left / perDay), when = new Date(today); when.setDate(today.getDate() + days);
+      const part = when.getDate() <= 10 ? 'early' : when.getDate() <= 20 ? 'mid' : 'late';
+      $('paceMain').textContent = 'At this pace: ≈ ' + (days < 14 ? days + ' days' : Math.round(days / 7) + ' weeks');
+      $('paceSub').textContent = part + ' ' + when.toLocaleString('en-US', { month: 'short' }) + ' · ' + fmt(perDay * 7) + ' saved a week lately';
+    } else {
+      $('paceMain').textContent = h ? 'No exports in the last 30 days' : 'Every export counts';
+      $('paceSub').textContent = 'Use a tool to get closer to ' + next + 'h';
+    }
+    const done = $('msDone'); done.innerHTML = '';
+    MILESTONES.filter(m => m <= h).slice(-4).forEach(m => {
+      const c = document.createElement('span'); c.innerHTML = '<svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg>'; c.appendChild(document.createTextNode(m.toLocaleString('en-GB') + 'h')); done.appendChild(c);
+    });
+  }
+
+  // ---------- calendar: time saved per day ----------
+  function renderCalendar() {
+    const box = $('cal'); if (!box.clientWidth && !box.parentElement.clientWidth) return;
+    calSize = box.parentElement.clientWidth;
+    const width = box.parentElement.clientWidth - 40, weeks = Math.max(8, Math.min(52, Math.floor((width - 34) / 26)));
+    box.innerHTML = ''; box.style.gridTemplateColumns = '30px repeat(' + weeks + ', minmax(0, 1fr))';
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const start = new Date(today); start.setDate(today.getDate() - ((today.getDay() + 6) % 7) - (weeks - 1) * 7);   // a Monday
+    const vals = Object.values(data.days || {}).filter(v => v > 0).sort((a, b) => a - b);
+    const q = p => vals.length ? vals[Math.min(vals.length - 1, Math.floor(vals.length * p))] : 1;
+    const level = v => !v ? 0 : v <= q(0.25) ? 1 : v <= q(0.5) ? 2 : v <= q(0.8) ? 3 : 4;
+    // first column: weekday names
+    box.appendChild(document.createElement('span'));
+    ['Mon', '', 'Wed', '', 'Fri', '', 'Sun'].forEach(n => { const e = document.createElement('span'); e.className = 'd'; e.textContent = n; box.appendChild(e); });
+    let used = 0, best = null, lastMonth = -1;
+    for (let w = 0; w < weeks; w++) {
+      const first = new Date(start); first.setDate(start.getDate() + w * 7);
+      const m = document.createElement('span'); m.className = 'm';
+      if (first.getMonth() !== lastMonth && first.getDate() <= 7) { m.textContent = first.toLocaleString('en-US', { month: 'short' }); lastMonth = first.getMonth(); }
+      box.appendChild(m);
+      for (let d = 0; d < 7; d++) {
+        const day = new Date(first); day.setDate(first.getDate() + d);
+        const c = document.createElement('span'), v = (data.days || {})[dayKey(day)] || 0, future = day > today;
+        c.className = 'c ' + (future ? 'future' : 'l' + level(v)) + (+day === +today ? ' today' : '');
+        c.dataset.w = w;
+        if (!future) {
+          c.title = day.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) + ' · ' + (v ? fmt(v) + ' saved' : 'not used');
+          if (v) { used++; if (!best || v > best.v) best = { v, day }; }
+        }
+        box.appendChild(c);
+      }
+    }
+    const span = Math.round((today - start) / 864e5) + 1;
+    $('calRange').textContent = 'last ' + weeks + ' weeks';
+    $('calDays').textContent = used + ' days';
+    $('calDaysSub').textContent = 'with exports, out of the last ' + span;
+    $('calBest').textContent = best ? fmt(best.v) : '–';
+    $('calBestSub').textContent = best ? 'best day · ' + best.day.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) : 'best day appears after the first export';
+  }
+
+  shell.onChange(renderTools);
+
+  // ---------- draw ----------
+  renderTools(); renderStats(); showView(); moveThumb();
+  // online: the real numbers for the whole team
+  if (served) loadPeriod('all');
+  // redraw only after a real change of size (a window resize), not when the view just became visible
+  let rt = 0; new ResizeObserver(() => {
+    clearTimeout(rt);
+    rt = setTimeout(() => {
+      const c = $('chartBox'), size = c.clientWidth + 'x' + c.clientHeight;
+      if (c.clientWidth && size !== chartSize) renderChart();
+      const w = $('cal').parentElement.clientWidth;
+      if (w && w !== calSize) renderCalendar();
+    }, 150);
+  }).observe($('chartBox'));
+})();
 </script>
+</body>
+</html>

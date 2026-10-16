@@ -5,172 +5,115 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ideas</title>
 <link rel="icon" type="image/png" href="../favicon.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../shared/motion.css">
+<link rel="stylesheet" href="../shared/shell.css">
+<link rel="stylesheet" href="../shared/tool.css">
 <script src="../shared/motion.js" defer></script>
 <style>
-  @view-transition{ navigation: auto; }
+  /* the shared tool design is in shared/tool.css; this is only what is the Ideas page's own */
+  /* the ideas over the full width, like the tools, with sharing one above them */
+  .board { width: 100%; }
+  .board .app-header { margin-bottom: 18px; }
+  .board .app-header .btn { width: auto; height: 38px; font-size: 13px; }
+  .composer { background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--radius-lg); padding: 18px; margin-bottom: 14px; }
+  .composer .section-label { margin-bottom: 4px; }
+  .composer-actions { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+  .composer-actions .btn { width: auto; }
+  .count { font-size: 11px; color: var(--faint); text-align: right; margin-top: 4px; }
+  #ideaForm .btn { margin-top: 4px; }
+  #formMsg:empty { display: none; }
+  #listMsg:empty { display: none; }
+  #listMsg { margin-bottom: 12px; }
 
-  :root{
-    --bg: #000000;
-    --surface: #272729;
-    --surface-2: #2a2a2c;
-    --surface-3: #252527;
-    --border: rgba(255, 255, 255, 0.08);
-    --border-hover: rgba(255, 255, 255, 0.16);
-    --text: #ffffff;
-    --text-muted: #cccccc;
-    --text-faint: #86868b;
-    --accent: #2997ff;
-    --accent-focus: #0071e3;
-    --on-accent: #ffffff;
-    --success: #30d158;
-    --warning: #ffd60a;
-    --error: #ff453a;
-    --font: 'Inter', -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  /* filters and sorting above the ideas */
+  .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+  .filters { display: flex; gap: 2px; flex-wrap: wrap; padding: 3px; border-radius: var(--radius-pill); background: var(--surface); border: 1px solid var(--border-hover); }
+  button.chip { height: 30px; border: none; background: none; color: var(--faint); font: 600 12px var(--font); padding: 0 12px; cursor: pointer; transition: color .15s ease, background-color .15s ease; }
+  button.chip:hover { color: var(--muted); }
+  button.chip .n { color: var(--faint); margin-left: 5px; font-weight: 500; }
+  button.chip.on { background: var(--surface-3); color: var(--text); box-shadow: inset 0 0 0 1px var(--border-hover); }
+  .sort { width: auto; height: 38px; padding: 0 34px 0 14px; font-size: 12.5px; font-weight: 600; border-radius: var(--radius-pill); background-color: var(--surface); }
+
+  /* the ideas: one hairline sheet, like the settings */
+  .idea-list { display: flex; flex-direction: column; gap: 1px; background: var(--hairline); border: 1px solid var(--hairline); border-radius: var(--radius-lg); overflow: hidden; }
+  .idea { display: flex; gap: 16px; padding: 18px; background: var(--surface); scroll-margin-top: 24px; transition: background-color .4s ease; }
+  .idea.flash { background: #1a1625; }
+  .vote {
+    flex: none; width: 52px; height: 60px; border-radius: 12px; cursor: pointer;
+    background: var(--field); border: 1px solid var(--border-hover); color: var(--text);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+    font: 700 15px var(--font); transition: transform .1s ease, border-color .15s ease, color .15s ease;
   }
+  .vote svg { width: 16px; height: 16px; stroke: currentColor; fill: none; }
+  .vote:hover { border-color: rgba(255, 255, 255, 0.3); }
+  .vote:active { transform: scale(0.96); }
+  .vote.on { border-color: var(--accent); color: #fff; background: rgba(139, 92, 246, 0.14); }
+  .vote.on svg { color: var(--accent); }
+  .idea-body { flex: 1; min-width: 0; }
+  .idea-top { display: flex; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
+  .idea-title { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; margin: 0; flex: 1; min-width: 200px; overflow-wrap: anywhere; }
+  .status { font-size: 10.5px; font-weight: 700; border-radius: 5px; padding: 2px 8px; color: var(--muted); background: var(--surface-3); white-space: nowrap; }
+  .status.new { color: #fff; background: var(--accent); }
+  .status.planned { color: #1a0a00; background: #f97316; }
+  .status.in-progress { color: #1a1400; background: var(--warning); }
+  .status.done { color: #002616; background: var(--success); }
+  .status.declined { color: var(--faint); text-decoration: line-through; }
+  .idea-text { max-width: 90ch; font-size: 13px; line-height: 1.55; color: var(--muted); margin: 6px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .meta { font-size: 11.5px; color: var(--faint); margin-top: 8px; }
+  .actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 12px; }
+  .actions select { width: auto; height: 28px; padding: 0 30px 0 11px; font-size: 11.5px; font-weight: 600; border-radius: var(--radius-pill); background-position: right 10px center; }
 
-  *{ box-sizing: border-box; }
-  html{ background: var(--bg); overflow-y: auto; scrollbar-gutter: stable; }
-  body{
-    margin: 0 auto; max-width: 1180px; min-height: 100vh;
-    padding: 32px 40px 48px;
-    background: var(--bg); color: var(--text); font-family: var(--font);
-    -webkit-font-smoothing: antialiased;
+  .comments { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 12px; }
+  .comment { font-size: 13px; line-height: 1.5; }
+  .comment .who { font-size: 11.5px; color: var(--faint); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .comment p { margin: 2px 0 0; color: var(--muted); white-space: pre-wrap; overflow-wrap: anywhere; }
+  .link-btn { background: none; border: none; padding: 0; color: var(--faint); font: 600 11.5px var(--font); cursor: pointer; }
+  .link-btn:hover { color: var(--error); }
+  .comment-form { display: flex; gap: 8px; align-items: flex-end; }
+  .comment-form textarea { min-height: 40px; height: 40px; padding: 9px 12px; }
+  .comment-form .btn-ghost { height: 40px; }
+  .empty { text-align: center; color: var(--faint); font-size: 13px; padding: 48px 24px; background: var(--surface); }
+
+  @media (max-width: 560px) {
+    .idea { gap: 12px; padding: 14px; }
+    .vote { width: 46px; height: 54px; }
+    .comment-form { flex-direction: column; align-items: stretch; }
   }
-  ::selection{ background: var(--accent); color: #fff; }
-  button{ font-family: inherit; cursor: pointer; }
-  button:active{ transform: scale(0.95); }
-  a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible{ outline: 2px solid var(--accent-focus); outline-offset: 3px; }
-
-  /* header */
-  .app-header{ display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 8px; }
-  .back-link{ display: inline-flex; align-items: center; gap: 6px; color: var(--text); text-decoration: none; border: 1px solid var(--border-hover); border-radius: 9999px; padding: 8px 15px; font-size: 14px; }
-  .back-link:hover{ border-color: var(--text-faint); }
-  .back-link svg{ width: 14px; height: 14px; stroke: currentColor; fill: none; }
-  h1{ font-size: 26px; font-weight: 600; letter-spacing: -0.02em; margin: 0; }
-  .lead{ font-size: 17px; line-height: 1.47; color: var(--text-muted); margin: 0 0 28px; max-width: 60ch; }
-
-  /* layout */
-  .layout{ display: grid; grid-template-columns: 360px 1fr; gap: 20px; align-items: start; }
-  .side{ position: sticky; top: 24px; display: flex; flex-direction: column; gap: 12px; }
-  @media (max-width: 900px){
-    body{ padding: 24px 20px 48px; }
-    .layout{ grid-template-columns: 1fr; }
-    .side{ position: static; }
-  }
-
-  .card{ background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 24px; transition: border-color .4s ease; }
-  .idea{ scroll-margin-top: 24px; }
-  .card-label{ font-size: 14px; font-weight: 600; margin: 0 0 4px; }
-  .note{ font-size: 13px; line-height: 1.5; color: var(--text-faint); margin: 0; }
-
-  /* form */
-  form{ display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
-  label{ font-size: 13px; color: var(--text-muted); margin: 2px 0 -4px 20px; }
-  input, textarea, select{
-    width: 100%; background: var(--surface-3); border: 1px solid var(--border); color: var(--text);
-    border-radius: 9999px; padding: 12px 20px; font: 400 17px var(--font);
-  }
-  textarea{ border-radius: 18px; resize: vertical; min-height: 120px; line-height: 1.47; }
-  input:focus, textarea:focus, select:focus{ outline: none; border-color: var(--accent); }
-  input::placeholder, textarea::placeholder{ color: var(--text-faint); }
-  .count{ font-size: 12px; color: var(--text-faint); text-align: right; margin: -4px 8px 0 0; }
-
-  .btn{ background: var(--accent); color: var(--on-accent); border: none; border-radius: 9999px; font: 400 17px var(--font); padding: 11px 22px; transition: transform .1s ease; }
-  .btn:disabled{ background: var(--surface-2); color: var(--text-faint); cursor: default; transform: none; }
-  .btn-utility{ background: transparent; color: var(--text); border: 1px solid var(--border-hover); border-radius: 9999px; padding: 8px 15px; font: 400 14px var(--font); transition: transform .1s ease, border-color .15s ease; }
-  .btn-utility:hover{ border-color: var(--text-faint); }
-  .btn-utility.small{ padding: 5px 12px; font-size: 13px; }
-  .btn-utility.danger:hover{ color: #e55; border-color: #e55; }
-  .msg{ font-size: 14px; line-height: 1.5; margin: 0; min-height: 1.5em; }
-  .msg.err{ color: var(--error); }
-  .msg.ok{ color: var(--success); }
-  #listMsg:empty{ display: none; }
-  #listMsg{ margin-bottom: 12px; }
-
-  /* toolbar */
-  .toolbar{ display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
-  .filters{ display: flex; gap: 6px; flex-wrap: wrap; }
-  .chip{ background: transparent; color: var(--text-muted); border: 1px solid var(--border-hover); border-radius: 9999px; padding: 6px 12px; font: 400 13px var(--font); }
-  .chip .n{ color: var(--text-faint); margin-left: 4px; }
-  .chip.on{ border-color: var(--accent); color: var(--text); background: rgba(41,151,255,0.08); }
-  .sort{ width: auto; padding: 7px 14px; font-size: 13px; }
-
-  /* ideas */
-  .list{ display: flex; flex-direction: column; gap: 12px; }
-  .idea{ display: flex; gap: 16px; padding: 20px; }
-  .vote{
-    flex: none; width: 56px; height: 64px; border-radius: 14px;
-    background: var(--surface-3); border: 1px solid var(--border-hover); color: var(--text);
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
-    font: 600 16px var(--font); transition: transform .1s ease, border-color .15s ease;
-  }
-  .vote svg{ width: 16px; height: 16px; stroke: currentColor; fill: none; }
-  .vote:hover{ border-color: var(--text-faint); }
-  .vote.on{ border-color: var(--accent); color: var(--accent); background: rgba(41,151,255,0.08); }
-  .idea-body{ flex: 1; min-width: 0; }
-  .idea-top{ display: flex; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
-  .idea-title{ font-size: 18px; font-weight: 600; letter-spacing: -0.01em; margin: 0; flex: 1; min-width: 200px; overflow-wrap: anywhere; }
-  .status{ font-size: 12px; border: 1px solid var(--border-hover); border-radius: 9999px; padding: 2px 10px; color: var(--text-faint); white-space: nowrap; }
-  .status.planned{ color: var(--accent); border-color: rgba(41,151,255,0.5); }
-  .status.in-progress{ color: var(--warning); border-color: rgba(255,214,10,0.45); }
-  .status.done{ color: var(--success); border-color: rgba(48,209,88,0.45); }
-  .status.declined{ color: var(--text-faint); text-decoration: line-through; }
-  .idea-text{ font-size: 15px; line-height: 1.55; color: var(--text-muted); margin: 8px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
-  .meta{ font-size: 12px; color: var(--text-faint); margin-top: 10px; }
-  .actions{ display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
-  .actions select{ width: auto; padding: 5px 12px; font-size: 13px; }
-
-  .comments{ margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 12px; }
-  .comment{ font-size: 14px; line-height: 1.5; }
-  .comment .who{ font-size: 12px; color: var(--text-faint); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-  .comment p{ margin: 2px 0 0; color: var(--text-muted); white-space: pre-wrap; overflow-wrap: anywhere; }
-  .link-btn{ background: none; border: none; padding: 0; color: var(--text-faint); font: 400 12px var(--font); }
-  .link-btn:hover{ color: #e55; }
-  .link-btn:active{ transform: none; }
-  .comment-form{ display: flex; gap: 8px; align-items: flex-end; margin: 0; flex-direction: row; }
-  .comment-form textarea{ min-height: 44px; height: 44px; padding: 11px 18px; font-size: 15px; border-radius: 22px; }
-  .empty{ text-align: center; color: var(--text-faint); font-size: 15px; padding: 48px 24px; }
-
-  @media (max-width: 560px){
-    .idea{ gap: 12px; padding: 16px; }
-    .vote{ width: 48px; height: 56px; }
-    .comment-form{ flex-direction: column; align-items: stretch; }
-  }
-  @media (prefers-reduced-motion: reduce){ *{ animation-duration: .001s !important; transition-duration: .001s !important; } }
-  [hidden]{ display: none !important; }
 </style>
 </head>
 <body>
+<script src="../shared/shell.js"></script>
+
+<div class="board">
 
 <div class="app-header">
-  <a class="back-link" href="../"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 19l-7-7 7-7"/></svg>Toolbox</a>
-  <h1>Ideas</h1>
-  <span id="notify" style="margin-left:auto"></span>
+  <h1>Ideas <span>· share your idea or vote for what gets built next</span></h1>
+  <button class="btn" type="button" id="shareBtn" aria-expanded="false" aria-controls="composer"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Share an idea</button>
 </div>
-<p class="lead">Missing a tool, or a feature in one? Share it here. Vote for the ideas you want most, so we know what to build next.</p>
 
-<div class="layout">
-  <aside class="side">
-    <div class="card">
-      <p class="card-label">Share an idea</p>
-      <p class="note">What should the tool do, and what would it save you?</p>
-      <form id="ideaForm" novalidate>
-        <label for="title">Title</label>
-        <input id="title" type="text" maxlength="120" placeholder="e.g. Story maker for releases" autocomplete="off">
-        <label for="body">Explain your idea <span style="color:var(--text-faint)">(optional)</span></label>
-        <textarea id="body" maxlength="2000" placeholder="Who uses it, what goes in, what comes out?"></textarea>
-        <p class="count" id="bodyCount">0 / 2000</p>
-        <button class="btn" type="submit">Share idea</button>
-        <p class="msg" id="formMsg" role="alert"></p>
-      </form>
+<!-- sharing an idea opens above the list -->
+<section class="composer" id="composer" hidden aria-label="Share an idea">
+  <div class="section-label plain">Share an idea<span class="end"><button class="btn-ghost small" type="button" id="closeComposer">Cancel</button></span></div>
+  <p class="note" style="margin:0 0 14px">Missing a tool, or a feature in one? What should it do, and what would it save you?</p>
+  <form id="ideaForm" novalidate>
+    <div class="field">
+      <label for="title">Title</label>
+      <input id="title" type="text" maxlength="120" placeholder="e.g. Story maker for releases" autocomplete="off">
     </div>
-  </aside>
+    <div class="field">
+      <label for="body">Explain your idea <span class="opt">optional</span></label>
+      <textarea id="body" maxlength="2000" placeholder="Who uses it, what goes in, what comes out?"></textarea>
+      <p class="count" id="bodyCount">0 / 2000</p>
+    </div>
+    <div class="composer-actions">
+      <button class="btn" type="submit">Share idea</button>
+      <p class="msg" id="formMsg" role="alert"></p>
+    </div>
+  </form>
+</section>
+<p class="msg ok" id="sharedMsg" role="status" hidden style="margin-bottom:12px">Thanks! Your idea is on the board.</p>
 
-  <main>
+<main>
     <div class="toolbar">
       <div class="filters" id="filters" role="tablist" aria-label="Filter by status"></div>
       <select class="sort" id="sort" aria-label="Sort">
@@ -179,8 +122,9 @@
       </select>
     </div>
     <p class="msg err" id="listMsg" role="alert"></p>
-    <div class="list" id="list"></div>
-  </main>
+    <div class="idea-list" id="list"></div>
+</main>
+
 </div>
 
 <script>
@@ -216,19 +160,32 @@
     return j;
   }
 
+  // #new (Share an idea in the sidebar): straight to the form
   // #idea-12 (from a notification): show that idea with its comments open
   function focusFromHash() {
+    if (location.hash === '#new') { openComposer(); return; }
     const m = location.hash.match(/^#idea-(\d+)$/); if (!m) return;
     const id = Number(m[1]); if (!data.ideas.some(i => i.id === id)) return;
     filter = 'all'; open.add(id); render();
     const card = document.getElementById('idea-' + id);
-    if (card) { card.scrollIntoView({ behavior: 'smooth', block: 'start' }); card.style.borderColor = 'var(--accent)'; setTimeout(() => card.style.borderColor = '', 2500); }
+    if (card) { card.scrollIntoView({ behavior: 'smooth', block: 'start' }); card.classList.add('flash'); setTimeout(() => card.classList.remove('flash'), 2500); }
   }
   window.addEventListener('hashchange', () => load());
 
   async function load() {
     try { data = await api('/api/ideas'); $('listMsg').textContent = ''; render(); focusFromHash(); }
-    catch (e) { $('listMsg').textContent = location.protocol === 'file:' ? 'Ideas only work in the online Toolbox.' : e.message; }
+    catch (e) {
+      if (location.protocol !== 'file:') { $('listMsg').textContent = e.message; return; }
+      // opened as a file: sample ideas to see the design
+      const now = Date.now(), h = 36e5;
+      data = { isAdmin: true, ideas: [
+        { id: 1, title: 'Story maker for releases', body: 'Instagram stories for a new release: artwork, artist and "Out now" in our templates.', status: 'planned', votes: 9, voted: true, comments: 3, author: 'Sam de Vries', author_job: 'Social', created_at: now - 50 * h, mine: false },
+        { id: 2, title: 'Batch export for the Cover Converter', body: 'Drop a whole folder and get one zip back.', status: 'new', votes: 4, voted: false, comments: 0, author: 'Joeri Roozen', author_job: 'Designer', created_at: now - 5 * h, mine: true },
+        { id: 3, title: 'Lyric video template', body: '', status: 'in-progress', votes: 3, voted: false, comments: 1, author: 'Lisa Bakker', author_job: 'Video', created_at: now - 200 * h, mine: false },
+        { id: 4, title: 'Spotify Canvas cropper', body: 'Crop a video to 9:16 and 8 seconds.', status: 'done', votes: 2, voted: false, comments: 0, author: 'Tom', author_job: '', created_at: now - 600 * h, mine: false },
+      ] };
+      render(); focusFromHash();
+    }
   }
 
   function renderFilters() {
@@ -251,7 +208,7 @@
     let ideas = data.ideas.filter(i => filter === 'all' || i.status === filter);
     ideas.sort(sort === 'new' ? (a, b) => b.created_at - a.created_at : (a, b) => b.votes - a.votes || b.created_at - a.created_at);
     if (!ideas.length) {
-      list.appendChild(el('div', 'card empty', data.ideas.length ? 'No ideas with this status.' : 'No ideas yet. Be the first to share one.'));
+      list.appendChild(el('div', 'empty', data.ideas.length ? 'No ideas with this status.' : 'No ideas yet. Be the first to share one.'));
       return;
     }
     ideas.forEach((i, k) => {
@@ -264,7 +221,7 @@
   }
 
   function ideaCard(i) {
-    const card = el('article', 'card idea'); card.id = 'idea-' + i.id;
+    const card = el('article', 'idea'); card.id = 'idea-' + i.id;
     const vote = el('button', 'vote' + (i.voted ? ' on' : ''));
     vote.type = 'button';
     vote.setAttribute('aria-pressed', i.voted);
@@ -272,7 +229,10 @@
     vote.innerHTML = '<svg viewBox="0 0 24 24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>';
     vote.appendChild(el('span', null, String(i.votes)));
     vote.addEventListener('click', async () => {
-      try { const r = await api('/api/ideas/' + i.id + '/vote', {}); i.voted = r.voted; i.votes = r.votes; render(); }
+      try {
+        const r = await api('/api/ideas/' + i.id + '/vote', {}); i.voted = r.voted; i.votes = r.votes; render();
+        if (r.voted && window.tbBump) tbBump(document.querySelector('#idea-' + i.id + ' .vote'));   // a small hop for your vote
+      }
       catch (e) { $('listMsg').textContent = e.message; }
     });
 
@@ -285,7 +245,7 @@
     body.appendChild(el('div', 'meta', who(i.author, i.author_job) + ' · ' + ago(i.created_at)));
 
     const actions = el('div', 'actions');
-    const toggle = el('button', 'btn-utility small', i.comments === 1 ? '1 comment' : i.comments + ' comments');
+    const toggle = el('button', 'btn-ghost small', i.comments === 1 ? '1 comment' : i.comments + ' comments');
     toggle.type = 'button';
     toggle.setAttribute('aria-expanded', open.has(i.id));
     toggle.addEventListener('click', () => {
@@ -303,7 +263,7 @@
       actions.appendChild(sel);
     }
     if (i.mine || data.isAdmin) {
-      const del = el('button', 'btn-utility small danger', 'Delete');
+      const del = el('button', 'btn-ghost small danger', 'Delete');
       del.type = 'button';
       del.addEventListener('click', async () => {
         if (!confirm('Delete the idea "' + i.title + '" with its votes and comments?')) return;
@@ -327,7 +287,7 @@
 
     const form = el('form', 'comment-form'); form.noValidate = true;
     const ta = el('textarea'); ta.maxLength = 1000; ta.placeholder = 'Write a comment'; ta.setAttribute('aria-label', 'Comment');
-    const send = el('button', 'btn-utility', 'Post'); send.type = 'submit';
+    const send = el('button', 'btn-ghost', 'Post'); send.type = 'submit';
     form.appendChild(ta); form.appendChild(send);
     const msg = el('p', 'msg err');
     box.appendChild(form); box.appendChild(msg);
@@ -373,7 +333,20 @@
     return box;
   }
 
-  // share an idea
+  // share an idea: the box opens above the list
+  function openComposer() {
+    $('composer').hidden = false; $('shareBtn').setAttribute('aria-expanded', 'true'); $('sharedMsg').hidden = true;
+    if (window.tbIn) tbIn($('composer'));
+    $('title').focus();
+  }
+  function closeComposer() {
+    $('composer').hidden = true; $('shareBtn').setAttribute('aria-expanded', 'false');
+    if (location.hash === '#new') history.replaceState(null, '', location.pathname);
+  }
+  $('shareBtn').addEventListener('click', () => $('composer').hidden ? openComposer() : $('title').focus());
+  $('closeComposer').addEventListener('click', closeComposer);
+  $('composer').addEventListener('keydown', e => { if (e.key === 'Escape') closeComposer(); });
+
   $('body').addEventListener('input', () => { $('bodyCount').textContent = $('body').value.length + ' / 2000'; });
   $('ideaForm').addEventListener('submit', async e => {
     e.preventDefault();
@@ -385,7 +358,7 @@
     try {
       await api('/api/ideas', { title, body: $('body').value.trim() });
       e.target.reset(); $('bodyCount').textContent = '0 / 2000';
-      msg.className = 'msg ok'; msg.textContent = 'Thanks! Your idea is on the board.';
+      closeComposer(); $('sharedMsg').hidden = false;
       filter = 'all'; sort = 'new'; $('sort').value = 'new';
       await load();
     } catch (err) { msg.className = 'msg err'; msg.textContent = err.message; }
@@ -396,6 +369,5 @@
   load();
 })();
 </script>
-<script src="../shared/notify.js"></script>
 </body>
 </html>

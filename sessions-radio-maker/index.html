@@ -1,376 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sessions Asset Generator</title>
 <link rel="icon" type="image/png" href="../favicon.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../shared/motion.css">
+<link rel="stylesheet" href="../shared/shell.css">
+<link rel="stylesheet" href="../shared/tool.css">
 <script src="../shared/motion.js" defer></script>
+<script src="../shared/track.js" defer></script>
 <style>
-  @view-transition{ navigation: auto; }
-
-  :root{
-    --bg: #000000;
-    --surface: #272729;
-    --surface-2: #2a2a2c;
-    --border: rgba(255, 255, 255, 0.08);
-    --border-hover: rgba(255, 255, 255, 0.16);
-    --text: #ffffff;
-    --text-muted: #cccccc;
-    --text-faint: #86868b;
-    --accent: #2997ff;
-    --accent-focus: #0071e3;
-    --on-accent: #ffffff;
-    --font-display: 'Inter', -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  }
-
-  *{ box-sizing: border-box; }
-  html{ height: 100%; }
-  html{ overflow-y: auto; scrollbar-gutter: stable; }
-  body{
-    margin:0; padding:0;
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--font-display);
-    -webkit-font-smoothing: antialiased;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    padding: 32px 40px 40px;
-  }
-  ::selection{ background: rgba(255,255,255,0.25); color: #fff; }
-
-  a{ color: inherit; }
-
-  header{
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 32px;
-    flex-wrap: wrap;
-    gap: 16px;
-  }
-  .header-left{
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    flex-wrap: wrap;
-  }
-
-  .app{
-    display: flex;
-    gap: 20px;
-    flex: 1;
-    align-items: flex-start;
-    flex-wrap: wrap;
-  }
-  @media (max-width: 880px){
-    .rail{ width: 100%; }
-  }
-
-  /* ---------- Rail ---------- */
-  .rail{
-    width: 380px;
-    flex-shrink: 0;
-    order: -1;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .back-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--text);
-    text-decoration: none;
-    border-radius: 9999px;
-    padding: 7px 14px 7px 10px;
-    font-size: 12px;
-    font-weight: 400;
-    transition: border-color 0.15s ease, background 0.15s ease;
-  }
-  .back-link:hover { border-color: var(--border-hover); background: rgba(255,255,255,0.04); }
-  .back-link svg { width: 14px; height: 14px; stroke: currentColor; flex-shrink: 0; }
-
-  h1.tool-title{
-    font-size: 26px;
-    font-weight: 600;
-    letter-spacing: -0.02em;
-    line-height: 1.1;
-    margin: 0;
-    text-wrap: balance;
-  }
-  .tool-sub{
-    margin: 6px 0 0;
-    font-size: 14px;
-    line-height: 1.47;
-    color: var(--text-muted);
-  }
-
-  .field-card{
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 18px;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-  }
-
-  .field{ display: flex; flex-direction: column; gap: 8px; }
-  .field label{
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text);
-  }
-  .field input{
-    background: var(--bg);
-    border: 1px solid var(--border);
-    color: var(--text);
-    font-size: 13px;
-    font-weight: 400;
-    padding: 10px 16px;
-    border-radius: 9999px;
-    font-family: inherit;
-    width: 100%;
-    outline: none;
-    transition: border-color .15s ease, background .15s ease;
-  }
-  .field input::placeholder{ color: var(--text-faint); font-weight: 400; }
-  .field input:focus{ border-color: var(--accent); }
-  .field .hint{ font-size: 11px; color: var(--text-faint); }
-
+  /* the shared tool design is in shared/tool.css; this is only what is the Sessions tool's own */
   #episode{ font-variant-numeric: tabular-nums; }
 
-  /* Mirrors the actual export color (see RED constant in the script below) —
-     a live preview has to show the real output color, not the UI's neutral
-     white/mono palette. Deliberate exception, not a UI accent. */
-  .preview-line{
-    background: #000;
-    border: 1px solid var(--border);
-    border-radius: 18px;
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-  .preview-line .ep{
-    color: #FF4948;
-    font-weight: 400;
-    font-size: 12px;
-    letter-spacing: 0.02em;
-  }
-  .preview-line .ar{
-    color: #FF4948;
-    font-weight: 400;
-    font-size: 17px;
-    letter-spacing: 0.01em;
-    text-wrap: balance;
-    overflow-wrap: anywhere;
-  }
-  .preview-line .lbl{
-    color: var(--text-faint);
-    font-size: 12px;
-    margin-bottom: 2px;
-  }
+  /* the text as it will appear: in the real export colour (see RED in the script), not a UI colour */
+  .preview-line{ background: #000; border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 2px; }
+  .preview-line .ep{ color: #FF4948; font-size: 12px; letter-spacing: 0.02em; }
+  .preview-line .ar{ color: #FF4948; font-size: 17px; letter-spacing: 0.01em; text-wrap: balance; overflow-wrap: anywhere; }
 
-  .rail-actions{ display: flex; flex-direction: column; gap: 10px; }
+  .status{ display: block; font-size: 11.5px; color: var(--muted); text-align: center; min-height: 16px; margin-top: 8px; }
+  .export-note{ font-size: 11.5px; color: var(--faint); line-height: 1.5; text-align: center; margin-top: 8px; }
+  .export-note:empty{ display: none; }
 
-  button{
-    font-family: inherit;
-    cursor: pointer;
-    border: none;
-  }
-  .btn{
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    font-size: 14px;
-    font-weight: 400;
-    padding: 13px 16px;
-    border-radius: 9999px;
-    transition: transform .1s ease;
-  }
-  .btn:active{ transform: scale(0.95); }
-  .btn-primary{
-    background: var(--accent);
-    color: var(--on-accent);
-  }
-  .btn-primary:disabled{ background: var(--surface-2); color: var(--text-faint); transform: none; cursor: not-allowed; }
-
-  .status{
-    font-size: 11px;
-    color: var(--text-faint);
-    text-align: center;
-    min-height: 14px;
-  }
-  .export-note{
-    font-size: 11px;
-    color: var(--text-faint);
-    line-height: 1.5;
-    text-align: center;
-  }
-
-  .folder-warning{
-    font-size: 11px;
-    color: var(--text-faint);
-    line-height: 1.5;
-    text-align: center;
-    margin-top: 10px;
-    padding-top: 10px;
-    border-top: 1px solid var(--border);
-  }
-
-  /* ---------- Grid ---------- */
-  .main{
-    flex: 1 1 640px;
-    min-width: 0;
-  }
-  .main-head{
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 16px;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-  }
-  .main-head h2{
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--text);
-    margin: 0;
-  }
-  .main-head .count{
-    font-size: 13px;
-    color: var(--text-faint);
-  }
-
-  .grid{
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 18px;
-  }
-
-  .card{
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 18px;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-  }
-  .card-canvas{
-    background: #000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    aspect-ratio: 1 / 1;
-    overflow: hidden;
-    position: relative;
-  }
-  .card-canvas canvas{
-    max-width: 100%;
-    max-height: 100%;
-    display: block;
-  }
-  .card-body{
-    padding: 12px 14px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-  }
-  .card-title{
-    font-size: 14px;
-    font-weight: 600;
-  }
-  .card-path{
-    display: block;
-    font-size: 11px;
-    font-weight: 400;
-    color: var(--text-faint);
-    margin-top: 1px;
-  }
-  .card-tag{
-    font-size: 11px;
-    color: var(--text-faint);
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-  }
-
-  a:focus-visible, button:focus-visible, input:focus-visible {
-    outline: 2px solid var(--accent-focus);
-    outline-offset: 2px;
-  }
-
-  @media (prefers-reduced-motion: reduce){
-    *{ animation-duration: .001s !important; transition-duration: .001s !important; }
-  }
-
-  /* wide screens: the tool stops growing at 1680 px and stays centred */
-  html { background: var(--bg); }
-  body { max-width: 1680px; margin-left: auto; margin-right: auto; }
-
-  /* small laptops and tablets in landscape: the formats stay next to the settings */
-  @media (min-width: 881px) and (max-width: 1240px) {
-    .main { flex-basis: 400px; }
-  }
-
-  /* phones and small tablets: the settings rail goes full width (after the .rail rule, so it wins) */
-  @media (max-width: 880px) {
-    body { padding: 24px 20px 48px; }
-    .rail { width: 100%; }
-  }
+  /* the 9 formats */
+  .grid{ display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+  .card-canvas{ background: #000; display: flex; align-items: center; justify-content: center; aspect-ratio: 1 / 1; overflow: hidden; border-radius: var(--radius-sm); border: 1px solid var(--border); }
+  .card-canvas canvas{ max-width: 100%; max-height: 100%; display: block; }
+  .card-path{ display: block; font-size: 11px; color: var(--faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 </style>
+</head>
+<body>
+<script src="../shared/shell.js"></script>
 
-<header>
-  <div class="header-left">
-    <a class="back-link" href="../"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 19l-7-7 7-7"/></svg>Toolbox</a>
-    <div>
-      <h1 class="tool-title">Sessions Asset Generator</h1>
-    </div>
-  </div>
-</header>
+<div class="app-header">
+  <h1>Sessions Asset Generator <span>· Spinnin' Sessions Radio</span></h1>
+  <div class="header-actions"><span class="chip">9 formats</span></div>
+</div>
 
-<div class="app">
+<div class="layout">
   <main class="main">
-    <div class="main-head">
-      <h2>Formats</h2>
-      <span class="count">9 assets</span>
-    </div>
     <div class="grid" id="grid"></div>
   </main>
 
-  <aside class="rail">
-    <p class="tool-sub">Enter the artist and episode number — all 9 formats update automatically with the correct text, position and colour.</p>
-
-    <div class="field-card">
+  <aside class="sidebar">
+    <div class="sb-section">
+      <div class="section-label">Episode</div>
       <div class="field">
-        <label for="artist">Artist Name</label>
-        <input id="artist" type="text" placeholder="Artist Name" autocomplete="off" />
+        <label for="artist">Artist name</label>
+        <input id="artist" type="text" placeholder="Artist name" autocomplete="off" />
       </div>
-
       <div class="field">
-        <label for="episode">Episode Number</label>
-        <input id="episode" type="text" inputmode="numeric" placeholder="Episode Number" autocomplete="off" />
-        <span class="hint">Automatically padded to 3 digits.</span>
+        <label for="episode">Episode number <span class="opt">padded to 3 digits</span></label>
+        <input id="episode" type="text" inputmode="numeric" placeholder="e.g. 612" autocomplete="off" />
       </div>
     </div>
 
-    <div class="preview-line">
-      <span class="lbl">Live preview text</span>
-      <span class="ep" id="prevEp">EPISODE // 000</span>
-      <span class="ar" id="prevAr">ARTIST NAME</span>
+    <div class="sb-section">
+      <div class="section-label">Check the text<span class="sub">all 9 formats update</span></div>
+      <div class="preview-line">
+        <span class="ep" id="prevEp">EPISODE // 000</span>
+        <span class="ar" id="prevAr">ARTIST NAME</span>
+      </div>
     </div>
 
-    <div class="rail-actions">
-      <button class="btn btn-primary" id="exportBtn">
-        <svg viewBox="0 0 24 24" fill="none" width="15" height="15"><path d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5M4 20h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <div class="sb-section">
+      <div class="section-label">Export</div>
+      <button class="btn" id="exportBtn">
+        <svg viewBox="0 0 24 24"><path d="M12 4v12M6 11l6 6 6-6M5 20h14"/></svg>
         <span id="exportBtnLabel">Export All 9</span>
       </button>
       <p class="export-note" id="exportNote"></p>
@@ -429,15 +126,10 @@ function drawLine(ctx, text, x, yTop, targetH, maxWidth){
 }
 
 const cardTpl = (a) => `
-  <div class="card">
+  <div class="preview-block">
+    <div class="preview-meta"><span class="preview-name">${a.label}</span><span class="preview-dims">${a.tag}</span></div>
     <div class="card-canvas"><canvas id="cv-${a.id}" width="${a.w}" height="${a.h}"></canvas></div>
-    <div class="card-body">
-      <div>
-        <span class="card-title">${a.label}</span>
-        <span class="card-path">${a.folder}/${a.filename}</span>
-      </div>
-      <span class="card-tag">${a.tag}</span>
-    </div>
+    <span class="card-path">${a.folder}/${a.filename}</span>
   </div>
 `;
 
@@ -658,10 +350,12 @@ async function runExport(){
       status.textContent = "Saving files…";
       await exportToFolder();
       status.textContent = "Done — all 9 files saved to the selected folder.";
+      if (window.tbTrack) tbTrack(ASSETS.length);   // time saved
     } else {
       status.textContent = "Preparing files…";
       await exportAsZip();
       status.textContent = "Done — ZIP downloaded.";
+      if (window.tbTrack) tbTrack(ASSETS.length);   // time saved
     }
   } catch(err){
     if(err && err.name === "AbortError"){
@@ -678,3 +372,5 @@ async function runExport(){
 
 document.getElementById("exportBtn").addEventListener("click", runExport);
 </script>
+</body>
+</html>

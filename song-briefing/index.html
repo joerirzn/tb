@@ -5,287 +5,99 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Song Briefing</title>
 <link rel="icon" type="image/png" href="../favicon.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../shared/motion.css">
+<link rel="stylesheet" href="../shared/shell.css">
+<link rel="stylesheet" href="../shared/tool.css">
 <script src="../shared/motion.js" defer></script>
+<script src="../shared/track.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="fonts.js"></script>
 <style>
-  @view-transition{ navigation: auto; }
-
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  :root {
-    --bg: #000000;
-    --surface: #272729;
-    --surface-2: #2a2a2c;
-    --surface-3: #252527;
-    --border: rgba(255, 255, 255, 0.08);
-    --border-hover: rgba(255, 255, 255, 0.16);
-    --text: #ffffff;
-    --text-muted: #cccccc;
-    --muted: #86868b;
-    --warning: #ffd60a;
-    --error: #ff453a;
-    --accent: #2997ff;
-    --accent-focus: #0071e3;
-    --on-accent: #ffffff;
-    --font-display: 'Inter', -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  }
-
-  html { overflow-y: auto; scrollbar-gutter: stable; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--font-display);
-    min-height: 100vh;
-    padding: 32px 40px 40px;
-  }
-
-  header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 32px;
-    flex-wrap: wrap;
-    gap: 16px;
-  }
-  .header-left { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-
-  .back-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--text);
-    text-decoration: none;
-    border-radius: 9999px;
-    padding: 7px 14px 7px 10px;
-    font-size: 12px;
-    font-weight: 400;
-    transition: border-color 0.15s ease, background 0.15s ease;
-  }
-  .back-link:hover { border-color: var(--border-hover); background: rgba(255,255,255,0.04); }
-  .back-link svg { width: 14px; height: 14px; stroke: currentColor; flex-shrink: 0; }
-
-  h1 { font-size: 26px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.1; }
-
-  .specs { display: flex; gap: 6px; align-items: center; }
-  .spec-tag {
-    font-size: 12px;
-    color: var(--muted);
-    border: 1px solid var(--border);
-    padding: 4px 12px;
-    border-radius: 9999px;
-  }
-
-  .main {
-    display: grid;
-    grid-template-columns: 400px 1fr;
-    gap: 20px;
-    align-items: start;
-  }
-
-  /* ---------- form ---------- */
-  .sidebar { display: flex; flex-direction: column; gap: 12px; }
-
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 18px;
-    padding: 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-  .card-label { font-size: 14px; font-weight: 600; color: var(--text); }
-  .card-label span { color: var(--muted); font-weight: 400; margin-right: 6px; }
-
-  .field { display: flex; flex-direction: column; gap: 8px; }
-  .field label { font-size: 13px; font-weight: 400; color: var(--text-muted); }
-
-  input[type="text"], input[type="url"], textarea {
-    width: 100%;
-    background: var(--surface-3);
-    border: 1px solid var(--border);
-    color: var(--text);
-    font: 400 15px var(--font-display);
-    outline: none;
-    transition: border-color 0.15s ease;
-  }
-  input[type="text"], input[type="url"] { border-radius: 9999px; padding: 11px 18px; }
-  textarea { border-radius: 18px; padding: 12px 18px; resize: vertical; min-height: 84px; line-height: 1.45; }
-  textarea.tall { min-height: 120px; }
-  input::placeholder, textarea::placeholder { color: var(--muted); }
-  input:focus, textarea:focus { border-color: var(--accent); }
-
-  .note { font-size: 12px; color: var(--muted); line-height: 1.4; }
-  .fit { font-size: 12px; line-height: 1.4; display: none; }
+  /* the shared tool design is in shared/tool.css; this is only what is Song Briefing's own */
+  .card-num { display: none; }
+  .fit { font-size: 11.5px; line-height: 1.4; display: none; margin-top: 6px; }
   .fit.shrunk { display: block; color: var(--warning); }
   .fit.over { display: block; color: var(--error); }
 
   /* saved briefings */
-  .lib { display: flex; flex-direction: column; gap: 6px; max-height: 260px; overflow-y: auto; }
-  .lib-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: var(--surface-3);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 4px 4px 4px 14px;
-    transition: border-color 0.15s ease;
-  }
-  .lib-item:hover { border-color: var(--border-hover); }
-  .lib-item.active { border-color: var(--accent); background: rgba(41,151,255,0.08); }
-  .lib-open {
-    flex: 1;
-    min-width: 0;
-    background: none;
-    border: none;
-    color: var(--text);
-    text-align: left;
-    padding: 6px 0;
-  }
-  .lib-open:active { transform: none; }
-  .lib-name { display: block; font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .lib-meta { display: block; font-size: 12px; color: var(--muted); margin-top: 2px; }
-  .lib-del {
-    width: 32px; height: 32px;
-    flex-shrink: 0;
-    border-radius: 9999px;
-    background: transparent;
-    border: 1px solid transparent;
-    color: var(--muted);
-    display: grid;
-    place-items: center;
-  }
-  .lib-del:hover { color: #e55; border-color: #e55; }
+  .lib { display: flex; flex-direction: column; max-height: 260px; overflow-y: auto; border: 1px solid var(--border); border-radius: 12px; background: var(--field); }
+  .lib-item { display: flex; align-items: center; gap: 8px; padding: 4px 6px 4px 12px; border-bottom: 1px solid var(--border); transition: background-color 0.15s ease; }
+  .lib-item:last-child { border-bottom: none; }
+  .lib-item:hover { background: rgba(255, 255, 255, 0.03); }
+  .lib-item.active { background: rgba(139, 92, 246, 0.08); box-shadow: inset 2px 0 0 var(--accent); }
+  .lib-open { flex: 1; min-width: 0; background: none; border: none; color: var(--text); text-align: left; padding: 6px 0; }
+  .lib-name { display: block; font-size: 12.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lib-meta { display: block; font-size: 11px; color: var(--faint); margin-top: 1px; }
+  .lib-del { width: 30px; height: 30px; flex-shrink: 0; border-radius: 9999px; background: transparent; border: 1px solid transparent; color: var(--faint); display: grid; place-items: center; }
+  .lib-del:hover { color: var(--error); border-color: rgba(248, 113, 113, 0.4); }
   .lib-del svg { width: 14px; height: 14px; stroke: currentColor; }
-  .lib-empty { font-size: 13px; color: var(--muted); line-height: 1.45; }
-  .row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .lib-empty { font-size: 12.5px; color: var(--faint); line-height: 1.45; padding: 12px; }
+  .lib-tools { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 
-  /* photo */
+  /* the artist photo */
   .photo-drop {
-    border: 1.5px dashed var(--border-hover);
-    border-radius: 18px;
-    background: #000;
-    padding: 20px;
-    text-align: center;
-    font-size: 14px;
-    color: var(--text-muted);
-    cursor: pointer;
-    transition: border-color 0.2s, background 0.2s;
+    border: 1px dashed rgba(255, 255, 255, 0.2); border-radius: 12px; background: var(--field); padding: 16px; text-align: center;
+    font-size: 12.5px; font-weight: 600; color: var(--text); cursor: pointer; transition: border-color 0.2s, background 0.2s;
   }
-  .photo-drop:hover, .photo-drop.drag { border-color: var(--accent); background: rgba(41,151,255,0.08); }
-  .photo-drop small { display: block; font-size: 12px; color: var(--muted); margin-top: 4px; }
-  .photo-controls { display: none; flex-direction: column; gap: 12px; }
+  .photo-drop:hover, .photo-drop.drag { border-color: var(--accent); background: var(--accent-glow); }
+  .photo-drop small { display: block; font-size: 11px; font-weight: 500; color: var(--faint); margin-top: 2px; }
+  .photo-controls { display: none; flex-direction: column; gap: 10px; margin-top: 10px; }
   .photo-controls.on { display: flex; }
-  .zoom-row { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--text-muted); }
-  .zoom-row input { flex: 1; accent-color: var(--accent); }
+  .zoom-row { display: flex; align-items: center; gap: 12px; font-size: 11.5px; font-weight: 600; color: var(--muted); }
+  .zoom-row input { flex: 1; }
 
-  /* ---------- preview ---------- */
-  .stage { position: sticky; top: 24px; display: flex; flex-direction: column; gap: 16px; }
-  .canvas-wrap {
-    background: #000;
-    border: 1.5px solid var(--border-hover);
-    border-radius: 18px;
-    overflow: hidden;
-    line-height: 0;
-  }
+  /* the briefing as it will look, with the actions under it */
+  .stage { position: sticky; top: 18px; display: flex; flex-direction: column; gap: 12px; }
+  .stage .canvas-wrap { border-color: var(--hairline); border-radius: var(--radius-lg); line-height: 0; width: min(100%, calc((100vh - 200px) * 16 / 9)); }
+  .stage .actions, .stage .pager { width: min(100%, calc((100vh - 200px) * 16 / 9)); }
   #preview { width: 100%; height: auto; display: block; aspect-ratio: 16 / 9; }
   #preview.can-drag { cursor: grab; }
   #preview.dragging { cursor: grabbing; }
-
   .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .actions .btn, .actions .btn-secondary { width: auto; }
   .actions .spacer { flex: 1; }
+  .status { font-size: 12px; color: var(--muted); min-height: 18px; }
 
-  button {
-    font-family: var(--font-display);
-    cursor: pointer;
-    transition: transform 0.1s ease, border-color 0.15s ease;
-  }
-  button:active { transform: scale(0.95); }
-  button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, .photo-drop:focus-visible { outline: 2px solid var(--accent-focus); outline-offset: 3px; }
-  .btn-primary {
-    background: var(--accent);
-    color: var(--on-accent);
-    border: 1px solid var(--accent);
-    border-radius: 9999px;
-    font-size: 14px;
-    font-weight: 400;
-    padding: 8px 15px;
-  }
-  .btn-primary:disabled { background: var(--surface-2); color: var(--muted); cursor: default; }
-  .btn-utility {
-    background: transparent;
-    color: var(--text);
-    border: 1px solid var(--border-hover);
-    border-radius: 9999px;
-    font-size: 14px;
-    font-weight: 400;
-    padding: 8px 15px;
-  }
-  .btn-utility:hover { border-color: var(--muted); }
-  .btn-utility.danger:hover { color: #e55; border-color: #e55; }
-
-  .status { font-size: 13px; color: var(--muted); min-height: 18px; }
-
-  .foot { margin-top: 40px; font-size: 12px; color: var(--muted); }
-
-  @media (max-width: 1000px) {
-    body { padding: 24px 16px; }
-    .main { grid-template-columns: 1fr; }
-    .stage { position: static; order: -1; }
-  }
+  @media (max-width: 900px) { .stage { position: static; order: -2; } }
 
   /* ?canvas: only the artwork, for checks */
-  body.canvas-only { padding: 0; }
-  body.canvas-only > *:not(.main) { display: none; }
+  body.canvas-only { padding: 0; max-width: none; }
+  html:has(body.canvas-only) { padding: 0; }
+  body.canvas-only > *:not(.layout) { display: none; }
   body.canvas-only .sidebar, body.canvas-only .actions, body.canvas-only .status { display: none; }
-  body.canvas-only .main { display: block; }
-  body.canvas-only .canvas-wrap { border: none; border-radius: 0; }
-
-  /* wide screens: the tool stops growing at 1680 px and stays centred */
-  html { background: var(--bg); }
-  body { max-width: 1680px; margin-left: auto; margin-right: auto; }
+  body.canvas-only .layout { display: block; }
+  body.canvas-only .stage .canvas-wrap { border: none; border-radius: 0; width: 100%; }
 </style>
 </head>
 <body>
+<script src="../shared/shell.js"></script>
 
-<header>
-  <div class="header-left">
-    <a class="back-link" href="../"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 19l-7-7 7-7"/></svg>Toolbox</a>
-    <h1>Song Briefing</h1>
+<div class="app-header">
+  <h1>Song Briefing <span>· a one-page briefing for an artist</span></h1>
+  <div class="header-actions">
+    <span class="chip">1920×1080</span>
+    <span class="chip">PDF</span>
   </div>
-  <div class="specs">
-    <span class="spec-tag">1920×1080</span>
-    <span class="spec-tag">PDF</span>
-  </div>
-</header>
+</div>
 
-<div class="main">
+<div class="layout">
 
-  <div class="sidebar">
+  <aside class="sidebar">
 
-    <div class="card">
-      <p class="card-label">Saved briefings</p>
+    <div class="sb-section">
+      <div class="section-label plain">Saved briefings</div>
       <div class="lib" id="lib"><p class="lib-empty">Loading…</p></div>
       <p class="note">Saved in this browser under the artist name.</p>
-      <div class="row">
-        <button class="btn-utility" id="downloadFile" type="button">Download editable file</button>
-        <button class="btn-utility" id="importFile" type="button">Open editable file</button>
+      <div class="lib-tools">
+        <button class="btn-ghost small" id="downloadFile" type="button">Download editable file</button>
+        <button class="btn-ghost small" id="importFile" type="button">Open editable file</button>
         <input type="file" id="briefFile" accept=".json,application/json" hidden>
       </div>
       <p class="note">An editable file (.json) only opens in this tool, e.g. for a colleague who needs to change the briefing. To send the finished briefing, use Export PDF.</p>
     </div>
 
-    <div class="card">
-      <p class="card-label">Artist</p>
+    <div class="sb-section">
+      <div class="section-label">Artist</div>
       <div class="field">
         <label for="artist">Artist name</label>
         <input type="text" id="artist" placeholder="Artist Name" autocomplete="off">
@@ -304,21 +116,21 @@
         <input type="file" id="photoFile" accept="image/*" hidden>
         <div class="photo-controls" id="photoControls">
           <div class="zoom-row">Zoom <input type="range" id="zoom" min="1" max="3" step="0.01" value="1"></div>
-          <div><button class="btn-utility danger" id="photoRemove" type="button">Remove photo</button></div>
+          <div><button class="btn-ghost small danger" id="photoRemove" type="button">Remove photo</button></div>
         </div>
       </div>
     </div>
 
-    <div class="card">
-      <p class="card-label"><span>01</span>Summary</p>
+    <div class="sb-section">
+      <div class="section-label">Summary</div>
       <div class="field">
         <textarea id="summary" class="tall" placeholder="Sum up the briefing in a few lines: what the song should be, the mood it needs to carry and what it should do for the artist."></textarea>
         <p class="fit" data-fit="summary"></p>
       </div>
     </div>
 
-    <div class="card">
-      <p class="card-label"><span>02</span>Sound preference</p>
+    <div class="sb-section">
+      <div class="section-label">Sound preference</div>
       <div class="field">
         <label for="genre">Genre</label>
         <input type="text" id="genre" placeholder="Add the genre(s)">
@@ -341,8 +153,8 @@
       </div>
     </div>
 
-    <div class="card">
-      <p class="card-label"><span>03</span>What the artist is looking for</p>
+    <div class="sb-section">
+      <div class="section-label">What the artist is looking for</div>
       <div class="field">
         <label for="vocals">Vocals &amp; Hooks</label>
         <textarea id="vocals" placeholder="Describe the vocals and hooks"></textarea>
@@ -365,16 +177,16 @@
       </div>
     </div>
 
-    <div class="card">
-      <p class="card-label"><span>04</span>What to avoid</p>
+    <div class="sb-section">
+      <div class="section-label">What to avoid</div>
       <div class="field">
         <textarea id="avoid" class="tall" placeholder="e.g. lyrical restrictions, production no-gos"></textarea>
         <p class="fit" data-fit="avoid"></p>
       </div>
     </div>
 
-    <div class="card">
-      <p class="card-label"><span>05</span>References</p>
+    <div class="sb-section">
+      <div class="section-label">References</div>
       <div class="field">
         <textarea id="references" class="tall" placeholder="Add song references and/or references to artists"></textarea>
         <p class="fit" data-fit="references"></p>
@@ -386,22 +198,21 @@
       </div>
     </div>
 
-  </div>
+  </aside>
 
-  <div class="stage">
+  <div class="main stage">
     <div class="canvas-wrap"><canvas id="preview"></canvas></div>
     <div class="actions">
-      <button class="btn-primary" id="exportPdf" type="button">Export PDF</button>
+      <button class="btn" id="exportPdf" type="button"><svg viewBox="0 0 24 24"><path d="M12 4v12M6 11l6 6 6-6M5 20h14"/></svg>Export PDF</button>
+      <button class="btn-secondary" id="saveBrief" type="button">Save briefing</button>
       <span class="spacer"></span>
-      <button class="btn-utility" id="saveBrief" type="button">Save briefing</button>
-      <button class="btn-utility" id="newBrief" type="button">New briefing</button>
+      <button class="btn-ghost" id="newBrief" type="button">New briefing</button>
     </div>
     <p class="status" id="status"></p>
   </div>
 
 </div>
 
-<footer class="foot">Internal use only — do not share this link outside the company.</footer>
 
 <script>
 (function () {
@@ -754,7 +565,7 @@
     const fits = render(pdfPainter(pdf), true);
     const url = playlistUrl($('playlist').value);
     if (url) { const r = spotifyBox(); pdf.link(r.x * k, r.y * k, r.w * k, r.h * k, { url }); }
-    pdf.setProperties({ title: fileBase(), subject: 'Song briefing', creator: 'Toolbox – Song Briefing' });
+    pdf.setProperties({ title: fileBase(), subject: 'Song briefing', creator: 'Creative Toolbox – Song Briefing' });
     return { pdf, fits, url };
   }
   $('exportPdf').addEventListener('click', () => {
@@ -762,6 +573,7 @@
     try {
       const { pdf, fits, url } = buildPdf();
       pdf.save(fileBase() + '.pdf');
+      if (window.tbTrack) tbTrack(1);   // time saved
       status('PDF exported' + (url ? ' with a clickable playlist link.' : '.') + overflowWarning(fits));
     } catch (e) { console.error(e); status('PDF export failed: ' + e.message); }
   });

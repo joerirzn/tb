@@ -63,6 +63,7 @@
     else if (n.type === 'status') what.append(t('Your idea '), title, t(' is now '), el('b', null, STATUS[n.detail] || n.detail));
     else if (n.type === 'idea') what.append(actor, t(' shared a new idea '), title);
     else if (n.type === 'announce') what.append(t('New tool: '), el('b', null, n.ann_title || 'a tool'));
+    else if (n.type === 'milestone') what.append(t('Milestone: the team saved '), el('b', null, n.detail + 'h'), t(' with the Creative Toolbox'));
     return what;
   }
 
@@ -89,6 +90,7 @@
         if (!n.read) { await post({ id: n.id }); n.read = true; unread = Math.max(0, unread - 1); }
         close();
         if (n.type === 'announce') { location.href = n.ann_link || '/'; return; }
+        if (n.type === 'milestone') { location.href = '/#time-saved'; return; }
         const target = '/ideas/#idea-' + n.idea_id;
         if (location.pathname === '/ideas/' || location.pathname === '/ideas') { location.hash = 'idea-' + n.idea_id; paint(); }
         else location.href = target;

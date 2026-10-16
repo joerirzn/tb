@@ -4,397 +4,189 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>General Briefing</title>
-<meta name="tool-version" content="2026-10-16.1">
+<meta name="tool-version" content="2026-10-16.5">
 <link rel="icon" type="image/png" href="../favicon.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../shared/motion.css">
+<link rel="stylesheet" href="../shared/shell.css">
+<link rel="stylesheet" href="../shared/tool.css">
 <script src="../shared/motion.js" defer></script>
+<script src="../shared/track.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="fonts.js"></script>
 <script src="logo.js"></script>
 <script src="labels.js"></script>
 <style>
-  @view-transition{ navigation: auto; }
+  /* the shared tool design is in shared/tool.css; this is only what is General Briefing's own */
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  :root {
-    --bg: #000000;
-    --surface: #272729;
-    --surface-2: #2a2a2c;
-    --surface-3: #252527;
-    --border: rgba(255, 255, 255, 0.08);
-    --border-hover: rgba(255, 255, 255, 0.16);
-    --text: #ffffff;
-    --text-muted: #cccccc;
-    --muted: #86868b;
-    --warning: #ffd60a;
-    --error: #ff453a;
-    --accent: #2997ff;
-    --accent-focus: #0071e3;
-    --on-accent: #ffffff;
-    --font-display: 'Inter', -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  /* the settings: sections whose parts are spaced evenly (the page form is built by the script) */
+  .stack { display: flex; flex-direction: column; gap: 14px; }
+  .stack > .section-label, .stack > .card-label:first-child { margin-bottom: 0; }
+  .stack > .field, .stack > .note { margin: 0; }
+  /* a note under a field (or the colours) keeps a little room */
+  .field > .note, .field > .warn, .field > .err { margin-top: 8px; }
+  #form .note:empty, #form .fitnote:empty, #form .warn:empty, #form .err:empty { display: none; }
+  .field .lbl + .swatches { margin-top: 2px; }
+  .card-label { font-size: 13px; font-weight: 700; color: var(--text); }
+  /* the first title of the page form is the step itself */
+  #form > .card-label:first-child { display: flex; align-items: center; gap: 10px; }
+  #form > .card-label:first-child::before {
+    counter-increment: step; content: counter(step);
+    width: 20px; height: 20px; flex: none; border-radius: 9999px; border: 1px solid var(--border-hover);
+    display: grid; place-items: center; font-size: 11px; font-weight: 700; color: var(--muted);
   }
-
-  html { overflow-y: auto; scrollbar-gutter: stable; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--font-display);
-    min-height: 100vh;
-    padding: 32px 40px 40px;
-  }
-
-  header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 32px;
-    flex-wrap: wrap;
-    gap: 16px;
-  }
-  .header-left { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-
-  .back-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--text);
-    text-decoration: none;
-    border-radius: 9999px;
-    padding: 7px 14px 7px 10px;
-    font-size: 12px;
-    font-weight: 400;
-    transition: border-color 0.15s ease, background 0.15s ease;
-  }
-  .back-link:hover { border-color: var(--border-hover); background: rgba(255,255,255,0.04); }
-  .back-link svg { width: 14px; height: 14px; stroke: currentColor; flex-shrink: 0; }
-
-  h1 { font-size: 26px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.1; }
-
-  .specs { display: flex; gap: 6px; align-items: center; }
-  .spec-tag {
-    font-size: 12px;
-    color: var(--muted);
-    border: 1px solid var(--border);
-    padding: 4px 12px;
-    border-radius: 9999px;
-  }
-
-  .main {
-    display: grid;
-    grid-template-columns: 420px 1fr;
-    gap: 20px;
-    align-items: start;
-  }
-
-  /* ---------- sidebar ---------- */
-  .sidebar { display: flex; flex-direction: column; gap: 12px; }
-
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 18px;
-    padding: 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-  .card-label { font-size: 14px; font-weight: 600; color: var(--text); }
-  .card-label span { color: var(--muted); font-weight: 400; margin-right: 6px; }
   .card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-
-  .field { display: flex; flex-direction: column; gap: 8px; }
-  .field label, .field .lbl { font-size: 13px; font-weight: 400; color: var(--text-muted); }
+  .field .lbl { display: block; font-size: 11.5px; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
   .two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .warn { font-size: 11.5px; line-height: 1.45; color: var(--warning); }
+  .err { font-size: 11.5px; line-height: 1.45; color: var(--error); }
 
-  input[type="text"], input[type="url"], input[type="password"], textarea {
-    width: 100%;
-    background: var(--surface-3);
-    border: 1px solid var(--border);
-    color: var(--text);
-    font: 400 15px var(--font-display);
-    outline: none;
-    transition: border-color 0.15s ease;
+  /* small actions, the same as .btn-ghost */
+  .btn-utility {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 34px; padding: 0 14px; white-space: nowrap;
+    background: var(--surface); border: 1px solid var(--border-hover); color: var(--muted); border-radius: var(--radius-pill);
+    font: 600 12.5px var(--font); cursor: pointer; transition: border-color 0.15s, color 0.15s;
   }
-  input[type="text"], input[type="url"], input[type="password"] { border-radius: 9999px; padding: 11px 18px; }
-  textarea { border-radius: 18px; padding: 12px 18px; resize: vertical; min-height: 84px; line-height: 1.45; }
-  textarea.tall { min-height: 150px; }
-  input::placeholder, textarea::placeholder { color: var(--muted); }
-  input:focus, textarea:focus { border-color: var(--accent); }
-  input.need { border-color: var(--warning); }
-  input.need::placeholder { color: var(--warning); }
+  .btn-utility:hover { border-color: var(--text); color: var(--text); }
+  .btn-utility.small { height: 28px; padding: 0 11px; font-size: 11.5px; }
+  .btn-utility.danger:hover { color: var(--error); border-color: var(--error); }
+  .btn-utility:disabled { opacity: .45; cursor: default; border-color: var(--border-hover); color: var(--muted); }
 
-  .note { font-size: 12px; color: var(--muted); line-height: 1.4; }
-  .warn { font-size: 12px; line-height: 1.4; color: var(--warning); }
-  .err { font-size: 12px; line-height: 1.4; color: var(--error); }
-
-  /* page list */
-  .pages { display: flex; flex-direction: column; gap: 4px; }
-  .pg {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    border: 1px solid transparent;
-    border-radius: 8px;
-    padding: 2px 4px 2px 0;
-    transition: border-color 0.15s ease;
-  }
-  .pg:hover { border-color: var(--border); }
-  .pg.active { border-color: var(--accent); background: rgba(41,151,255,0.08); }
-  .pg-open {
-    flex: 1;
-    min-width: 0;
-    background: none;
-    border: none;
-    color: var(--text);
-    text-align: left;
-    padding: 8px 10px;
-    font-size: 14px;
-    display: flex;
-    gap: 10px;
-    align-items: baseline;
-  }
-  .pg-open:active { transform: none; }
-  .pg-num { color: var(--muted); font-size: 12px; width: 18px; flex-shrink: 0; }
+  /* the pages of the briefing */
+  .pages { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: 12px; background: var(--field); overflow: hidden; }
+  .pg { display: flex; align-items: center; gap: 2px; padding: 2px 4px 2px 0; border-bottom: 1px solid var(--border); transition: background-color 0.15s ease; }
+  .pg:last-child { border-bottom: none; }
+  .pg:hover { background: rgba(255, 255, 255, 0.03); }
+  .pg.active { background: rgba(139, 92, 246, 0.08); box-shadow: inset 2px 0 0 var(--accent); }
+  .pg-open { flex: 1; min-width: 0; background: none; border: none; color: var(--text); text-align: left; padding: 8px 12px; font: 600 12.5px var(--font); display: flex; gap: 10px; align-items: baseline; }
+  .pg-num { color: var(--faint); font-size: 11px; width: 18px; flex-shrink: 0; font-variant-numeric: tabular-nums; }
   .pg-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .pg-kind { color: var(--muted); font-size: 12px; margin-left: auto; flex-shrink: 0; }
+  .pg-kind { color: var(--faint); font-size: 11px; font-weight: 500; margin-left: auto; flex-shrink: 0; }
 
   .icon-btn {
-    width: 30px; height: 30px;
-    flex-shrink: 0;
-    border-radius: 9999px;
-    background: transparent;
-    border: 1px solid transparent;
-    color: var(--muted);
-    display: grid;
-    place-items: center;
+    width: 28px; height: 28px; flex-shrink: 0; border-radius: 9999px; background: transparent; border: 1px solid transparent;
+    color: var(--faint); display: grid; place-items: center; cursor: pointer;
   }
   .icon-btn:hover { color: var(--text); border-color: var(--border-hover); }
-  .icon-btn.del:hover { color: #e55; border-color: #e55; }
+  .icon-btn.del:hover { color: var(--error); border-color: rgba(248, 113, 113, 0.4); }
   .icon-btn:disabled { opacity: 0.25; cursor: default; }
   .icon-btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
-  /* sub cards: tracks, logos */
-  .sub {
-    background: var(--surface-3);
-    border: 1px solid var(--border);
-    border-radius: 18px;
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-  .sub-head { display: flex; align-items: center; gap: 8px; }
-  .sub-head .t { font-size: 13px; color: var(--muted); flex: 1; }
+  /* one track or logo inside the form */
+  .sub { background: var(--field); border: 1px solid var(--border); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+  .sub-head { display: flex; align-items: center; gap: 6px; }
+  .sub-head .t { font-size: 11.5px; font-weight: 700; color: var(--faint); flex: 1; font-variant-numeric: tabular-nums; }
   .sub input[type="text"], .sub input[type="url"] { background: var(--surface); }
-  .track-art {
-    width: 56px; height: 56px; flex-shrink: 0;
-    border-radius: 8px;
-    background: #1c1c1c center / cover no-repeat;
-    border: 1px solid var(--border);
-  }
+  .track-art { width: 56px; height: 56px; flex-shrink: 0; border-radius: 8px; background: #1c1c1c center / cover no-repeat; border: 1px solid var(--border); }
   .track-top { display: flex; gap: 12px; align-items: center; }
   .track-top .field { flex: 1; min-width: 0; }
   .chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-  .chip {
-    background: transparent;
-    color: var(--text);
-    border: 1px solid var(--border-hover);
-    border-radius: 9999px;
-    font-size: 12px;
-    padding: 4px 10px;
-  }
-  .chip:hover { border-color: var(--accent); }
+  button.chip { height: 26px; background: transparent; color: var(--text); cursor: pointer; }
+  button.chip:hover { border-color: var(--accent); }
   .find { position: relative; }
-  .results {
-    display: none; flex-direction: column; gap: 2px;
-    margin-top: 6px; padding: 6px;
-    background: var(--surface-2); border: 1px solid var(--border-hover); border-radius: 18px;
-    max-height: 320px; overflow-y: auto;
-  }
+  .results { display: none; flex-direction: column; gap: 2px; margin-top: 6px; padding: 6px; background: var(--surface-2); border: 1px solid var(--border-hover); border-radius: 12px; max-height: 320px; overflow-y: auto; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6); }
   .results.open { display: flex; }
-  .res {
-    display: flex; align-items: center; gap: 12px; width: 100%;
-    background: none; border: none; border-radius: 8px; padding: 6px 8px;
-    color: var(--text); text-align: left;
-  }
-  .res:hover, .res:focus-visible { background: rgba(255,255,255,0.06); }
-  .res:active { transform: none; }
-  .res img { width: 40px; height: 40px; border-radius: 4px; flex-shrink: 0; background: #1c1c1c; }
+  .res { display: flex; align-items: center; gap: 12px; width: 100%; background: none; border: none; border-radius: 8px; padding: 6px 8px; color: var(--text); text-align: left; cursor: pointer; }
+  .res:hover, .res:focus-visible { background: rgba(255, 255, 255, 0.06); }
+  .res img { width: 40px; height: 40px; border-radius: 6px; flex-shrink: 0; background: #1c1c1c; }
   .res .rt { min-width: 0; }
   .res .rt b, .res .rt span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .res .rt b { font-size: 14px; font-weight: 600; }
-  .res .rt span { font-size: 12px; color: var(--muted); }
+  .res .rt b { font-size: 13px; font-weight: 700; }
+  .res .rt span { font-size: 11.5px; color: var(--faint); }
   .swatches { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-  .sw {
-    width: 32px; height: 32px; border-radius: 9999px; padding: 0;
-    border: 1px solid var(--border-hover);
-    outline: 2px solid transparent; outline-offset: 2px;
-  }
+  .sw { width: 30px; height: 30px; border-radius: 9999px; padding: 0; cursor: pointer; border: 1px solid var(--border-hover); outline: 2px solid transparent; outline-offset: 2px; }
   .sw.on { outline-color: var(--accent); }
-
-  .logo-thumb {
-    width: 64px; height: 40px; flex-shrink: 0;
-    border-radius: 8px;
-    background: #000 center / contain no-repeat;
-    border: 1px solid var(--border);
-    display: grid; place-items: center;
-    font-size: 10px; color: var(--muted);
-  }
+  .logo-thumb { width: 64px; height: 40px; flex-shrink: 0; border-radius: 8px; background: #000 center / contain no-repeat; border: 1px solid var(--border); display: grid; place-items: center; font-size: 10px; color: var(--faint); }
   .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .row > * { flex: 0 1 auto; }
 
   .drop {
-    border: 1.5px dashed var(--border-hover);
-    border-radius: 18px;
-    background: #000;
-    padding: 18px;
-    text-align: center;
-    font-size: 14px;
-    color: var(--text-muted);
-    cursor: pointer;
-    transition: border-color 0.2s, background 0.2s;
+    border: 1px dashed rgba(255, 255, 255, 0.2); border-radius: 12px; background: var(--field); padding: 16px; text-align: center;
+    font-size: 12.5px; font-weight: 600; color: var(--text); cursor: pointer; transition: border-color 0.2s, background 0.2s;
   }
-  .drop:hover, .drop.drag { border-color: var(--accent); background: rgba(41,151,255,0.08); }
-  .drop small { display: block; font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .drop:hover, .drop.drag { border-color: var(--accent); background: var(--accent-glow); }
+  .drop small { display: block; font-size: 11px; font-weight: 500; color: var(--faint); margin-top: 2px; }
 
   /* saved briefings */
-  .lib { display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; }
-  .lib-item {
-    display: flex; align-items: center; gap: 8px;
-    background: var(--surface-3);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 4px 4px 4px 14px;
-  }
-  .lib-item:hover { border-color: var(--border-hover); }
-  .lib-item.active { border-color: var(--accent); background: rgba(41,151,255,0.08); }
-  .lib-open { flex: 1; min-width: 0; background: none; border: none; color: var(--text); text-align: left; padding: 6px 0; }
-  .lib-open:active { transform: none; }
-  .lib-name { display: block; font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .lib-meta { display: block; font-size: 12px; color: var(--muted); margin-top: 2px; }
-  .lib-empty { font-size: 13px; color: var(--muted); line-height: 1.45; }
+  .lib { display: flex; flex-direction: column; max-height: 220px; overflow-y: auto; border: 1px solid var(--border); border-radius: 12px; background: var(--field); }
+  .lib-item { display: flex; align-items: center; gap: 8px; padding: 4px 6px 4px 12px; border-bottom: 1px solid var(--border); }
+  .lib-item:last-child { border-bottom: none; }
+  .lib-item:hover { background: rgba(255, 255, 255, 0.03); }
+  .lib-item.active { background: rgba(139, 92, 246, 0.08); box-shadow: inset 2px 0 0 var(--accent); }
+  .lib-open { flex: 1; min-width: 0; background: none; border: none; color: var(--text); text-align: left; padding: 6px 0; cursor: pointer; }
+  .lib-name { display: block; font-size: 12.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lib-meta { display: block; font-size: 11px; color: var(--faint); margin-top: 1px; }
+  .lib-empty { font-size: 12.5px; color: var(--faint); line-height: 1.45; padding: 12px; }
 
-  /* ---------- preview ---------- */
-  .stage { position: sticky; top: 24px; display: flex; flex-direction: column; gap: 16px; }
-  .canvas-wrap {
-    background: #000;
-    border: 1.5px solid var(--border-hover);
-    border-radius: 18px;
-    overflow: hidden;
-    line-height: 0;
-  }
+  /* the briefing as it will look */
+  .stage { position: sticky; top: 18px; display: flex; flex-direction: column; gap: 12px; }
+  .stage .canvas-wrap { border-color: var(--hairline); border-radius: var(--radius-lg); line-height: 0; width: min(100%, calc((100vh - 200px) * 16 / 9)); }
+  .stage .actions, .stage .pager { width: min(100%, calc((100vh - 200px) * 16 / 9)); }
   #preview { width: 100%; height: auto; display: block; aspect-ratio: 16 / 9; }
-  .pager { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
-
+  .pager { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 12px; font-weight: 600; color: var(--muted); }
   .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .actions .btn, .actions .btn-secondary { width: auto; }
   .actions .spacer { flex: 1; }
-
-  button { font-family: var(--font-display); cursor: pointer; transition: transform 0.1s ease, border-color 0.15s ease; }
-  button:active { transform: scale(0.95); }
-  button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, .drop:focus-visible { outline: 2px solid var(--accent-focus); outline-offset: 3px; }
-  .btn-primary {
-    background: var(--accent);
-    color: var(--on-accent);
-    border: 1px solid var(--accent);
-    border-radius: 9999px;
-    font-size: 14px;
-    font-weight: 400;
-    padding: 8px 15px;
-  }
-  .btn-primary:disabled { background: var(--surface-2); border-color: var(--surface-2); color: var(--muted); cursor: default; }
-  .btn-utility {
-    background: transparent;
-    color: var(--text);
-    border: 1px solid var(--border-hover);
-    border-radius: 9999px;
-    font-size: 14px;
-    font-weight: 400;
-    padding: 8px 15px;
-  }
-  .btn-utility:hover { border-color: var(--muted); }
-  .btn-utility.danger:hover { color: #e55; border-color: #e55; }
-  .btn-utility.small { font-size: 12px; padding: 5px 12px; }
-
-  .status { font-size: 13px; color: var(--muted); min-height: 18px; }
+  .status { font-size: 12px; color: var(--muted); min-height: 18px; }
   .update {
     display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
-    background: rgba(41,151,255,0.08); border: 1px solid var(--accent); border-radius: 18px;
-    padding: 12px 12px 12px 20px; margin-bottom: 20px; font-size: 14px;
+    background: rgba(139, 92, 246, 0.08); border: 1px solid var(--accent); border-radius: var(--radius-lg);
+    padding: 10px 10px 10px 18px; margin-bottom: 14px; font-size: 13px; font-weight: 600;
   }
-  .update[hidden] { display: none; }
-  .foot { margin-top: 40px; font-size: 12px; color: var(--muted); }
+  .update .btn { width: auto; height: 34px; }
 
-  @media (max-width: 1000px) {
-    body { padding: 24px 16px; }
-    .main { grid-template-columns: 1fr; }
-    .stage { position: static; order: -1; }
-  }
+  @media (max-width: 900px) { .stage { position: static; order: -2; } }
 
   /* ?canvas=N: one page of the artwork only, for checks */
-  body.canvas-only { padding: 0; }
-  body.canvas-only > *:not(.main) { display: none; }
+  body.canvas-only { padding: 0; max-width: none; }
+  html:has(body.canvas-only) { padding: 0; }
+  body.canvas-only > *:not(.layout) { display: none; }
   body.canvas-only .sidebar, body.canvas-only .actions, body.canvas-only .status, body.canvas-only .pager { display: none; }
-  body.canvas-only .main { display: block; }
-  body.canvas-only .canvas-wrap { border: none; border-radius: 0; }
-
-  /* wide screens: the tool stops growing at 1680 px and stays centred */
-  html { background: var(--bg); }
-  body { max-width: 1680px; margin-left: auto; margin-right: auto; }
+  body.canvas-only .layout { display: block; }
+  body.canvas-only .stage .canvas-wrap { border: none; border-radius: 0; width: 100%; }
 </style>
 </head>
 <body>
+<script src="../shared/shell.js"></script>
 
 <div class="update" id="update" hidden>
   <span>A newer version of this tool is online.</span>
-  <button class="btn-primary" id="loadNew" type="button">Load the new version</button>
+  <button class="btn" id="loadNew" type="button">Load the new version</button>
 </div>
 
-<header>
-  <div class="header-left">
-    <a class="back-link" href="../"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 19l-7-7 7-7"/></svg>Toolbox</a>
-    <h1>General Briefing</h1>
+<div class="app-header">
+  <h1>General Briefing <span>· the genre and trend briefing</span></h1>
+  <div class="header-actions">
+    <span class="chip">1920×1080</span>
+    <span class="chip">Multi-page PDF</span>
   </div>
-  <div class="specs">
-    <span class="spec-tag">1920×1080</span>
-    <span class="spec-tag">Multi-page PDF</span>
-  </div>
-</header>
+</div>
 
-<div class="main">
+<div class="layout">
 
-  <div class="sidebar">
+  <aside class="sidebar">
 
-    <div class="card">
-      <p class="card-label">Saved briefings</p>
+    <div class="sb-section stack">
+      <div class="section-label plain">Saved briefings</div>
       <div class="lib" id="lib"><p class="lib-empty">Loading…</p></div>
       <p class="note">Saved in this browser under the date.</p>
       <div class="row">
-        <button class="btn-utility" id="downloadFile" type="button">Download editable file</button>
-        <button class="btn-utility" id="importFile" type="button">Open editable file</button>
+        <button class="btn-utility small" id="downloadFile" type="button">Download editable file</button>
+        <button class="btn-utility small" id="importFile" type="button">Open editable file</button>
         <input type="file" id="briefFile" accept=".json,application/json" hidden>
       </div>
       <p class="note">An editable file (.json) only opens in this tool, e.g. for a colleague who needs to change the briefing. To send the finished briefing, use Export PDF.</p>
     </div>
 
-    <div class="card">
-      <div class="card-head">
-        <p class="card-label">Pages</p>
-        <button class="btn-utility small" id="addGenre" type="button">Add genre page</button>
-      </div>
+    <div class="sb-section stack">
+      <div class="section-label">Pages<span class="end"><button class="btn-utility small" id="addGenre" type="button">Add genre page</button></span></div>
       <div class="pages" id="pages"></div>
     </div>
 
-    <div class="card" id="form"></div>
+    <div class="sb-section stack" id="form"></div>
 
-  </div>
+  </aside>
 
-  <div class="stage">
+  <div class="main stage">
     <div class="canvas-wrap"><canvas id="preview"></canvas></div>
     <div class="pager">
       <button class="icon-btn" id="prevPage" type="button" aria-label="Previous page"><svg viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"/></svg></button>
@@ -402,9 +194,9 @@
       <button class="icon-btn" id="nextPage" type="button" aria-label="Next page"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
     </div>
     <div class="actions">
-      <button class="btn-primary" id="exportPdf" type="button">Export PDF</button>
+      <button class="btn" id="exportPdf" type="button"><svg viewBox="0 0 24 24"><path d="M12 4v12M6 11l6 6 6-6M5 20h14"/></svg>Export PDF</button>
+      <button class="btn-secondary" id="saveBrief" type="button">Save briefing</button>
       <span class="spacer"></span>
-      <button class="btn-utility" id="saveBrief" type="button">Save briefing</button>
       <button class="btn-utility" id="newBrief" type="button">New briefing</button>
     </div>
     <p class="status" id="status"></p>
@@ -412,7 +204,6 @@
 
 </div>
 
-<footer class="foot">Internal use only — do not share this link outside the company.</footer>
 
 <script>
 (function () {
@@ -1077,7 +868,7 @@
       const list = await searchTracks(q);
       if (my !== seq) return;
       results.innerHTML = '';
-      if (list === null) { closeResults(); ui.note(location.protocol === 'file:' ? 'Search only works in the online Toolbox.' : 'Search is not available right now. Paste a Spotify link or fill in the fields.', 'warn'); return; }
+      if (list === null) { closeResults(); ui.note(location.protocol === 'file:' ? 'Search only works in the online Creative Toolbox.' : 'Search is not available right now. Paste a Spotify link or fill in the fields.', 'warn'); return; }
       if (!list.length) { closeResults(); ui.note('Nothing found. Try artist + title, paste a Spotify link, or fill in the fields.', 'warn'); return; }
       ui.note('Pick a track:');
       list.forEach(r => {
@@ -1222,7 +1013,7 @@
       const fits = renderPage(P, p, true) || {};
       if (Object.values(fits).includes('over')) problems.push(pageName(p));
     });
-    pdf.setProperties({ title: fileBase(), subject: 'Song briefing', creator: 'Toolbox – General Briefing' });
+    pdf.setProperties({ title: fileBase(), subject: 'Song briefing', creator: 'Creative Toolbox – General Briefing' });
     return { pdf, problems };
   }
   $('exportPdf').addEventListener('click', async () => {
@@ -1232,6 +1023,7 @@
       await imagesReady();
       const { pdf, problems } = buildPdf();
       pdf.save(fileBase() + '.pdf');
+      if (window.tbTrack) tbTrack(B.pages.length);   // time saved: every page counts as an asset
       status('PDF exported (' + B.pages.length + ' pages).' + (problems.length ? ' Text is cut off on: ' + problems.join(', ') + '.' : ''));
     } catch (e) { console.error(e); status('PDF export failed: ' + e.message); }
     finally { btn.disabled = false; }

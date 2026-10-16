@@ -5,258 +5,33 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Social Banner Creator</title>
 <link rel="icon" type="image/png" href="../favicon.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../shared/motion.css">
+<link rel="stylesheet" href="../shared/shell.css">
+<link rel="stylesheet" href="../shared/tool.css">
 <script src="../shared/motion.js" defer></script>
+<script src="../shared/track.js" defer></script>
 <style>
-@view-transition{ navigation: auto; }
-
-:root {
-  --bg:           #000000;
-  --surface:      #272729;
-  --surface-2:    #2a2a2c;
-  --border:       rgba(255, 255, 255, 0.08);
-  --border-hover: rgba(255, 255, 255, 0.16);
-  --text:         #ffffff;
-  --muted:        #86868b;
-  --accent:       #2997ff;
-  --accent-glow:  rgba(41, 151, 255, 0.08);
-  --accent-focus: #0071e3;
-  --on-accent:    #ffffff;
-  --font: 'Inter', -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --radius-sm: 8px;
-  --radius-lg: 18px;
-  --radius-pill: 9999px;
-}
-
-* { margin: 0; padding: 0; box-sizing: border-box; }
-html { height: 100%; }
-html { overflow-y: auto; scrollbar-gutter: stable; }
-
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--font);
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  padding: 32px 40px 40px;
-}
-
-/* Header */
-.app-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 32px;
-  flex-wrap: wrap;
-  gap: 16px;
-}
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-.app-header h1 {
-  font-size: 26px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
-}
-
-.back-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: transparent;
-  border: 1px solid var(--border);
-  color: var(--text);
-  text-decoration: none;
-  border-radius: var(--radius-pill);
-  padding: 7px 14px 7px 10px;
-  font-size: 12px;
-  font-weight: 400;
-  transition: border-color 0.15s ease, background 0.15s ease;
-}
-.back-link:hover { border-color: var(--border-hover); background: rgba(255,255,255,0.04); }
-.back-link svg { width: 14px; height: 14px; stroke: currentColor; flex-shrink: 0; }
-
-/* Layout */
-.layout {
-  display: flex;
-  gap: 20px;
-  flex: 1;
-  align-items: flex-start;
-  flex-wrap: wrap;
-}
-
-/* Sidebar */
-.sidebar {
-  width: 380px;
-  flex-shrink: 0;
-  order: -1;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.sb-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; }
-
-.section-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text);
-  margin-bottom: 10px;
-}
-
-.field { margin-bottom: 10px; }
-.field:last-child { margin-bottom: 0; }
-.field label {
-  display: block;
-  font-size: 11px;
-  color: var(--muted);
-  margin-bottom: 5px;
-}
-
-/* Inputs */
-input[type="text"], select {
-  width: 100%;
-  font-size: 13px;
-  font-family: var(--font);
-  color: var(--text);
-  background: var(--bg);
-  border: 1px solid var(--border);
-  padding: 9px 14px;
-  outline: none;
-  transition: border-color 0.15s, color 0.15s;
-}
-input[type="text"] { border-radius: var(--radius-pill); }
-select { border-radius: var(--radius-sm); }
-input[type="text"]:focus, select:focus { border-color: var(--accent); }
-input[type="text"]::placeholder { color: var(--muted); }
-select { cursor: pointer; }
-
-.hint {
-  font-size: 10px;
-  color: #3a3a3a;
-  margin-top: 5px;
-  line-height: 1.5;
-}
-.hint code { color: #505050; font-family: monospace; }
-
-.color-row { display: flex; gap: 6px; }
-.color-row input[type="text"] { flex: 1; }
-.color-row input[type="color"] {
-  width: 34px; min-width: 34px; height: 34px;
-  background: var(--bg); border: 1px solid var(--border);
-  border-radius: var(--radius-sm); padding: 2px 3px; cursor: pointer;
-}
-
-/* Upload zone */
-.upload-zone {
-  border: 1.5px dashed var(--border-hover);
-  border-radius: var(--radius-lg);
-  padding: 16px;
-  text-align: center;
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-  background: #000;
-  transition: border-color 0.2s, background 0.2s;
-}
-.upload-zone:hover { border-color: var(--accent); background: var(--accent-glow); }
-.upload-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
-.upload-zone .uz-icon { font-size: 20px; color: #333; margin-bottom: 4px; }
-.upload-zone .uz-text { font-size: 12px; color: var(--muted); }
-.upload-zone .uz-sub { font-size: 10px; color: #3a3a3a; margin-top: 2px; }
+/* the shared tool design is in shared/tool.css; this is only what is the banner tool's own */
 .thumb { width: 100%; max-height: 56px; object-fit: contain; border-radius: 4px; display: none; margin-bottom: 6px; }
 .thumb.visible { display: block; }
-
-/* Buttons */
-.btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  background: var(--accent); color: var(--on-accent); border: none;
-  border-radius: var(--radius-pill); padding: 10px 14px;
-  font-size: 14px; font-weight: 400; font-family: var(--font);
-  cursor: pointer; transition: transform 0.1s ease; width: 100%;
-}
-.btn:active { transform: scale(0.97); }
-.btn:disabled { background: var(--surface-2); color: var(--muted); transform: none; cursor: default; }
-
-.btn-ghost {
-  background: none; border: 1px solid var(--border-hover); color: var(--muted);
-  border-radius: var(--radius-pill); padding: 6px 14px;
-  font-size: 12px; font-weight: 400; font-family: var(--font);
-  cursor: pointer; transition: border-color 0.15s, color 0.15s;
-}
-.btn-ghost:hover { border-color: var(--text); color: var(--text); }
-
-/* Progress */
-.progress-wrap { margin-top: 8px; display: none; }
-.progress-wrap.visible { display: block; }
-.progress-bar-track { width: 100%; height: 2px; background: var(--border-hover); border-radius: 2px; overflow: hidden; }
-.progress-bar-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.2s; border-radius: 2px; }
-.progress-label { font-size: 10px; color: var(--muted); margin-top: 5px; text-align: center; }
-
-.folder-warning {
-  font-size: 11px;
-  color: var(--muted);
-  line-height: 1.5;
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid var(--border);
-}
-
-/* Main grid */
-.main {
-  flex: 1 1 640px; min-width: 0;
-  display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-content: start;
-}
-
-.banner-block { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.banner-meta { display: flex; align-items: baseline; gap: 8px; }
-.banner-name { font-size: 12px; font-weight: 600; color: var(--text); }
-.banner-dims { font-size: 11px; color: var(--muted); }
-.canvas-wrap { width: 100%; border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border); background: #000; }
-.canvas-wrap canvas { display: block; width: 100%; height: auto; }
-
-a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible {
-  outline: 2px solid var(--accent-focus);
-  outline-offset: 2px;
-}
-
-@media (prefers-reduced-motion: reduce){
-  *{ animation-duration: .001s !important; transition-duration: .001s !important; }
-}
-
-  /* wide screens: the tool stops growing at 1680 px and stays centred */
-  html { background: var(--bg); }
-  body { max-width: 1680px; margin-left: auto; margin-right: auto; }
-
-  /* small laptops and tablets in landscape: banners stay next to the settings, one per row */
-  @media (min-width: 901px) and (max-width: 1240px) {
-    .main { flex-basis: 400px; grid-template-columns: 1fr; }
-  }
-
-  /* phones and small tablets: settings full width, banners stacked */
-  @media (max-width: 900px) {
-    body { padding: 24px 20px 48px; }
-    .sidebar { width: 100%; }
-    .main { flex-basis: 100%; grid-template-columns: 1fr; }
-  }
+/* the banners: two per row */
+.main { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-content: start; }
+/* small laptops and tablets in landscape: banners stay next to the settings, one per row */
+@media (min-width: 901px) and (max-width: 1240px) { .main { flex-basis: 400px; grid-template-columns: 1fr; } }
+@media (max-width: 900px) { .main { grid-template-columns: 1fr; } }
+/* wide screens: three banners per row, very wide screens four */
+@media (min-width: 2000px) { .main { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 2900px) { .main { grid-template-columns: repeat(4, 1fr); } }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body>
+<script src="../shared/shell.js"></script>
 
 <div class="app-header">
   <div class="header-left">
-    <a class="back-link" href="../"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 19l-7-7 7-7"/></svg>Toolbox</a>
     <div>
-      <h1>Social Banner Creator</h1>
+      <h1>Social Banner Creator <span>· banners for every platform</span></h1>
     </div>
   </div>
   <button class="btn-ghost" id="clearBtn">Clear all</button>
@@ -268,34 +43,9 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   <aside class="sidebar">
 
     <div class="sb-section">
-      <div style="display:flex;flex-direction:column;gap:8px;">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <div style="width:20px;height:20px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--on-accent);flex-shrink:0;">1</div>
-          <div>
-            <div style="font-size:12px;font-weight:600;color:var(--text);">Select label</div>
-            <div style="font-size:11px;color:var(--muted);margin-top:1px;">Pick your label preset</div>
-          </div>
-        </div>
-        <div style="display:flex;align-items:center;gap:10px;">
-          <div style="width:20px;height:20px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--on-accent);flex-shrink:0;">2</div>
-          <div>
-            <div style="font-size:12px;font-weight:600;color:var(--text);">Drop artwork</div>
-            <div style="font-size:11px;color:var(--muted);margin-top:1px;">System scans text for artist / title</div>
-          </div>
-        </div>
-        <div style="display:flex;align-items:center;gap:10px;">
-          <div style="width:20px;height:20px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--on-accent);flex-shrink:0;">3</div>
-          <div>
-            <div style="font-size:12px;font-weight:600;color:var(--text);">Adjust &amp; export</div>
-            <div style="font-size:11px;color:var(--muted);margin-top:1px;">Tweak colors, download all</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="sb-section">
       <div class="section-label">Label</div>
-      <div class="field">
+      <div class="choices" id="labelCards" role="group" aria-label="Label"></div>
+      <div class="field" hidden>
         <select id="logoPreset">
           <option value="">— Select label —</option>
           <option value="spinnin">Spinnin' Records</option>
@@ -306,22 +56,22 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
     </div>
 
 <div class="sb-section">
-      <div class="section-label">Artwork</div>
+      <div class="section-label">Artwork<span class="sub">artist and title are read from it</span></div>
       <div class="upload-zone" id="artworkZone">
         <input type="file" accept="image/*" id="artworkUpload">
         <img class="thumb" id="artworkThumb" alt="">
-        <div class="uz-icon">&#8593;</div>
+        <div class="uz-icon"><svg viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></svg></div>
         <div class="uz-text">Click to upload</div>
         <div class="uz-sub">Cover art / key visual</div>
       </div>
       <div class="field" style="margin-top:12px;">
         <label style="display:flex;justify-content:space-between;"><span>Crop position</span><span id="cropVal" style="color:var(--muted);">50%</span></label>
-        <input type="range" id="cropSlider" min="0" max="100" value="50" style="width:100%;margin-top:6px;accent-color:var(--accent);cursor:pointer;">
+        <input type="range" id="cropSlider" min="0" max="100" value="50" style="width:100%;margin-top:4px;accent-color:var(--accent);cursor:pointer;">
       </div>
     </div>
 
     <div class="sb-section">
-      <div class="section-label">Bar style</div>
+      <div class="section-label">Colours</div>
       <div class="field">
         <label>Bar background color</label>
         <div class="color-row">
@@ -340,7 +90,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 
     <div class="sb-section">
       <div class="section-label">Export</div>
-      <button class="btn" id="btnExportAll">&#8595; Download all banners</button>
+      <button class="btn" id="btnExportAll"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v12M6 11l6 6 6-6M5 20h14"/></svg>Download all banners</button>
       <div class="progress-wrap" id="progressWrap">
         <div class="progress-bar-track"><div class="progress-bar-fill" id="progressFill"></div></div>
         <div class="progress-label" id="progressLabel">Processing...</div>
@@ -380,9 +130,9 @@ const canvases = {};
 const blocks = {};
 const mainArea = document.getElementById('mainArea');
 SIZES.forEach(s => {
-  const block = document.createElement('div'); block.className = 'banner-block';
-  const meta  = document.createElement('div'); meta.className = 'banner-meta';
-  meta.innerHTML = `<span class="banner-name">${s.name}</span><span class="banner-dims">${s.w} × ${s.h} px</span>`;
+  const block = document.createElement('div'); block.className = 'preview-block';
+  const meta  = document.createElement('div'); meta.className = 'preview-meta';
+  meta.innerHTML = `<span class="preview-name">${s.name}</span><span class="preview-dims">${s.w} × ${s.h} px</span>`;
   const wrap   = document.createElement('div'); wrap.className = 'canvas-wrap';
   const canvas = document.createElement('canvas');
   wrap.appendChild(canvas); canvases[s.id] = canvas;
@@ -405,7 +155,7 @@ function updateBlocks() {
   const active = activeSizes();
   SIZES.forEach(s => {
     blocks[s.id].style.display = active.includes(s) ? '' : 'none';
-    blocks[s.id].querySelector('.banner-name').textContent = sizeName(s);
+    blocks[s.id].querySelector('.preview-name').textContent = sizeName(s);
   });
   // Keep the on-screen order of the active label
   active.forEach(s => mainArea.appendChild(blocks[s.id]));
@@ -488,6 +238,7 @@ document.getElementById('clearBtn').addEventListener('click', () => {
   txtColorTxt.value = '#ffffff'; txtColorPick.value = '#ffffff';
   state.cropOffset = 0.5; cropSlider.value = 50; cropVal.textContent = '50%';
   document.getElementById('logoPreset').value = '';
+  document.querySelectorAll('.choice').forEach(b => b.setAttribute('aria-pressed', 'false'));
   updateBlocks();
   renderAll();
 });
@@ -830,6 +581,7 @@ document.getElementById('btnExportAll').addEventListener('click', async () => {
   }
 
   fill.style.width = '100%'; lbl.textContent = 'Done!';
+  if (window.tbTrack) tbTrack(sizes.length);   // time saved
   btn.disabled = false;
   setTimeout(() => { wrap.classList.remove('visible'); fill.style.width = '0%'; }, 2000);
 });
@@ -861,6 +613,36 @@ document.getElementById('logoPreset').addEventListener('change', function(e) {
   };
   img.src = preset.src;
 });
+
+// the label as cards with their logo; the (hidden) list underneath keeps doing the work
+(function () {
+  var sel = document.getElementById('logoPreset'), box = document.getElementById('labelCards');
+  [].slice.call(sel.options).forEach(function (o) {
+    if (!o.value) return;
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'choice'; b.dataset.value = o.value;
+    b.setAttribute('aria-pressed', 'false');
+    var logo = document.createElement('span'); logo.className = 'pic';
+    var im = document.createElement('img'); im.alt = ''; logo.appendChild(im);
+    // a dark logo would disappear on the black card: show it light
+    im.onload = function () {
+      var c = document.createElement('canvas'), w = c.width = 60, h = c.height = Math.max(1, Math.round(60 * im.naturalHeight / im.naturalWidth));
+      var x = c.getContext('2d'); x.drawImage(im, 0, 0, w, h);
+      var d = x.getImageData(0, 0, w, h).data, sum = 0, n = 0;
+      for (var i = 0; i < d.length; i += 4) if (d[i + 3] > 128) { sum += d[i] + d[i + 1] + d[i + 2]; n++; }
+      if (n && sum / n / 3 < 90) im.style.filter = 'invert(1)';
+    };
+    im.src = LOGO_PRESETS[o.value].src;
+    b.appendChild(logo); b.appendChild(document.createTextNode(o.textContent));
+    b.addEventListener('click', function () {
+      sel.value = sel.value === o.value ? '' : o.value;   // click again to choose no label
+      sel.dispatchEvent(new Event('change'));
+    });
+    box.appendChild(b);
+  });
+  sel.addEventListener('change', function () {
+    box.querySelectorAll('.choice').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.value === sel.value ? 'true' : 'false'); });
+  });
+})();
 
 updateBlocks();
 renderAll();
