@@ -5,6 +5,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 
 :root {
+  color-scheme: dark;   /* the browser's own parts (autofill, scrollbars, pickers) in dark too */
   --bg:           #000000;
   --surface:      #141414;
   --surface-2:    #1b1b1b;
@@ -95,6 +96,14 @@ input[type="text"], input[type="url"], input[type="password"], input[type="numbe
 textarea { resize: vertical; min-height: 84px; line-height: 1.5; }
 textarea.tall { min-height: 140px; }
 input::placeholder, textarea::placeholder { color: var(--faint); }
+/* a saved email or password: the browser fills it in, but the field keeps our dark look instead of turning white */
+input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus, input:-webkit-autofill:active,
+textarea:-webkit-autofill, select:-webkit-autofill {
+  -webkit-text-fill-color: var(--text); caret-color: var(--text);
+  -webkit-box-shadow: 0 0 0 1000px var(--field) inset; box-shadow: 0 0 0 1000px var(--field) inset;
+  transition: background-color 600000s 0s, color 600000s 0s;
+}
+input:autofill { background-color: var(--field); color: var(--text); }
 input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 input.need, textarea.need { border-color: var(--warning); }
 input.need::placeholder { color: var(--warning); }
