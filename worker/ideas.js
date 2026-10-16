@@ -127,6 +127,8 @@ export async function notify(env, recipients, actorId, type, ideaId, detail = ''
 
 export async function handleNotifications(request, env, url, user) {
   if (request.method === 'GET') {
+    // 30 at a time, newest first; ?before=<time> gives the 30 before that ("Show older")
+    const before = Number(url.searchParams.get('before')) || 0;
     const rows = await env.DB.prepare(
       `SELECT n.id, n.type, n.idea_id, n.detail, n.created_at, n.read_at, a.name AS actor,
               CASE WHEN n.type = 'announce' THEN NULL ELSE i.title END AS idea_title,
@@ -135,9 +137,9 @@ export async function handleNotifications(request, env, url, user) {
          LEFT JOIN users a ON a.id = n.actor_id
          LEFT JOIN ideas i ON i.id = n.idea_id AND n.type != 'announce'
          LEFT JOIN announcements an ON an.id = n.idea_id AND n.type = 'announce'
-       WHERE n.user_id = ? ORDER BY n.created_at DESC LIMIT 30`).bind(user.id).all();
+       WHERE n.user_id = ? AND (? = 0 OR n.created_at < ?) ORDER BY n.created_at DESC LIMIT 30`).bind(user.id, before, before).all();
     const unread = await env.DB.prepare('SELECT COUNT(*) AS n FROM notifications WHERE user_id = ? AND read_at IS NULL').bind(user.id).first();
-    return json({ unread: unread.n, items: rows.results.map(r => ({ ...r, read: !!r.read_at })) });
+    return json({ unread: unread.n, more: rows.results.length === 30, items: rows.results.map(r => ({ ...r, read: !!r.read_at })) });
   }
   if (request.method !== 'POST') return new Response('Method not allowed', { status: 405 });
   if (!sameOrigin(request, url)) return json({ error: 'Bad request.' }, 403);
@@ -145,7 +147,7 @@ export async function handleNotifications(request, env, url, user) {
   if (body.id) await env.DB.prepare('UPDATE notifications SET read_at = ? WHERE id = ? AND user_id = ? AND read_at IS NULL').bind(now, Number(body.id), user.id).run();
   else await env.DB.batch([
     env.DB.prepare('UPDATE notifications SET read_at = ? WHERE user_id = ? AND read_at IS NULL').bind(now, user.id),
-    env.DB.prepare('DELETE FROM notifications WHERE created_at < ?').bind(now - 90 * 864e5),
+    env.DB.prepare('DELETE FROM notifications WHERE created_at < ?').bind(now - 365 * 864e5),   // kept for a year
   ]);
   return json({ ok: true });
 }

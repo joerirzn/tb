@@ -33,6 +33,17 @@
     .nt-msg{ font-size: 13px; line-height: 1.45; color: #b5b5b5; margin-top: 4px; white-space: pre-wrap; overflow-wrap: anywhere;
       display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
     .nt-time{ font-size: 12px; color: #86868b; margin-top: 3px; }
+    .nt-tabs{ display: flex; gap: 2px; padding: 3px; margin: 0 6px 6px; border-radius: 9999px; background: #0a0a0a; border: 1px solid rgba(255,255,255,0.12); }
+    .nt-tabs button{ flex: 1; height: 28px; border: none; background: none; border-radius: 9999px; color: #7b7b7b; font: 600 12px inherit; font-family: inherit; cursor: pointer; }
+    .nt-tabs button:hover{ color: #a6a6a6; }
+    .nt-tabs button.on{ background: #232323; color: #fff; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12); }
+    .nt-tabs .n{ margin-left: 5px; color: #f87171; }
+    .nt-item.read .nt-what{ color: #9a9a9a; }
+    .nt-item.read .nt-what b{ color: #d0d0d0; }
+    .nt-more{ display: block; width: calc(100% - 12px); margin: 6px; height: 34px; border-radius: 9999px; background: transparent; border: 1px solid rgba(255,255,255,0.14);
+      color: #a6a6a6; font: 600 12.5px inherit; font-family: inherit; cursor: pointer; }
+    .nt-more:hover{ color: #fff; border-color: rgba(255,255,255,0.3); }
+    .nt-more:disabled{ opacity: .5; cursor: default; }
     .nt-empty{ font-size: 13px; color: #86868b; padding: 16px 10px 18px; }
   `;
   const style = document.createElement('style'); style.textContent = css; document.head.appendChild(style);
@@ -46,7 +57,7 @@
   const panel = el('div', 'nt-panel'); panel.hidden = true; panel.setAttribute('role', 'dialog'); panel.setAttribute('aria-label', 'Notifications');
   wrap.appendChild(btn); wrap.appendChild(panel); host.appendChild(wrap);
 
-  let items = [], unread = 0;
+  let items = [], unread = 0, more = false, view = 'unread';   // view: unread or read
   function ago(t) {
     const m = Math.round((Date.now() - t) / 60000);
     if (m < 1) return 'just now';
@@ -80,10 +91,22 @@
       head.appendChild(all);
     }
     panel.appendChild(head);
+    // Unread / Read
+    const tabs = el('div', 'nt-tabs'); tabs.setAttribute('role', 'tablist');
+    [['unread', 'Unread'], ['read', 'Read']].forEach(([k, label]) => {
+      const b = el('button', view === k ? 'on' : '', label); b.type = 'button'; b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', view === k);
+      if (k === 'unread' && unread) b.appendChild(el('span', 'n', String(unread)));
+      b.addEventListener('click', e => { e.stopPropagation(); if (view !== k) { view = k; paint(); } });
+      tabs.appendChild(b);
+    });
+    panel.appendChild(tabs);
     const list = el('div', 'nt-list');
-    if (!items.length) list.appendChild(el('div', 'nt-empty', 'Nothing yet. You hear here about new tools, updates, and replies to your suggestions.'));
-    items.forEach(n => {
-      const it = el('button', 'nt-item' + (n.read ? '' : ' unread')); it.type = 'button';
+    // the unread ones, or everything you already read (back to a year ago, 30 at a time)
+    const shown = items.filter(n => view === 'unread' ? !n.read : n.read);
+    if (!shown.length) list.appendChild(el('div', 'nt-empty', !items.length ? 'Nothing yet. You hear here about new tools, updates, and replies to your suggestions.'
+      : view === 'unread' ? 'You are all caught up. Earlier notifications are under Read.' : 'Nothing read yet.'));
+    shown.forEach(n => {
+      const it = el('button', 'nt-item' + (n.read ? ' read' : ' unread')); it.type = 'button';
       it.appendChild(line(n));
       if ((n.type === 'comment' || n.type === 'reply') && n.detail) it.appendChild(el('div', 'nt-snip', n.detail));
       if (n.type === 'announce' && n.ann_body) it.appendChild(el('div', n.ann_kind === 'update' ? 'nt-msg' : 'nt-snip', n.ann_body));
@@ -99,6 +122,20 @@
       });
       list.appendChild(it);
     });
+    if (more && view === 'read') {
+      const older = el('button', 'nt-more', 'Show older'); older.type = 'button';
+      older.addEventListener('click', async () => {
+        older.disabled = true; older.textContent = 'Loading…';
+        try {
+          const last = items[items.length - 1];
+          const r = await fetch('/api/notifications?before=' + (last ? last.created_at : 0));
+          const j = await r.json();
+          items = items.concat(j.items.filter(n => !items.some(x => x.id === n.id))); more = j.more;
+          const top = list.scrollTop; paint(); panel.querySelector('.nt-list').scrollTop = top;
+        } catch (e) { older.disabled = false; older.textContent = 'Show older'; }
+      });
+      list.appendChild(older);
+    }
     panel.appendChild(list);
   }
 
@@ -110,11 +147,14 @@
       const r = await fetch('/api/notifications');
       if (!r.ok) { wrap.hidden = true; return; }
       const j = await r.json();
-      items = j.items; unread = j.unread; wrap.hidden = false;
+      // keep older ones you loaded with "Show older"
+      const oldest = j.items.length ? j.items[j.items.length - 1].created_at : Infinity;
+      const kept = items.filter(n => n.created_at < oldest && !j.items.some(x => x.id === n.id));
+      items = j.items.concat(kept); unread = j.unread; if (!kept.length) more = j.more; wrap.hidden = false;
       if (panel.hidden) paint();
     } catch (e) { wrap.hidden = true; }
   }
-  function open() { paint(); panel.hidden = false; btn.setAttribute('aria-expanded', 'true'); }
+  function open() { view = unread ? 'unread' : 'read'; paint(); panel.hidden = false; btn.setAttribute('aria-expanded', 'true'); }
   function close() { panel.hidden = true; btn.setAttribute('aria-expanded', 'false'); }
 
   btn.addEventListener('click', () => panel.hidden ? open() : close());
