@@ -62,7 +62,7 @@
   nav.className = 'tb-nav'; nav.id = 'tbNav'; nav.setAttribute('aria-label', 'Navigation');
   nav.innerHTML =
     '<div class="tb-head">' +
-      '<a class="tb-brand" href="' + page('') + '" data-tip="Creative Toolbox"><img src="' + ROOT + 'favicon.png" alt=""><span>Creative Toolbox</span></a>' +
+      '<a class="tb-brand" href="' + page('') + '" data-tip="Creative Toolbox"><img src="' + ROOT + 'favicon.png?v=2" alt=""><span>Creative Toolbox</span></a>' +
     '</div>' +
     '<button class="tb-edge" type="button" id="tbCollapse" aria-label="Make the sidebar smaller">' + svg('chev') + '</button>' +
     '<div class="tb-searchrow">' +
@@ -94,7 +94,7 @@
 
   const top = document.createElement('div');
   top.className = 'tb-top';
-  top.innerHTML = '<button type="button" id="tbBurger" aria-label="Menu">' + svg('burger') + '</button><a href="' + page('') + '"><img src="' + ROOT + 'favicon.png" alt="">Creative Toolbox</a>';
+  top.innerHTML = '<button type="button" id="tbBurger" aria-label="Menu">' + svg('burger') + '</button><a href="' + page('') + '"><img src="' + ROOT + 'favicon.png?v=2" alt="">Creative Toolbox</a>';
   const shade = document.createElement('div'); shade.className = 'tb-shade';
   const tip = document.createElement('div'); tip.className = 'tb-tip'; tip.hidden = true;
   document.body.prepend(nav, top, shade, tip);

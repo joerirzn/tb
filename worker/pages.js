@@ -8,7 +8,7 @@ const jsStr = v => JSON.stringify(String(v)).replace(/</g, '\\u003c').replace(/\
 const HEAD = `<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="icon" type="image/png" href="/favicon.png?v=2">
 <link rel="stylesheet" href="/shared/motion.css">
 <link rel="stylesheet" href="/shared/tool.css">
 <script src="/shared/motion.js" defer></script>`;
@@ -65,7 +65,7 @@ ${BASE_CSS}
 </head>
 <body>
 <main class="box">
-  <div class="brand"><img src="/favicon.png" alt=""><h1>Creative Toolbox</h1></div>
+  <div class="brand"><img src="/favicon.png?v=2" alt=""><h1>Creative Toolbox</h1></div>
   <p class="lead" id="lead">Sign in to open the tools.</p>
   <div class="card">
     <div class="tabs" role="tablist">
