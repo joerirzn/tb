@@ -57,6 +57,13 @@ const SCHEMA = [
      at INTEGER NOT NULL
    )`,
   `CREATE INDEX IF NOT EXISTS activity_at ON activity (at)`,
+  // the tools someone starred, so they are the same on every device
+  `CREATE TABLE IF NOT EXISTS favourites (
+     user_id INTEGER NOT NULL,
+     path TEXT NOT NULL,
+     created_at INTEGER NOT NULL,
+     PRIMARY KEY (user_id, path)
+   )`,
 ];
 
 // columns added after the first release, for databases that already exist
@@ -113,6 +120,7 @@ export default {
     if (path.startsWith('/api/ideas') || path.startsWith('/api/comments/')) return handleIdeas(request, env, url, user);
     if (path === '/api/notifications' || path === '/api/notifications/read') return handleNotifications(request, env, url, user);
     if (path === '/api/usage') return handleUsage(request, env, url, user);
+    if (path === '/api/favourites') return handleFavourites(request, env, url, user);
     if (path === '/api/stats' && request.method === 'GET') return handleStats(env, url);
 
     if (path.startsWith('/admin/api/')) {
@@ -145,6 +153,7 @@ export default {
       out.headers.set('Cache-Control', 'private, no-store');
       out.headers.delete('ETag'); out.headers.delete('Last-Modified');
       const enc = s => encodeURIComponent(s || '');
+      const favs = (await env.DB.prepare('SELECT path FROM favourites WHERE user_id = ? ORDER BY created_at').bind(user.id).all()).results.map(r => r.path);
       return new HTMLRewriter()
         .on(user.is_admin ? '[data-not-admin]' : '[data-admin-only]', { element(e) { e.remove(); } })
         .on('body', { element(e) {
@@ -152,12 +161,34 @@ export default {
           e.setAttribute('data-tb-job', enc(user.job_title));
           e.setAttribute('data-tb-email', enc(user.email));
           e.setAttribute('data-tb-admin', user.is_admin ? '1' : '0');
+          e.setAttribute('data-tb-favs', enc(JSON.stringify(favs)));
         } })
         .transform(out);
     }
     return out;
   }
 };
+
+// ---------- favourites ----------
+// POST /api/favourites { path: '/banner-generator/', on: true }   or   { paths: [...] } to add several at once
+async function handleFavourites(request, env, url, user) {
+  const list = async () => (await env.DB.prepare('SELECT path FROM favourites WHERE user_id = ? ORDER BY created_at').bind(user.id).all()).results.map(r => r.path);
+  if (request.method === 'GET') return json({ favourites: await list() });
+  if (request.method !== 'POST') return new Response('Method not allowed', { status: 405 });
+  if (!sameOrigin(request, url)) return json({ error: 'Bad request.' }, 403);
+  const body = await readJson(request);
+  const ok = p => typeof p === 'string' && /^\/[a-z0-9-]+\/$/.test(p);   // a tool folder, e.g. /song-briefing/
+  const now = Date.now();
+  if (Array.isArray(body.paths)) {
+    const paths = body.paths.filter(ok).slice(0, 30);
+    if (paths.length) await env.DB.batch(paths.map((p, i) => env.DB.prepare('INSERT OR IGNORE INTO favourites (user_id, path, created_at) VALUES (?, ?, ?)').bind(user.id, p, now + i)));
+  } else {
+    if (!ok(body.path)) return json({ error: 'Unknown tool.' }, 400);
+    if (body.on) await env.DB.prepare('INSERT OR IGNORE INTO favourites (user_id, path, created_at) VALUES (?, ?, ?)').bind(user.id, body.path, now).run();
+    else await env.DB.prepare('DELETE FROM favourites WHERE user_id = ? AND path = ?').bind(user.id, body.path).run();
+  }
+  return json({ favourites: await list() });
+}
 
 // ---------- auth endpoints ----------
 

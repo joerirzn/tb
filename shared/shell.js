@@ -49,9 +49,13 @@
   const initials = n => n.split(/[\s@.]+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('') || '·';
 
   // ---------- favourites (kept in this browser) ----------
+  // online they live on the server (the same on every device; the server puts them on <body>);
+  // a file preview keeps them in this browser
   const FAV_KEY = 'toolbox.favourites';
-  let favs = [];
-  try { favs = JSON.parse(localStorage.getItem(FAV_KEY) || '[]'); } catch (e) { }
+  let favs = [], localFavs = [];
+  try { localFavs = JSON.parse(localStorage.getItem(FAV_KEY) || '[]'); } catch (e) { }
+  if (served && b.tbFavs != null) { try { favs = JSON.parse(dec(b.tbFavs)); } catch (e) { } }
+  else favs = localFavs;
   const listeners = [];
   const tools = () => TOOLS.filter(t => !t.admin || user.isAdmin);
 
@@ -159,6 +163,15 @@
     if (here !== ROOT) return;
     e.preventDefault(); history.pushState(null, '', a.dataset.key === 'time' ? '#time-saved' : '#home'); dispatchEvent(new HashChangeEvent('hashchange'));
   }));
+
+  // favourites starred in this browser before they moved to the server are taken along once
+  if (served && b.tbFavs != null && localFavs.length) {
+    fetch('/api/favourites', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ paths: localFavs }) })
+      .then(r => r.ok ? r.json() : Promise.reject()).then(j => {
+        try { localStorage.removeItem(FAV_KEY); } catch (e) { }
+        favs = j.favourites; renderTools(); listeners.forEach(f => f(favs.slice()));
+      }).catch(() => { });
+  }
 
   // online: the full details (name changes etc.), new ideas, and the bell
   if (served) {
@@ -338,9 +351,11 @@
     favourites: () => favs.slice(),
     isFavourite: p => favs.includes(p),
     toggleFavourite(p) {
-      favs = favs.includes(p) ? favs.filter(x => x !== p) : favs.concat(p);
-      try { localStorage.setItem(FAV_KEY, JSON.stringify(favs)); } catch (e) { }
+      const on = !favs.includes(p);
+      favs = on ? favs.concat(p) : favs.filter(x => x !== p);
       renderTools(); listeners.forEach(f => f(favs.slice()));
+      if (!served) { try { localStorage.setItem(FAV_KEY, JSON.stringify(favs)); } catch (e) { } return; }
+      fetch('/api/favourites', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: p, on }) }).catch(() => { });
     },
     onChange: f => listeners.push(f),
     suggest: openSuggest,
