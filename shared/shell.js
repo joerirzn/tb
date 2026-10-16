@@ -80,7 +80,6 @@
       '<nav class="tb-links" aria-label="Main">' +
         '<a href="' + page('') + '#home" data-key="home" data-tip="Home">' + svg('home') + '<span class="tb-t">Home</span></a>' +
         '<a href="' + page('') + '#time-saved" data-key="time" data-tip="Time saved">' + svg('clock') + '<span class="tb-t">Time saved</span></a>' +
-        '<a href="' + page('ideas/') + '" data-key="ideas" data-tip="Ideas" id="tbIdeasLink" hidden>' + svg('idea') + '<span class="tb-t">Ideas</span><span class="tb-badge" id="tbIdeas" hidden></span></a>' +
       '</nav>' +
       '<a class="tb-create" href="' + page('ideas/') + '#new" data-tip="Suggest a tool" id="tbSuggest">' + svg('plus') + '<span class="tb-t">Suggest a tool</span></a>' +
       '<div class="tb-group" id="tbFavGroup" hidden><div class="tb-label">Favourites</div><nav class="tb-links" id="tbFavs" aria-label="Favourite tools"></nav></div>' +
@@ -89,12 +88,12 @@
     '<div class="tb-me">' +
       '<div class="tb-menu" id="tbMenu" hidden>' +
         '<a href="/admin" id="tbAdmin" hidden>' + svg('shield') + 'Access</a>' +
-        '<a href="' + page('ideas/') + '" id="tbMine" hidden>' + svg('idea') + 'My suggestions</a>' +
+        '<a href="' + page('ideas/') + '" id="tbMine">' + svg('idea') + '<span id="tbMineLabel">My suggestions</span><span class="tb-badge" id="tbIdeas" hidden></span></a>' +
         '<a href="/account">' + svg('user') + 'Account and password</a>' +
         '<button type="button" id="tbSignOut">' + svg('out') + 'Sign out</button>' +
       '</div>' +
       '<button class="tb-me-btn" type="button" id="tbMe" aria-haspopup="true" aria-expanded="false">' +
-        '<span class="tb-avatar"><span id="tbInitials"></span></span>' +
+        '<span class="tb-avatar"><span id="tbInitials"></span><i class="tb-me-dot" id="tbMeDot" hidden></i></span>' +
         '<span class="tb-me-txt"><b id="tbName"></b><span id="tbJob"></span></span>' + svg('updown') +
       '</button>' +
     '</div>';
@@ -113,9 +112,8 @@
     $('tbJob').textContent = user.jobTitle || (user.name ? user.email : '') || '';
     $('tbInitials').textContent = initials(user.name || user.email || '');
     $('tbAdmin').hidden = !user.isAdmin;
-    // suggestions are private: the admin reads them all under Ideas, everyone else finds their own in the profile menu
-    $('tbIdeasLink').hidden = !user.isAdmin;
-    $('tbMine').hidden = !!user.isAdmin;
+    // suggestions are private and live in the profile menu: the admin reads them all (Ideas), everyone else their own
+    $('tbMineLabel').textContent = user.isAdmin ? 'Ideas' : 'My suggestions';
     nav.querySelector('.tb-me').hidden = !(user.name || user.email);
   }
 
@@ -137,7 +135,7 @@
 
   // which page we are on: Home and Time saved are two views of the launcher
   function markMain() {
-    const launcher = here === ROOT, key = launcher ? (location.hash === '#time-saved' ? 'time' : 'home') : here === ROOT + 'ideas/' ? 'ideas' : '';
+    const launcher = here === ROOT, key = launcher ? (location.hash === '#time-saved' ? 'time' : 'home') : '';
     nav.querySelectorAll('.tb-links a[data-key]').forEach(a => { a.classList.toggle('tb-on', a.dataset.key === key); if (a.dataset.key === key) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
     glide();
   }
@@ -179,11 +177,11 @@
     // new suggestions waiting for the admin (suggestions are private, so only the admin gets this count)
     if (user.isAdmin) fetch('/api/ideas').then(r => r.ok ? r.json() : Promise.reject()).then(d => {
       const fresh = d.ideas.filter(i => i.status === 'new').length;
-      if (fresh) { $('tbIdeas').textContent = fresh; $('tbIdeas').hidden = false; }
+      if (fresh) { $('tbIdeas').textContent = fresh; $('tbIdeas').hidden = false; $('tbMeDot').hidden = false; }
     }).catch(() => { });
     const s = document.createElement('script'); s.src = ROOT + 'shared/notify.js'; s.defer = true; document.head.appendChild(s);
   } else {
-    $('tbIdeas').textContent = '2'; $('tbIdeas').hidden = false;
+    $('tbIdeas').textContent = '2'; $('tbIdeas').hidden = false; $('tbMeDot').hidden = false;
     $('notify').innerHTML = '<span class="tb-ic" title="Notifications (preview)">' + svg('bell') + '<span class="tb-dot"></span></span>';
   }
 
@@ -237,7 +235,7 @@
     list.sort((a, b) => b.fav - a.fav);
     list.push({ label: 'Home', kind: 'Page', href: page('') + '#home', icon: I.home });
     list.push({ label: 'Time saved', kind: 'Page', href: page('') + '#time-saved', icon: I.clock });
-    if (user.isAdmin) list.push({ label: 'Ideas', kind: 'Page', href: page('ideas/'), icon: I.idea });
+    if (user.isAdmin) list.push({ label: 'Ideas', kind: 'Admin', href: page('ideas/'), icon: I.idea });
     else list.push({ label: 'My suggestions', kind: 'Page', href: page('ideas/'), icon: I.idea });
     list.push({ label: 'Suggest a tool', kind: 'Ideas', href: '#suggest', icon: I.plus });
     list.push({ label: 'Account and password', kind: 'Page', href: '/account', icon: I.user });

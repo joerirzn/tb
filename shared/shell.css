@@ -105,6 +105,10 @@ html.tb-swap .tb-scroll, html.tb-swap .tb-search, html.tb-swap .tb-me, html.tb-s
 .tb-me-txt span{ display: block; font-size: 12px; color: var(--tb-faint); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tb-menu{ position: absolute; left: 0; width: 216px; bottom: calc(100% + 6px); z-index: 60; background: var(--tb-panel-2); border: 1px solid var(--tb-line-2); border-radius: 14px; padding: 6px; box-shadow: 0 20px 50px rgba(0,0,0,0.7); }
 .tb-menu a, .tb-menu button{ display: flex; align-items: center; gap: 10px; width: 100%; background: none; border: none; border-radius: 9px; padding: 9px 12px; font-size: 13px; color: var(--tb-muted); text-align: left; white-space: nowrap; }
+.tb-menu .tb-badge{ margin-left: auto; }
+/* something new behind the profile menu (new suggestions for the admin) */
+.tb-avatar{ position: relative; }
+.tb-me-dot{ position: absolute; top: 0; right: 0; width: 9px; height: 9px; border-radius: 9999px; background: var(--tb-orange); box-shadow: 0 0 0 2px var(--tb-bg); }
 .tb-menu a:hover, .tb-menu button:hover{ background: rgba(255,255,255,0.05); color: var(--tb-text); }
 @starting-style{ .tb-menu{ opacity: 0; transform: translateY(4px); } }
 .tb-menu{ transition: opacity .16s ease, transform .2s cubic-bezier(.2,.8,.2,1); }
