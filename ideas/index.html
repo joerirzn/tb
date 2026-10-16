@@ -74,7 +74,7 @@
 <div class="board">
 
 <div class="app-header">
-  <h1>Ideas <span id="lead">· suggest a tool; only the admin sees your suggestions</span></h1>
+  <h1><b id="pageTitle" style="font-weight:inherit">My suggestions</b> <span id="lead">· only you and the admin see these</span></h1>
   <button class="btn" type="button" id="shareBtn" aria-expanded="false" aria-controls="composer"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Suggest a tool</button>
 </div>
 
@@ -154,6 +154,7 @@
     if (card) { card.scrollIntoView({ behavior: 'smooth', block: 'start' }); card.classList.add('flash'); setTimeout(() => card.classList.remove('flash'), 2500); }
   }
   window.addEventListener('hashchange', () => load());
+  addEventListener('tb:suggested', () => load());   // sent from the Suggest a tool window in the sidebar
 
   async function load() {
     try { data = await api('/api/ideas'); $('listMsg').textContent = ''; render(); focusFromHash(); }
@@ -190,7 +191,9 @@
     const list = $('list'); list.innerHTML = '';
     let ideas = data.ideas.filter(i => filter === 'all' || i.status === filter);
     ideas.sort((a, b) => b.created_at - a.created_at);   // newest first
-    $('lead').textContent = data.isAdmin ? '· every suggestion from the team' : '· suggest a tool; only the admin sees your suggestions';
+    $('pageTitle').textContent = data.isAdmin ? 'Ideas' : 'My suggestions';
+    $('lead').textContent = data.isAdmin ? '· every suggestion from the team' : '· only you and the admin see these';
+    document.title = data.isAdmin ? 'Ideas' : 'My suggestions';
     if (!ideas.length) {
       list.appendChild(el('div', 'empty', data.ideas.length ? 'No suggestions with this status.'
         : data.isAdmin ? 'No suggestions yet.' : 'You have not suggested anything yet. Your suggestions and their status show up here; only you and the admin see them.'));

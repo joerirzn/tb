@@ -425,7 +425,8 @@
       const cols = getComputedStyle(grid).gridTemplateColumns.split(' ').length;
       let used = shown;
       if (!showFavs) {
-        const sg = document.createElement('a'); sg.className = 'suggest'; sg.href = shell.page('ideas/') + '#new';   // opens the form on Ideas
+        const sg = document.createElement('a'); sg.className = 'suggest'; sg.href = shell.page('ideas/') + '#new';
+        sg.addEventListener('click', e => { e.preventDefault(); shell.suggest(); });   // the Suggest a tool window, right here
         sg.innerHTML = '<span><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span>Suggest a tool<small>or an improvement to an existing one</small>';
         grid.appendChild(sg); used++;
       }

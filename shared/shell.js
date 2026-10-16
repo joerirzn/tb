@@ -32,6 +32,8 @@
     updown: '<path d="M8 9l4-4 4 4M8 15l4 4 4-4"/>',
     lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
     chev: '<path d="M15 18l-6-6 6-6"/>',
+    x: '<path d="M6 6l12 12M18 6L6 18"/>',
+    check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
     burger: '<path d="M4 7h16M4 12h16M4 17h16"/>',
     bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
     page: '<rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 8h8M8 12h8M8 16h5"/>',
@@ -74,15 +76,16 @@
       '<nav class="tb-links" aria-label="Main">' +
         '<a href="' + page('') + '#home" data-key="home" data-tip="Home">' + svg('home') + '<span class="tb-t">Home</span></a>' +
         '<a href="' + page('') + '#time-saved" data-key="time" data-tip="Time saved">' + svg('clock') + '<span class="tb-t">Time saved</span></a>' +
-        '<a href="' + page('ideas/') + '" data-key="ideas" data-tip="Ideas">' + svg('idea') + '<span class="tb-t">Ideas</span><span class="tb-badge" id="tbIdeas" hidden></span></a>' +
+        '<a href="' + page('ideas/') + '" data-key="ideas" data-tip="Ideas" id="tbIdeasLink" hidden>' + svg('idea') + '<span class="tb-t">Ideas</span><span class="tb-badge" id="tbIdeas" hidden></span></a>' +
       '</nav>' +
-      '<a class="tb-create" href="' + page('ideas/') + '#new" data-tip="Suggest a tool">' + svg('plus') + '<span class="tb-t">Suggest a tool</span></a>' +
+      '<a class="tb-create" href="' + page('ideas/') + '#new" data-tip="Suggest a tool" id="tbSuggest">' + svg('plus') + '<span class="tb-t">Suggest a tool</span></a>' +
       '<div class="tb-group" id="tbFavGroup" hidden><div class="tb-label">Favourites</div><nav class="tb-links" id="tbFavs" aria-label="Favourite tools"></nav></div>' +
       '<div class="tb-group" id="tbToolGroup"><div class="tb-label" id="tbToolsLabel">Tools</div><nav class="tb-links" id="tbTools" aria-label="Tools"></nav></div>' +
     '</div>' +
     '<div class="tb-me">' +
       '<div class="tb-menu" id="tbMenu" hidden>' +
         '<a href="/admin" id="tbAdmin" hidden>' + svg('shield') + 'Access</a>' +
+        '<a href="' + page('ideas/') + '" id="tbMine" hidden>' + svg('idea') + 'My suggestions</a>' +
         '<a href="/account">' + svg('user') + 'Account and password</a>' +
         '<button type="button" id="tbSignOut">' + svg('out') + 'Sign out</button>' +
       '</div>' +
@@ -106,6 +109,9 @@
     $('tbJob').textContent = user.jobTitle || (user.name ? user.email : '') || '';
     $('tbInitials').textContent = initials(user.name || user.email || '');
     $('tbAdmin').hidden = !user.isAdmin;
+    // suggestions are private: the admin reads them all under Ideas, everyone else finds their own in the profile menu
+    $('tbIdeasLink').hidden = !user.isAdmin;
+    $('tbMine').hidden = !!user.isAdmin;
     nav.querySelector('.tb-me').hidden = !(user.name || user.email);
   }
 
@@ -136,7 +142,7 @@
   const glider = document.createElement('span'); glider.className = 'tb-glide'; glider.setAttribute('aria-hidden', 'true');
   mainLinks.prepend(glider); mainLinks.classList.add('tb-has-glide');
   function glide() {
-    const on = mainLinks.querySelector('a.tb-on');
+    const on = mainLinks.querySelector('a.tb-on:not([hidden])');
     glider.classList.toggle('tb-show', !!on);
     if (!on) return;
     const moved = glider.style.height !== '';
@@ -218,8 +224,9 @@
     list.sort((a, b) => b.fav - a.fav);
     list.push({ label: 'Home', kind: 'Page', href: page('') + '#home', icon: I.home });
     list.push({ label: 'Time saved', kind: 'Page', href: page('') + '#time-saved', icon: I.clock });
-    list.push({ label: 'Ideas', kind: 'Page', href: page('ideas/'), icon: I.idea });
-    list.push({ label: 'Suggest a tool', kind: 'Ideas', href: page('ideas/') + '#new', icon: I.plus });
+    if (user.isAdmin) list.push({ label: 'Ideas', kind: 'Page', href: page('ideas/'), icon: I.idea });
+    else list.push({ label: 'My suggestions', kind: 'Page', href: page('ideas/'), icon: I.idea });
+    list.push({ label: 'Suggest a tool', kind: 'Ideas', href: '#suggest', icon: I.plus });
     list.push({ label: 'Account and password', kind: 'Page', href: '/account', icon: I.user });
     if (user.isAdmin) list.push({ label: 'Access requests', kind: 'Admin', href: '/admin', icon: I.shield });
     return list;
@@ -234,6 +241,7 @@
   }
   function go(href) {
     closePalette();
+    if (href === '#suggest') { openSuggest(); return; }
     const u = new URL(href, location.href);
     if (u.href.split('#')[0] === location.href.split('#')[0] && u.hash) { history.pushState(null, '', u.hash); dispatchEvent(new HashChangeEvent('hashchange')); }
     else location.href = href;
@@ -275,6 +283,54 @@
     else if (e.key === 'Escape') document.documentElement.classList.remove('tb-open');
   });
 
+  // ---------- Suggest a tool: a window on every page, the suggestion goes to the admin ----------
+  const sg = document.createElement('div');
+  sg.className = 'tb-palette tb-suggest'; sg.hidden = true;
+  sg.setAttribute('role', 'dialog'); sg.setAttribute('aria-modal', 'true'); sg.setAttribute('aria-labelledby', 'tbSgTitle');
+  sg.innerHTML =
+    '<form class="tb-palette-box tb-sg-box" novalidate>' +
+      '<div class="tb-sg-head"><b id="tbSgTitle">Suggest a tool</b><button type="button" class="tb-sg-x" aria-label="Close">' + svg('x') + '</button></div>' +
+      '<p class="tb-sg-note">Missing a tool, or a feature in one? What should it do, and what would it save you? Only the admin sees your suggestion.</p>' +
+      '<label class="tb-sg-label" for="tbSgT">Title</label>' +
+      '<input class="tb-sg-in" id="tbSgT" type="text" maxlength="120" placeholder="e.g. Story maker for releases" autocomplete="off">' +
+      '<label class="tb-sg-label" for="tbSgB">Explain your suggestion <span>optional</span></label>' +
+      '<textarea class="tb-sg-in" id="tbSgB" maxlength="2000" placeholder="Who uses it, what goes in, what comes out?"></textarea>' +
+      '<p class="tb-sg-msg" id="tbSgMsg" role="alert"></p>' +
+      '<div class="tb-sg-actions"><button type="submit" class="tb-sg-send">Send suggestion</button><button type="button" class="tb-sg-cancel">Cancel</button></div>' +
+      '<div class="tb-sg-done" hidden><span>' + svg('check') + '</span><b>Thanks! Your suggestion has been sent.</b>' +
+        '<p>You get a notification when the admin replies or changes its status.' + (user.isAdmin ? '' : ' Your suggestions are under My suggestions in your profile menu.') + '</p>' +
+        '<button type="button" class="tb-sg-cancel">Close</button></div>' +
+    '</form>';
+  document.body.appendChild(sg);
+  const sgForm = sg.querySelector('form'), sgT = $('tbSgT'), sgB = $('tbSgB'), sgMsg = $('tbSgMsg'), sgDone = sg.querySelector('.tb-sg-done');
+  let sgBefore = null;
+  function openSuggest() {
+    sgBefore = document.activeElement; sg.hidden = false; tip.hidden = true;
+    sgForm.querySelectorAll(':scope > :not(.tb-sg-done)').forEach(e => e.hidden = false); sgDone.hidden = true;
+    sgMsg.textContent = ''; document.documentElement.classList.remove('tb-open'); sgT.focus();
+  }
+  function closeSuggest() { if (sg.hidden) return; sg.hidden = true; if (sgBefore && sgBefore.focus) sgBefore.focus(); }
+  $('tbSuggest').addEventListener('click', e => { e.preventDefault(); openSuggest(); });
+  sg.addEventListener('click', e => { if (e.target === sg || e.target.closest('.tb-sg-x, .tb-sg-cancel')) closeSuggest(); });
+  sg.addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); closeSuggest(); } });
+  sgForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    const title = sgT.value.trim(), send = sgForm.querySelector('.tb-sg-send');
+    if (!title) { sgMsg.textContent = 'Give your suggestion a title.'; sgT.focus(); return; }
+    if (!served) { sgMsg.textContent = 'Sending only works in the online Creative Toolbox.'; return; }
+    send.disabled = true; sgMsg.textContent = '';
+    try {
+      const r = await fetch('/api/ideas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, body: sgB.value.trim() }) });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j.error || 'Sending failed. Try again.');
+      sgForm.reset();
+      sgForm.querySelectorAll(':scope > :not(.tb-sg-done)').forEach(el => el.hidden = true); sgDone.hidden = false;
+      sgDone.querySelector('button').focus();
+      dispatchEvent(new Event('tb:suggested'));   // a page that lists suggestions (Ideas) can reload
+    } catch (err) { sgMsg.textContent = err.message; }
+    send.disabled = false;
+  });
+
   // ---------- for the page ----------
   window.tbShell = {
     root: ROOT, page, served,
@@ -287,5 +343,6 @@
       renderTools(); listeners.forEach(f => f(favs.slice()));
     },
     onChange: f => listeners.push(f),
+    suggest: openSuggest,
   };
 })();
