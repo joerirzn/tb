@@ -726,7 +726,7 @@
     $('calDays').textContent = used + ' days';
     $('calDaysSub').textContent = 'with exports, out of the last ' + span;
     $('calBest').textContent = best ? fmt(best.v) : '–';
-    $('calBestSub').textContent = best ? 'best day · ' + best.day.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) : 'best day appears after the first export';
+    $('calBestSub').textContent = best ? 'saved on the best day · ' + best.day.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) : 'the most saved in one day appears after the first export';
   }
 
   shell.onChange(renderTools);
