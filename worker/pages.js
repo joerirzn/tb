@@ -172,67 +172,127 @@ ${SHELL_HEAD}
 <title>Creative Toolbox · Access</title>
 <style>
 ${BASE_CSS}
-  .status{ font-size: 12.5px; color: var(--muted); min-height: 1.4em; margin: -4px 0 12px; }
+  /* the numbers at a glance */
+  .stats{ display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: var(--hairline); border: 1px solid var(--hairline); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 14px; }
+  .stat{ background: var(--surface); padding: 16px 18px; text-align: left; border: none; color: inherit; font: inherit; cursor: pointer; transition: background-color .15s ease; }
+  .stat:hover{ background: #191919; }
+  .stat .k{ font-size: 11.5px; font-weight: 600; color: var(--faint); }
+  .stat .v{ font-size: 26px; font-weight: 700; letter-spacing: -0.02em; margin-top: 2px; }
+  .stat.alert .v{ color: var(--accent); }
+  @media (max-width: 760px){ .stats{ grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+  /* one subject at a time */
+  .bar{ display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+  .tabs{ display: flex; gap: 2px; padding: 3px; border-radius: var(--radius-pill); background: var(--surface); border: 1px solid var(--border-hover); flex-wrap: wrap; }
+  .tabs button{ height: 32px; border: none; background: none; border-radius: var(--radius-pill); color: var(--faint); font: 600 12.5px var(--font); padding: 0 14px; cursor: pointer; transition: color .15s, background-color .15s; }
+  .tabs button:hover{ color: var(--muted); }
+  .tabs button.on{ background: var(--surface-3); color: var(--text); box-shadow: inset 0 0 0 1px var(--border-hover); }
+  .tabs .n{ margin-left: 6px; font-weight: 500; color: var(--faint); }
+  .tabs .n.hot{ color: #fff; background: var(--accent); border-radius: 5px; padding: 0 6px; font-weight: 700; }
+  .find{ margin-left: auto; width: 260px; }
+  .find input{ height: 36px; border-radius: var(--radius-pill); padding: 0 14px; }
+  @media (max-width: 760px){ .find{ width: 100%; margin-left: 0; } }
+
+  .status{ font-size: 12.5px; color: var(--muted); margin: 0 0 12px; }
   .status:empty{ display: none; }
   .status.err{ color: var(--error); }
-  .count{ font-weight: 500; color: var(--faint); margin-left: 6px; }
-  .intro{ font-size: 12.5px; line-height: 1.5; color: var(--faint); margin: -6px 0 12px; max-width: 80ch; }
-  .empty{ font-size: 12.5px; color: var(--faint); margin: 0; }
-  /* one person (or announcement) per row */
-  .person{ display: flex; align-items: center; gap: 16px; padding: 12px 0; border-top: 1px solid var(--border); flex-wrap: wrap; }
-  .person:first-child{ border-top: none; padding-top: 0; }
-  .who{ flex: 1; min-width: 220px; }
-  .name{ font-size: 13.5px; font-weight: 700; }
-  .badge{ font-size: 10.5px; font-weight: 700; color: #fff; background: var(--accent); border-radius: 5px; padding: 1px 7px; margin-left: 8px; vertical-align: 1px; }
-  .job{ font-weight: 500; color: var(--muted); }
-  .email{ font-size: 12.5px; color: var(--muted); margin-top: 1px; word-break: break-all; }
-  .who .note{ font-size: 12.5px; color: var(--muted); margin-top: 6px; line-height: 1.5; white-space: pre-wrap; max-width: 80ch; }
-  .meta{ font-size: 11.5px; color: var(--faint); margin-top: 4px; }
-  .actions{ display: flex; gap: 6px; flex-wrap: wrap; }
-  .actions .btn{ width: auto; height: 34px; font-size: 12.5px; padding: 0 16px; }
-  .pw{ font-size: 12.5px; color: var(--warning); margin-top: 8px; }
-  .pw code{ font-size: 13px; color: var(--text); background: var(--field); border: 1px solid var(--border-hover); border-radius: 8px; padding: 2px 8px; user-select: all; }
-  /* recent activity */
-  .act{ display: grid; grid-template-columns: 160px minmax(0, 1fr) 220px; gap: 12px; padding: 8px 0; border-top: 1px solid var(--border); font-size: 12.5px; }
-  .act:first-child{ border-top: none; padding-top: 0; }
-  .act .t{ color: var(--faint); }
-  .act .p{ color: var(--muted); }
-  @media (max-width: 700px){ .act{ grid-template-columns: 1fr; gap: 2px; } }
+  .pwbox{ display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 12px 14px; margin-bottom: 12px; border-radius: 12px; background: rgba(251, 191, 36, 0.08); border: 1px solid rgba(251, 191, 36, 0.3); font-size: 12.5px; color: var(--warning); }
+  .pwbox code{ font-size: 13px; color: var(--text); background: var(--field); border: 1px solid var(--border-hover); border-radius: 8px; padding: 3px 9px; user-select: all; }
+  .pwbox .btn-utility{ margin-left: auto; }
+
+  /* tables */
+  .table{ background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--radius-lg); overflow: hidden; }
+  .row{ display: grid; align-items: center; gap: 14px; padding: 11px 16px; border-top: 1px solid var(--border); font-size: 12.5px; min-width: 0; }
+  .row:first-child{ border-top: none; }
+  .row.head{ font-size: 11px; font-weight: 600; color: var(--faint); text-transform: uppercase; letter-spacing: .06em; padding-top: 10px; padding-bottom: 10px; background: #111; }
+  .people .row{ grid-template-columns: minmax(180px, 1.4fr) minmax(160px, 1.2fr) 120px 120px 230px; }
+  .acts .row{ grid-template-columns: 150px minmax(0, 1fr) 220px; }
+  .row > *{ min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .who{ display: flex; align-items: center; gap: 10px; }
+  .ini{ width: 30px; height: 30px; flex: none; border-radius: 9999px; background: var(--surface-3); box-shadow: inset 0 0 0 1px var(--border-hover); display: grid; place-items: center; font-size: 10.5px; font-weight: 700; }
+  .who .t{ min-width: 0; }
+  .who .t b{ display: block; font-size: 13px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; }
+  .who .t .job{ display: block; font-size: 11.5px; color: var(--faint); overflow: hidden; text-overflow: ellipsis; }
+  .badge{ font-size: 10px; font-weight: 700; color: #fff; background: var(--accent); border-radius: 5px; padding: 1px 6px; margin-left: 6px; vertical-align: 1px; }
+  .muted{ color: var(--muted); }
+  .faint{ color: var(--faint); }
+  .actions{ display: flex; gap: 6px; justify-content: flex-end; overflow: visible; }
+  .actions .btn-utility{ height: 28px; padding: 0 11px; font-size: 11.5px; }
+  .actions .btn{ width: auto; height: 28px; padding: 0 14px; font-size: 11.5px; }
+  .empty{ padding: 28px 16px; text-align: center; color: var(--faint); font-size: 12.5px; }
+  @media (max-width: 1000px){
+    .people .row{ grid-template-columns: minmax(0, 1fr) auto; }
+    .people .row > .c-mail, .people .row > .c-seen, .people .row > .c-since{ display: none; }
+    .people .row.head{ display: none; }
+    .acts .row{ grid-template-columns: 110px minmax(0, 1fr); }
+    .acts .row > .c-page{ grid-column: 2; }
+  }
+
+  /* requests: one card each, with what they need it for */
+  .cards{ display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px; }
+  .card{ background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--radius-lg); padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .card .note{ font-size: 12.5px; line-height: 1.5; color: var(--muted); white-space: pre-wrap; background: var(--field); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin: 0; }
+  .card .meta{ font-size: 11.5px; color: var(--faint); }
+  .card .actions{ justify-content: flex-start; }
+  .card .actions .btn, .card .actions .btn-utility{ height: 34px; font-size: 12.5px; padding: 0 16px; }
+
+  .intro{ font-size: 12.5px; line-height: 1.5; color: var(--faint); margin: 0 0 12px; max-width: 80ch; }
 </style>
 </head>
 ${shellBody({ me, name, jobTitle, isAdmin: true })}
 <div class="app-header">
-  <h1>Access <span>· requests and people with access</span></h1>
+  <h1>Access <span>· who can use the Creative Toolbox</span></h1>
+</div>
+
+<div class="stats" id="stats">
+  <button class="stat" type="button" data-go="requests"><div class="k">Waiting for approval</div><div class="v" id="s-pending">–</div></button>
+  <button class="stat" type="button" data-go="people"><div class="k">People with access</div><div class="v" id="s-people">–</div></button>
+  <button class="stat" type="button" data-go="activity"><div class="k">Active in the last 7 days</div><div class="v" id="s-active">–</div></button>
+  <button class="stat" type="button" data-go="declined"><div class="k">Declined or removed</div><div class="v" id="s-denied">–</div></button>
+</div>
+
+<div class="bar">
+  <div class="tabs" role="tablist" aria-label="Show">
+    <button type="button" role="tab" data-tab="requests">Requests<span class="n" id="t-pending"></span></button>
+    <button type="button" role="tab" data-tab="people">People<span class="n" id="t-people"></span></button>
+    <button type="button" role="tab" data-tab="declined">Declined<span class="n" id="t-denied"></span></button>
+    <button type="button" role="tab" data-tab="activity">Activity</button>
+    <button type="button" role="tab" data-tab="announcements">Announcements</button>
+  </div>
+  <div class="find" id="findWrap"><input type="search" id="find" placeholder="Search a name or email" aria-label="Search people" autocomplete="off"></div>
 </div>
 <p class="status" id="status" role="status"></p>
+<div id="pwbox"></div>
 
-<div class="sheet">
-  <section class="sb-section"><div class="section-label plain">Requests<span class="count" id="c-pending"></span></div><div id="pending"></div></section>
-  <section class="sb-section"><div class="section-label plain">People with access<span class="count" id="c-approved"></span></div><div id="approved"></div></section>
-  <section class="sb-section"><div class="section-label plain">Declined or removed<span class="count" id="c-denied"></span></div><div id="denied"></div></section>
-  <section class="sb-section">
-    <div class="section-label plain">New tool announcements<span class="end">sent automatically</span></div>
-    <p class="intro">When a new tool appears on the Creative Toolbox home, everyone with access gets a notification. Admin-only tools are announced once they are opened up to everyone.</p>
-    <div id="announcements"></div>
-  </section>
-  <section class="sb-section"><div class="section-label plain">Recent activity<span class="end">last 100 opened pages</span></div><div id="activity"></div></section>
-</div>
+<section data-panel="requests"><div class="cards" id="pending"></div></section>
+<section data-panel="people" hidden><div class="table people" id="approved"></div></section>
+<section data-panel="declined" hidden><div class="table people" id="denied"></div></section>
+<section data-panel="activity" hidden><div class="table acts" id="activity"></div></section>
+<section data-panel="announcements" hidden>
+  <p class="intro">When a new tool appears on the Creative Toolbox home, everyone with access gets a notification automatically. Admin-only tools are announced once they are opened up to everyone.</p>
+  <div class="table" id="announcements"></div>
+</section>
 <script>
 (function () {
   var $ = function (id) { return document.getElementById(id); };
-  var TOOLS = { '/': 'Home', '/admin': 'Admin', '/banner-generator/': 'Social Banner Creator', '/cover-converter/': 'Cover Converter',
+  var mine = ${jsStr(me)};
+  var TOOLS = { '/': 'Home', '/admin': 'Access', '/account': 'Account', '/banner-generator/': 'Social Banner Creator', '/cover-converter/': 'Cover Converter',
     '/sessions-radio-maker/': 'Sessions Asset Generator', '/thumbnail-maker/': 'Thumbnail Maker', '/song-briefing/': 'Song Briefing', '/general-briefing/': 'General Briefing', '/ideas/': 'Ideas' };
+  var users = [], activity = [], tab = '', query = '';
 
   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
   function when(t) {
     if (!t) return 'never';
-    var d = Date.now() - t, m = Math.round(d / 60000);
+    var m = Math.round((Date.now() - t) / 60000);
     if (m < 1) return 'just now';
     if (m < 60) return m + ' min ago';
     if (m < 60 * 24) return Math.round(m / 60) + ' h ago';
-    return new Date(t).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    if (m < 60 * 24 * 7) return Math.round(m / 1440) + ' d ago';
+    return new Date(t).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
   }
+  function initials(s) { return String(s || '').split(/[\\s@.]+/).filter(Boolean).slice(0, 2).map(function (w) { return w[0].toUpperCase(); }).join('') || '·'; }
   function status(s, err) { var e = $('status'); e.textContent = s || ''; e.className = 'status' + (err ? ' err' : ''); }
+  function button(text, cls, onClick) { var b = el('button', cls, text); b.type = 'button'; b.addEventListener('click', onClick); return b; }
 
   async function call(action, id, confirmText) {
     if (confirmText && !confirm(confirmText)) return null;
@@ -241,97 +301,151 @@ ${shellBody({ me, name, jobTitle, isAdmin: true })}
     if (!r.ok) { status(j.error || 'That did not work. Reload and try again.', true); return null; }
     return j;
   }
-  function button(text, cls, onClick) { var b = el('button', cls, text); b.type = 'button'; b.addEventListener('click', onClick); return b; }
 
-  function person(u, buttons, metaText) {
-    var row = el('div', 'person'), who = el('div', 'who');
-    var name = el('div', 'name', u.name || '(no name)');
-    if (u.job_title) name.appendChild(el('span', 'job', ' · ' + u.job_title));
-    if (u.is_admin) name.appendChild(el('span', 'badge', 'Admin'));
-    who.appendChild(name);
-    who.appendChild(el('div', 'email', u.email));
-    if (u.note) who.appendChild(el('div', 'note', u.note));
-    who.appendChild(el('div', 'meta', metaText));
-    var actions = el('div', 'actions');
-    buttons.forEach(function (b) { actions.appendChild(b); });
-    row.appendChild(who); row.appendChild(actions);
-    return { row: row, who: who };
+  // name, job and avatar in one cell
+  function whoCell(u) {
+    var c = el('div', 'who'), t = el('div', 't');
+    c.appendChild(el('span', 'ini', initials(u.name || u.email)));
+    var b = el('b', null, u.name || '(no name)'); if (u.is_admin) b.appendChild(el('span', 'badge', 'Admin'));
+    t.appendChild(b); t.appendChild(el('span', 'job', u.job_title || '')); c.appendChild(t);
+    return c;
+  }
+  function matches(u) { var q = query.toLowerCase(); return !q || (u.name + ' ' + u.email + ' ' + (u.job_title || '')).toLowerCase().indexOf(q) >= 0; }
+
+  function renderRequests() {
+    var box = $('pending'); box.innerHTML = '';
+    var list = users.filter(function (u) { return u.status === 'pending'; });
+    if (!list.length) { var e = el('div', 'table'); e.appendChild(el('div', 'empty', 'No open requests. New requests show up here.')); box.appendChild(e); return; }
+    list.forEach(function (u) {
+      var c = el('div', 'card');
+      var top = whoCell(u); c.appendChild(top);
+      c.appendChild(el('div', 'muted', u.email));
+      if (u.note) c.appendChild(el('p', 'note', u.note));
+      c.appendChild(el('div', 'meta', 'Requested ' + when(u.created_at)));
+      var a = el('div', 'actions');
+      a.appendChild(button('Accept', 'btn', async function () { if (await call('approve', u.id)) { status('Accepted ' + u.email + '. They can sign in now.'); load(); } }));
+      a.appendChild(button('Decline', 'btn-utility danger', async function () { if (await call('deny', u.id, 'Decline the request from ' + u.email + '?')) { status('Declined ' + u.email + '.'); load(); } }));
+      c.appendChild(a); box.appendChild(c);
+    });
   }
 
-  function fill(box, countEl, list, render, emptyText) {
+  function peopleTable(box, list, cols, rowFor, emptyText) {
     box.innerHTML = '';
-    countEl.textContent = list.length ? String(list.length) : '';
-    if (!list.length) { box.appendChild(el('p', 'empty', emptyText)); return; }
-    list.forEach(function (u) { box.appendChild(render(u)); });
+    var head = el('div', 'row head'); cols.forEach(function (c) { head.appendChild(el('div', c[0], c[1])); }); box.appendChild(head);
+    if (!list.length) { box.appendChild(el('div', 'empty', emptyText)); return; }
+    list.forEach(function (u) { box.appendChild(rowFor(u)); });
   }
 
-  var firstLoad = true;
+  function renderPeople() {
+    var list = users.filter(function (u) { return u.status === 'approved' && matches(u); })
+      .sort(function (a, b) { return (b.last_seen_at || 0) - (a.last_seen_at || 0); });
+    peopleTable($('approved'), list, [['', 'Name'], ['c-mail', 'Email'], ['c-seen', 'Last active'], ['c-since', 'Access since'], ['', '']], function (u) {
+      var r = el('div', 'row');
+      r.appendChild(whoCell(u));
+      r.appendChild(el('div', 'c-mail muted', u.email));
+      r.appendChild(el('div', 'c-seen muted', when(u.last_seen_at)));
+      r.appendChild(el('div', 'c-since faint', when(u.decided_at || u.created_at)));
+      var a = el('div', 'actions');
+      if (u.email !== mine) {
+        a.appendChild(button('Reset password', 'btn-utility', async function () {
+          var j = await call('reset-password', u.id, 'Give ' + u.email + ' a new password? Their current password stops working.');
+          if (!j) return;
+          var box = $('pwbox'); box.innerHTML = '';
+          var p = el('div', 'pwbox'); p.appendChild(el('span', null, 'New password for ' + u.email + ' (shown once, send it to them):'));
+          p.appendChild(el('code', null, j.password));
+          p.appendChild(button('Done', 'btn-utility', function () { box.innerHTML = ''; }));
+          box.appendChild(p);
+        }));
+        a.appendChild(button('Remove', 'btn-utility danger', async function () { if (await call('revoke', u.id, 'Remove access for ' + u.email + '? They are signed out right away.')) { status('Removed access for ' + u.email + '.'); load(); } }));
+      }
+      r.appendChild(a);
+      return r;
+    }, query ? 'Nobody matches "' + query + '".' : 'Nobody has access yet.');
+  }
+
+  function renderDeclined() {
+    var list = users.filter(function (u) { return u.status === 'denied' && matches(u); });
+    peopleTable($('denied'), list, [['', 'Name'], ['c-mail', 'Email'], ['c-seen', 'Since'], ['c-since', ''], ['', '']], function (u) {
+      var r = el('div', 'row');
+      r.appendChild(whoCell(u));
+      r.appendChild(el('div', 'c-mail muted', u.email));
+      r.appendChild(el('div', 'c-seen muted', when(u.decided_at)));
+      r.appendChild(el('div', 'c-since'));
+      var a = el('div', 'actions');
+      a.appendChild(button('Give access', 'btn-utility', async function () { if (await call('approve', u.id, 'Give ' + u.email + ' access?')) { status('Gave access to ' + u.email + '.'); load(); } }));
+      a.appendChild(button('Delete', 'btn-utility danger', async function () { if (await call('delete', u.id, 'Delete ' + u.email + ' completely? They can then request access again.')) { status('Deleted ' + u.email + '.'); load(); } }));
+      r.appendChild(a);
+      return r;
+    }, query ? 'Nobody matches "' + query + '".' : 'Nobody has been declined or removed.');
+  }
+
+  function renderActivity() {
+    var box = $('activity'); box.innerHTML = '';
+    var q = query.toLowerCase();
+    var list = activity.filter(function (a) { return !q || ((a.name || '') + ' ' + a.email).toLowerCase().indexOf(q) >= 0; });
+    var head = el('div', 'row head'); ['When', 'Who', 'Opened'].forEach(function (t) { head.appendChild(el('div', null, t)); }); box.appendChild(head);
+    if (!list.length) { box.appendChild(el('div', 'empty', q ? 'No activity for "' + query + '".' : 'Nothing yet. When colleagues open the tools, it shows up here.')); return; }
+    list.forEach(function (a) {
+      var r = el('div', 'row');
+      r.appendChild(el('div', 'faint', when(a.at)));
+      r.appendChild(el('div', null, (a.name || a.email)));
+      r.appendChild(el('div', 'c-page muted', TOOLS[a.path] || a.path));
+      box.appendChild(r);
+    });
+  }
+
+  function renderStats() {
+    var pending = users.filter(function (u) { return u.status === 'pending'; }).length;
+    var people = users.filter(function (u) { return u.status === 'approved'; }).length;
+    var denied = users.filter(function (u) { return u.status === 'denied'; }).length;
+    var week = Date.now() - 7 * 864e5;
+    var active = users.filter(function (u) { return u.status === 'approved' && u.last_seen_at > week && u.email !== mine; }).length;
+    $('s-pending').textContent = pending; $('s-people').textContent = people; $('s-active').textContent = active; $('s-denied').textContent = denied;
+    document.querySelector('.stat[data-go="requests"]').classList.toggle('alert', pending > 0);
+    $('t-pending').textContent = pending || ''; $('t-pending').className = 'n' + (pending ? ' hot' : '');
+    $('t-people').textContent = people; $('t-denied').textContent = denied || '';
+  }
+
+  function show(name) {
+    tab = name;
+    document.querySelectorAll('.tabs button').forEach(function (b) { var on = b.dataset.tab === name; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
+    document.querySelectorAll('[data-panel]').forEach(function (p) { p.hidden = p.dataset.panel !== name; });
+    $('findWrap').hidden = !(name === 'people' || name === 'declined' || name === 'activity');
+    var panel = document.querySelector('[data-panel="' + name + '"]');
+    if (window.tbIn) tbIn(panel);
+    try { history.replaceState(null, '', '#' + name); } catch (e) {}
+  }
+  document.querySelectorAll('.tabs button').forEach(function (b) { b.addEventListener('click', function () { show(b.dataset.tab); }); });
+  document.querySelectorAll('.stat').forEach(function (b) { b.addEventListener('click', function () { show(b.dataset.go); }); });
+  $('find').addEventListener('input', function () { query = this.value.trim(); renderPeople(); renderDeclined(); renderActivity(); });
+
   async function load() {
     var r = await fetch('/admin/api/users');
     if (!r.ok) { status('Could not load the list. Reload the page.', true); return; }
-    var data = await r.json(), users = data.users;
-    var mine = ${jsStr(me)};
-
-    fill($('pending'), $('c-pending'), users.filter(function (u) { return u.status === 'pending'; }), function (u) {
-      return person(u, [
-        button('Accept', 'btn', async function () { if (await call('approve', u.id)) { status('Accepted ' + u.email + '. They can sign in now.'); load(); } }),
-        button('Decline', 'btn-utility danger', async function () { if (await call('deny', u.id, 'Decline the request from ' + u.email + '?')) { status('Declined ' + u.email + '.'); load(); } })
-      ], 'Requested ' + when(u.created_at)).row;
-    }, 'No open requests.');
-
-    fill($('approved'), $('c-approved'), users.filter(function (u) { return u.status === 'approved'; }), function (u) {
-      var self = u.email === mine, p;
-      var buttons = self ? [] : [
-        button('Reset password', 'btn-utility', async function () {
-          var j = await call('reset-password', u.id, 'Give ' + u.email + ' a new password? Their current password stops working.');
-          if (!j) return;
-          var old = p.who.querySelector('.pw'); if (old) old.remove();
-          var line = el('div', 'pw', 'New password for ' + u.email + ' (shown once, send it to them): ');
-          line.appendChild(el('code', null, j.password));
-          p.who.appendChild(line);
-        }),
-        button('Remove access', 'btn-utility danger', async function () { if (await call('revoke', u.id, 'Remove access for ' + u.email + '? They are signed out right away.')) { status('Removed access for ' + u.email + '.'); load(); } })
-      ];
-      p = person(u, buttons, 'Last active ' + when(u.last_seen_at) + ' · last sign-in ' + when(u.last_login_at) + ' · access since ' + when(u.decided_at || u.created_at));
-      return p.row;
-    }, 'Nobody has access yet.');
-
-    fill($('denied'), $('c-denied'), users.filter(function (u) { return u.status === 'denied'; }), function (u) {
-      return person(u, [
-        button('Give access', 'btn-utility', async function () { if (await call('approve', u.id, 'Give ' + u.email + ' access?')) { status('Gave access to ' + u.email + '.'); load(); } }),
-        button('Delete', 'btn-utility danger', async function () { if (await call('delete', u.id, 'Delete ' + u.email + ' completely? They can then request access again.')) { status('Deleted ' + u.email + '.'); load(); } })
-      ], 'Since ' + when(u.decided_at)).row;
-    }, 'Nobody.');
-
-    var act = $('activity'); act.innerHTML = '';
-    if (!data.activity.length) act.appendChild(el('p', 'empty', 'Nothing yet.'));
-    data.activity.forEach(function (a) {
-      var row = el('div', 'act');
-      row.appendChild(el('span', 't', when(a.at)));
-      row.appendChild(el('span', null, (a.name || a.email) + ' · ' + a.email));
-      row.appendChild(el('span', 'p', TOOLS[a.path] || a.path));
-      act.appendChild(row);
-    });
-    // the lists come in one after the other the first time; later updates stay still
-    if (firstLoad && window.tbStagger) tbStagger(document.querySelectorAll('.sheet > section'), 45);
-    firstLoad = false;
+    var data = await r.json(); users = data.users; activity = data.activity;
+    renderStats(); renderRequests(); renderPeople(); renderDeclined(); renderActivity();
+    // first visit: open requests if there are any, otherwise the people
+    if (!tab) {
+      var want = location.hash.slice(1);
+      show(document.querySelector('[data-panel="' + want + '"]') ? want : (users.some(function (u) { return u.status === 'pending'; }) ? 'requests' : 'people'));
+    }
   }
-  // ---- announcements ----
   async function loadAnnouncements() {
     var r = await fetch('/admin/api/announcements'); if (!r.ok) return;
     var list = (await r.json()).announcements, box = $('announcements'); box.innerHTML = '';
+    if (!list.length) { box.appendChild(el('div', 'empty', 'No tools have been announced yet.')); return; }
     list.forEach(function (a) {
-      var row = el('div', 'person'), who = el('div', 'who');
-      who.appendChild(el('div', 'name', 'New tool: ' + a.title));
-      if (a.body) who.appendChild(el('div', 'note', a.body));
-      who.appendChild(el('div', 'meta', when(a.created_at) + ' · opens ' + (TOOLS[a.link] || a.link) + ' · sent to ' + a.sent + ', opened by ' + a.opened));
-      var del = button('Delete', 'btn-utility danger', async function () {
+      var row = el('div', 'row'); row.style.gridTemplateColumns = 'minmax(0, 1fr) auto';
+      var who = el('div'); who.style.whiteSpace = 'normal';
+      who.appendChild(el('b', null, 'New tool: ' + a.title));
+      who.appendChild(el('div', 'faint', when(a.created_at) + ' · opens ' + (TOOLS[a.link] || a.link) + ' · sent to ' + a.sent + ', opened by ' + a.opened));
+      var acts = el('div', 'actions');
+      acts.appendChild(button('Delete', 'btn-utility danger', async function () {
         if (!confirm('Delete this announcement? It also disappears from the notifications of everyone.')) return;
         var x = await fetch('/admin/api/announcements/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: a.id }) });
         if (x.ok) { status('Announcement deleted.'); loadAnnouncements(); } else status('Deleting failed. Reload and try again.', true);
-      });
-      row.appendChild(who); row.appendChild(el('div', 'actions')).appendChild(del);
-      box.appendChild(row);
+      }));
+      row.appendChild(who); row.appendChild(acts); box.appendChild(row);
     });
   }
   load();
