@@ -17,7 +17,7 @@
     { path: 'sessions-radio-maker/', name: 'Sessions Asset Generator', img: 'sessions-radio-maker/thumbnail.jpg' },
     { path: 'thumbnail-maker/', name: 'Thumbnail Maker', img: 'thumbnail-maker/thumbnail.jpg' },
     { path: 'song-briefing/', name: 'Song Briefing', img: 'song-briefing/thumbnail.jpg' },
-    { path: 'general-briefing/', name: 'General Briefing' },   // its thumbnail is still to come
+    { path: 'general-briefing/', name: 'General Briefing', img: 'general-briefing/thumbnail.jpg' },
   ];
 
   const I = {
