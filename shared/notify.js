@@ -76,6 +76,7 @@
     else if (n.type === 'idea') what.append(actor, t(' suggested '), title);
     else if (n.type === 'announce' && n.ann_kind === 'update') what.append(el('b', null, n.ann_title || 'Update'));
     else if (n.type === 'announce') what.append(t('New tool: '), el('b', null, n.ann_title || 'a tool'));
+    else if (n.type === 'request') what.append(actor, t(' requested access to the Creative Toolbox'));
     else if (n.type === 'milestone') what.append(t('Milestone: the team saved '), el('b', null, n.detail + 'h'), t(' with the Creative Toolbox'));
     return what;
   }
@@ -108,7 +109,7 @@
     shown.forEach(n => {
       const it = el('button', 'nt-item' + (n.read ? ' read' : ' unread')); it.type = 'button';
       it.appendChild(line(n));
-      if ((n.type === 'comment' || n.type === 'reply') && n.detail) it.appendChild(el('div', 'nt-snip', n.detail));
+      if ((n.type === 'comment' || n.type === 'reply' || n.type === 'request') && n.detail) it.appendChild(el('div', 'nt-snip', n.detail));
       if (n.type === 'announce' && n.ann_body) it.appendChild(el('div', n.ann_kind === 'update' ? 'nt-msg' : 'nt-snip', n.ann_body));
       it.appendChild(el('div', 'nt-time', ago(n.created_at)));
       it.addEventListener('click', async () => {
@@ -116,6 +117,7 @@
         close();
         if (n.type === 'announce') { if (n.ann_kind !== 'update' || (n.ann_link && n.ann_link !== '/')) location.href = n.ann_link || '/'; else paint(); return; }
         if (n.type === 'milestone') { location.href = '/#time-saved'; return; }
+        if (n.type === 'request') { location.href = '/admin#requests'; return; }
         const target = '/ideas/#idea-' + n.idea_id;
         if (location.pathname === '/ideas/' || location.pathname === '/ideas') { location.hash = 'idea-' + n.idea_id; paint(); }
         else location.href = target;

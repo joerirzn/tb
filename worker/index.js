@@ -6,7 +6,7 @@
 // ADMIN_EMAIL secret (set in the Cloudflare dashboard, never in this repo).
 
 import { loginPage, adminPage, accountPage } from './pages.js';
-import { IDEAS_SCHEMA, handleIdeas, handleNotifications, listAnnouncements, deleteAnnouncement, syncTools, announce } from './ideas.js';
+import { IDEAS_SCHEMA, handleIdeas, handleNotifications, listAnnouncements, deleteAnnouncement, syncTools, announce, notify } from './ideas.js';
 import { USAGE_SCHEMA, handleUsage, handleStats } from './usage.js';
 
 const SESSION_COOKIE = '__Host-tb_session';
@@ -160,6 +160,7 @@ export default {
       out.headers.delete('ETag'); out.headers.delete('Last-Modified');
       const enc = s => encodeURIComponent(s || '');
       const favs = (await env.DB.prepare('SELECT path FROM favourites WHERE user_id = ? ORDER BY created_at').bind(user.id).all()).results.map(r => r.path);
+      const pending = user.is_admin ? (await env.DB.prepare("SELECT COUNT(*) AS n FROM users WHERE status = 'pending'").first()).n : 0;
       return new HTMLRewriter()
         .on(user.is_admin ? '[data-not-admin]' : '[data-admin-only]', { element(e) { e.remove(); } })
         .on('body', { element(e) {
@@ -169,6 +170,7 @@ export default {
           e.setAttribute('data-tb-admin', user.is_admin ? '1' : '0');
           e.setAttribute('data-tb-favs', enc(JSON.stringify(favs)));
           e.setAttribute('data-tb-toured', user.toured_at ? '1' : '0');
+          if (user.is_admin) e.setAttribute('data-tb-pending', String(pending));   // access requests waiting
         } })
         .transform(out);
     }
@@ -280,6 +282,9 @@ async function handleAuth(request, env, url, user) {
       const u = await env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(res.meta.last_row_id).first();
       return startSession(env, u, body.next);
     }
+    // the admin hears about it straight away (in the bell)
+    const admins = await env.DB.prepare("SELECT id FROM users WHERE is_admin = 1 AND status = 'approved'").all();
+    await notify(env, admins.results.map(a => a.id), res.meta.last_row_id, 'request', 0, n.jobTitle);
     return json({ ok: true, pending: true });
   }
 
@@ -341,12 +346,18 @@ async function handleAdmin(request, env, url, me) {
   if (target.id === me.id) return json({ error: 'You cannot change your own account here.' }, 400);
   const now = Date.now();
 
+  // a request that has been decided on no longer waits in the admin's bell
+  const requestHandled = env.DB.prepare("UPDATE notifications SET read_at = ? WHERE type = 'request' AND actor_id = ? AND read_at IS NULL").bind(now, id);
   if (action === 'approve') {
-    await env.DB.prepare("UPDATE users SET status = 'approved', decided_at = ? WHERE id = ?").bind(now, id).run();
+    await env.DB.batch([
+      env.DB.prepare("UPDATE users SET status = 'approved', decided_at = ? WHERE id = ?").bind(now, id),
+      requestHandled,
+    ]);
     return json({ ok: true });
   }
   if (action === 'deny' || action === 'revoke') {
     await env.DB.batch([
+      requestHandled,
       env.DB.prepare("UPDATE users SET status = 'denied', decided_at = ? WHERE id = ?").bind(now, id),
       env.DB.prepare('DELETE FROM sessions WHERE user_id = ?').bind(id),
     ]);

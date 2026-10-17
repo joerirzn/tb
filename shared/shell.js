@@ -88,7 +88,7 @@
     '</div>' +
     '<div class="tb-me">' +
       '<div class="tb-menu" id="tbMenu" hidden>' +
-        '<a href="/admin" id="tbAdmin" hidden>' + svg('shield') + 'Access</a>' +
+        '<a href="/admin" id="tbAdmin" hidden>' + svg('shield') + 'Access<span class="tb-badge" id="tbPending" hidden></span></a>' +
         '<a href="' + page('ideas/') + '" id="tbMine">' + svg('idea') + '<span id="tbMineLabel">My suggestions</span><span class="tb-badge" id="tbIdeas" hidden></span></a>' +
         '<a href="/account">' + svg('user') + 'Account and password</a>' +
         '<a href="' + page('') + '#tour">' + svg('play') + 'Take the tour</a>' +
@@ -116,6 +116,10 @@
     $('tbAdmin').hidden = !user.isAdmin;
     // suggestions are private and live in the profile menu: the admin reads them all (Ideas), everyone else their own
     $('tbMineLabel').textContent = user.isAdmin ? 'Ideas' : 'My suggestions';
+    // access requests waiting for the admin (the server counts them for the page)
+    const pending = user.isAdmin ? (served ? Number(b.tbPending) || 0 : 1) : 0;
+    $('tbPending').textContent = pending; $('tbPending').hidden = !pending;
+    if (pending) $('tbMeDot').hidden = false;
     nav.querySelector('.tb-me').hidden = !(user.name || user.email);
   }
 
@@ -349,6 +353,7 @@
   // ---------- for the page ----------
   window.tbShell = {
     root: ROOT, page, served,
+    get pending() { return user.isAdmin ? (served ? Number(b.tbPending) || 0 : 1) : 0; },   // access requests waiting (admin)
     get user() { return user; },
     favourites: () => favs.slice(),
     isFavourite: p => favs.includes(p),

@@ -220,6 +220,14 @@ ${BASE_CSS}
   .actions .btn-utility{ height: 28px; padding: 0 11px; font-size: 11.5px; }
   .actions .btn{ width: auto; height: 28px; padding: 0 14px; font-size: 11.5px; }
   .empty{ padding: 28px 16px; text-align: center; color: var(--faint); font-size: 12.5px; }
+  /* a row that just came in lights up for a moment */
+  @keyframes fresh{ from{ background: rgba(139, 92, 246, 0.22); } to{ background: transparent; } }
+  .row.fresh{ animation: fresh 2.5s ease-out; }
+  .row.fresh > :first-child{ color: var(--accent); font-weight: 700; }
+  /* Activity is live */
+  .live{ display: inline-block; width: 7px; height: 7px; border-radius: 9999px; background: var(--success); margin-left: 7px; vertical-align: 1px; animation: livepulse 2s ease-in-out infinite; }
+  @keyframes livepulse{ 50%{ opacity: .35; } }
+  @media (prefers-reduced-motion: reduce){ .row.fresh, .live{ animation: none; } }
   @media (max-width: 1000px){
     .people .row{ grid-template-columns: minmax(0, 1fr) auto; }
     .people .row > .c-mail, .people .row > .c-seen, .people .row > .c-since{ display: none; }
@@ -271,7 +279,7 @@ ${shellBody({ me, name, jobTitle, isAdmin: true })}
     <button type="button" role="tab" data-tab="requests">Requests<span class="n" id="t-pending"></span></button>
     <button type="button" role="tab" data-tab="people">People<span class="n" id="t-people"></span></button>
     <button type="button" role="tab" data-tab="declined">Declined<span class="n" id="t-denied"></span></button>
-    <button type="button" role="tab" data-tab="activity">Activity</button>
+    <button type="button" role="tab" data-tab="activity" title="Updates by itself">Activity<span class="live" aria-label="live"></span></button>
     <button type="button" role="tab" data-tab="announcements">Announcements</button>
   </div>
   <div class="find" id="findWrap"><input type="search" id="find" placeholder="Search a name or email" aria-label="Search people" autocomplete="off"></div>
@@ -413,12 +421,14 @@ ${shellBody({ me, name, jobTitle, isAdmin: true })}
     var head = el('div', 'row head'); ['When', 'Who', 'Opened'].forEach(function (t) { head.appendChild(el('div', null, t)); }); box.appendChild(head);
     if (!list.length) { box.appendChild(el('div', 'empty', q ? 'No activity for "' + query + '".' : 'Nothing yet. When colleagues open the tools, it shows up here.')); return; }
     list.forEach(function (a) {
-      var r = el('div', 'row');
+      var r = el('div', 'row'), key = a.at + '|' + a.email + '|' + a.path;
+      if (seenActs && !seenActs.has(key)) r.classList.add('fresh');   // came in while the page was open
       r.appendChild(el('div', 'faint', when(a.at)));
       r.appendChild(el('div', null, (a.name || a.email)));
       r.appendChild(el('div', 'c-page muted', TOOLS[a.path] || a.path));
       box.appendChild(r);
     });
+    seenActs = new Set(activity.map(function (a) { return a.at + '|' + a.email + '|' + a.path; }));
   }
 
   function renderStats() {
@@ -446,11 +456,17 @@ ${shellBody({ me, name, jobTitle, isAdmin: true })}
   document.querySelectorAll('.stat').forEach(function (b) { b.addEventListener('click', function () { show(b.dataset.go); }); });
   $('find').addEventListener('input', function () { query = this.value.trim(); renderPeople(); renderDeclined(); renderActivity(); });
 
-  async function load() {
+  var lastData = '', seenActs = null;
+  async function load(live) {
     var r = await fetch('/admin/api/users');
-    if (!r.ok) { status('Could not load the list. Reload the page.', true); return; }
-    var data = await r.json(); users = data.users; activity = data.activity;
+    if (!r.ok) { if (!live) status('Could not load the list. Reload the page.', true); return; }
+    var text = await r.text(), data = JSON.parse(text);
+    // a live check that found nothing new only refreshes the times ("2 min ago")
+    if (live && text === lastData) { renderActivity(); return; }
+    var hadPending = users.filter(function (u) { return u.status === 'pending'; }).length;
+    lastData = text; users = data.users; activity = data.activity;
     renderStats(); renderRequests(); renderPeople(); renderDeclined(); renderActivity();
+    if (live && users.filter(function (u) { return u.status === 'pending'; }).length > hadPending) tbFlash(document.querySelector('[data-tab="requests"]'));
     // first visit: open requests if there are any, otherwise the people
     if (!tab) {
       var want = location.hash.slice(1);
@@ -507,6 +523,11 @@ ${shellBody({ me, name, jobTitle, isAdmin: true })}
   }
   load();
   loadAnnouncements();
+
+  // live: every 10 seconds while the page is in view, and straight away when you come back to it
+  function tbFlash(e) { if (e && window.tbBump) tbBump(e); }
+  setInterval(function () { if (document.visibilityState === 'visible') load(true); }, 10000);
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') load(true); });
 })();
 </script>
 </body>
