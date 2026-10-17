@@ -88,8 +88,8 @@
     '</div>' +
     '<div class="tb-me">' +
       '<div class="tb-menu" id="tbMenu" hidden>' +
-        '<a href="/admin" id="tbAdmin" hidden>' + svg('shield') + 'Access<span class="tb-badge" id="tbPending" hidden></span></a>' +
-        '<a href="' + page('ideas/') + '" id="tbMine">' + svg('idea') + '<span id="tbMineLabel">My suggestions</span><span class="tb-badge" id="tbIdeas" hidden></span></a>' +
+        '<a href="/admin" id="tbAdmin" hidden>' + svg('shield') + 'Admin<span class="tb-badge" id="tbPending" hidden></span></a>' +
+        '<a href="' + page('ideas/') + '" id="tbMine">' + svg('idea') + 'My suggestions</a>' +
         '<a href="/account">' + svg('user') + 'Account and password</a>' +
         '<a href="' + page('') + '#tour">' + svg('play') + 'Take the tour</a>' +
         '<button type="button" id="tbSignOut">' + svg('out') + 'Sign out</button>' +
@@ -109,17 +109,20 @@
   const $ = id => document.getElementById(id);
 
   // ---------- fill in ----------
+  // what waits for the admin: access requests (counted by the server for the page) plus new suggestions
+  let freshIdeas = 0;
+  function adminCount() {
+    const n = user.isAdmin ? (served ? Number(b.tbPending) || 0 : 1) + freshIdeas : 0;
+    $('tbPending').textContent = n; $('tbPending').hidden = !n; $('tbMeDot').hidden = !n;
+  }
   function showUser() {
     $('tbName').textContent = user.name || user.email || '';
     $('tbJob').textContent = user.jobTitle || (user.name ? user.email : '') || '';
     $('tbInitials').textContent = initials(user.name || user.email || '');
+    // the admin has one place for everything (access, activity, suggestions); everyone else finds their own suggestions
     $('tbAdmin').hidden = !user.isAdmin;
-    // suggestions are private and live in the profile menu: the admin reads them all (Ideas), everyone else their own
-    $('tbMineLabel').textContent = user.isAdmin ? 'Ideas' : 'My suggestions';
-    // access requests waiting for the admin (the server counts them for the page)
-    const pending = user.isAdmin ? (served ? Number(b.tbPending) || 0 : 1) : 0;
-    $('tbPending').textContent = pending; $('tbPending').hidden = !pending;
-    if (pending) $('tbMeDot').hidden = false;
+    $('tbMine').hidden = !!user.isAdmin;
+    adminCount();
     nav.querySelector('.tb-me').hidden = !(user.name || user.email);
   }
 
@@ -182,12 +185,11 @@
     if (!user.name && !user.email) fetch('/auth/me').then(r => r.ok ? r.json() : null).then(me => { if (me) { user = me; showUser(); renderTools(); } }).catch(() => { });
     // new suggestions waiting for the admin (suggestions are private, so only the admin gets this count)
     if (user.isAdmin) fetch('/api/ideas').then(r => r.ok ? r.json() : Promise.reject()).then(d => {
-      const fresh = d.ideas.filter(i => i.status === 'new').length;
-      if (fresh) { $('tbIdeas').textContent = fresh; $('tbIdeas').hidden = false; $('tbMeDot').hidden = false; }
+      freshIdeas = d.ideas.filter(i => i.status === 'new').length; adminCount();
     }).catch(() => { });
     const s = document.createElement('script'); s.src = ROOT + 'shared/notify.js'; s.defer = true; document.head.appendChild(s);
   } else {
-    $('tbIdeas').textContent = '2'; $('tbIdeas').hidden = false; $('tbMeDot').hidden = false;
+    freshIdeas = 2; adminCount();
     $('notify').innerHTML = '<span class="tb-ic" title="Notifications (preview)">' + svg('bell') + '<span class="tb-dot"></span></span>';
   }
 
@@ -242,12 +244,12 @@
     list.sort((a, b) => b.fav - a.fav);
     list.push({ label: 'Home', kind: 'Page', href: page('') + '#home', icon: I.home });
     list.push({ label: 'Time saved', kind: 'Page', href: page('') + '#time-saved', icon: I.clock });
-    if (user.isAdmin) list.push({ label: 'Ideas', kind: 'Admin', href: page('ideas/'), icon: I.idea });
+    if (user.isAdmin) list.push({ label: 'Ideas', kind: 'Admin', href: '/admin#ideas', icon: I.idea });
     else list.push({ label: 'My suggestions', kind: 'Page', href: page('ideas/'), icon: I.idea });
     list.push({ label: 'Suggest a tool', kind: 'Ideas', href: '#suggest', icon: I.plus });
     list.push({ label: 'Account and password', kind: 'Page', href: '/account', icon: I.user });
     list.push({ label: 'Take the tour', kind: 'Help', href: page('') + '#tour', icon: I.play });
-    if (user.isAdmin) list.push({ label: 'Access requests', kind: 'Admin', href: '/admin', icon: I.shield });
+    if (user.isAdmin) list.push({ label: 'Admin', kind: 'Admin', href: '/admin', icon: I.shield });
     return list;
   }
   function score(label, q) {   // part of the name ("sess"), or the first letters of its words ("sbc")

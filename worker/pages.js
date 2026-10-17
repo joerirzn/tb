@@ -169,7 +169,7 @@ export function adminPage({ me, name, jobTitle }) {
 <html lang="en">
 <head>
 ${SHELL_HEAD}
-<title>Creative Toolbox · Access</title>
+<title>Creative Toolbox · Admin</title>
 <style>
 ${BASE_CSS}
   /* the numbers at a glance */
@@ -244,6 +244,34 @@ ${BASE_CSS}
   .card .actions{ justify-content: flex-start; }
   .card .actions .btn, .card .actions .btn-utility{ height: 34px; font-size: 12.5px; padding: 0 16px; }
 
+  /* suggestions from the team */
+  .ifilters{ display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .ifilters button{ height: 28px; padding: 0 12px; border-radius: var(--radius-pill); border: 1px solid var(--border-hover); background: none; color: var(--faint); font: 600 12px var(--font); cursor: pointer; }
+  .ifilters button:hover{ color: var(--muted); }
+  .ifilters button.on{ color: var(--text); background: var(--surface-3); }
+  .ifilters .n{ margin-left: 5px; font-weight: 500; }
+  .idea{ padding: 14px 16px; border-top: 1px solid var(--border); }
+  .idea:first-child{ border-top: none; }
+  .idea.open{ background: #171717; }
+  .idea-top{ display: flex; align-items: flex-start; gap: 14px; }
+  .idea-main{ flex: 1; min-width: 0; }
+  .idea-main b{ font-size: 13.5px; font-weight: 700; }
+  .idea-main p{ margin: 4px 0 0; font-size: 12.5px; color: var(--muted); line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; max-width: 90ch; }
+  .idea-main .meta{ font-size: 11.5px; color: var(--faint); margin-top: 6px; }
+  .idea .actions select{ width: auto; height: 28px; padding: 0 30px 0 11px; font-size: 11.5px; font-weight: 600; border-radius: var(--radius-pill); background-position: right 10px center; }
+  .st{ font-size: 10px; font-weight: 700; border-radius: 5px; padding: 1px 7px; margin-left: 8px; vertical-align: 1px; color: var(--muted); background: var(--surface-3); }
+  .st.new{ color: #fff; background: var(--accent); }
+  .st.planned{ color: #1a0a00; background: #f97316; }
+  .st.in-progress{ color: #1a1400; background: var(--warning); }
+  .st.done{ color: #002616; background: var(--success); }
+  .st.declined{ text-decoration: line-through; }
+  .thread{ margin: 12px 0 0 0; padding-top: 12px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px; max-width: 90ch; }
+  .thread .c{ font-size: 12.5px; line-height: 1.5; }
+  .thread .c .w{ font-size: 11.5px; color: var(--faint); }
+  .thread .c p{ margin: 2px 0 0; color: var(--muted); white-space: pre-wrap; overflow-wrap: anywhere; }
+  .thread form{ display: flex; gap: 8px; }
+  .thread textarea{ min-height: 38px; height: 38px; padding: 8px 12px; }
+  .thread .btn-utility{ height: 38px; }
   .intro{ font-size: 12.5px; line-height: 1.5; color: var(--faint); margin: 0 0 12px; max-width: 80ch; }
   /* write a message to everyone */
   .ann-grid{ display: grid; grid-template-columns: minmax(320px, 440px) minmax(0, 1fr); gap: 16px; align-items: start; }
@@ -264,7 +292,7 @@ ${BASE_CSS}
 </head>
 ${shellBody({ me, name, jobTitle, isAdmin: true })}
 <div class="app-header">
-  <h1>Access <span>· who can use the Creative Toolbox</span></h1>
+  <h1>Admin <span>· access, activity and suggestions</span></h1>
 </div>
 
 <div class="stats" id="stats">
@@ -280,6 +308,7 @@ ${shellBody({ me, name, jobTitle, isAdmin: true })}
     <button type="button" role="tab" data-tab="people">People<span class="n" id="t-people"></span></button>
     <button type="button" role="tab" data-tab="declined">Declined<span class="n" id="t-denied"></span></button>
     <button type="button" role="tab" data-tab="activity" title="Updates by itself">Activity<span class="live" aria-label="live"></span></button>
+    <button type="button" role="tab" data-tab="ideas">Ideas<span class="n" id="t-ideas"></span></button>
     <button type="button" role="tab" data-tab="announcements">Announcements</button>
   </div>
   <div class="find" id="findWrap"><input type="search" id="find" placeholder="Search a name or email" aria-label="Search people" autocomplete="off"></div>
@@ -291,6 +320,10 @@ ${shellBody({ me, name, jobTitle, isAdmin: true })}
 <section data-panel="people" hidden><div class="table people" id="approved"></div></section>
 <section data-panel="declined" hidden><div class="table people" id="denied"></div></section>
 <section data-panel="activity" hidden><div class="table acts" id="activity"></div></section>
+<section data-panel="ideas" hidden>
+  <div class="ifilters" id="ifilters"></div>
+  <div class="table ideas" id="ideas"></div>
+</section>
 <section data-panel="announcements" hidden>
   <div class="ann-grid">
     <form class="composer" id="annForm" novalidate>
@@ -456,6 +489,84 @@ ${shellBody({ me, name, jobTitle, isAdmin: true })}
   document.querySelectorAll('.stat').forEach(function (b) { b.addEventListener('click', function () { show(b.dataset.go); }); });
   $('find').addEventListener('input', function () { query = this.value.trim(); renderPeople(); renderDeclined(); renderActivity(); });
 
+  // ---------- suggestions from the team ----------
+  var STATUS = { 'new': 'New', 'planned': 'Planned', 'in-progress': 'In progress', 'done': 'Done', 'declined': 'Declined' };
+  var ideas = [], ifilter = 'all', openIdea = 0, lastIdeas = '';
+  async function api(path, body) {
+    var r = await fetch(path, body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {});
+    var j = {}; try { j = await r.json(); } catch (e) {}
+    if (!r.ok) throw new Error(j.error || 'That did not work. Try again.');
+    return j;
+  }
+  async function loadIdeas(live) {
+    var r = await fetch('/api/ideas'); if (!r.ok) return;
+    var text = await r.text(); if (live && text === lastIdeas) return;
+    var hadNew = ideas.filter(function (i) { return i.status === 'new'; }).length;
+    lastIdeas = text; ideas = JSON.parse(text).ideas; renderIdeas();
+    if (live && ideas.filter(function (i) { return i.status === 'new'; }).length > hadNew) tbFlash(document.querySelector('[data-tab="ideas"]'));
+  }
+  function renderIdeas() {
+    var fresh = ideas.filter(function (i) { return i.status === 'new'; }).length;
+    $('t-ideas').textContent = fresh || ''; $('t-ideas').className = 'n' + (fresh ? ' hot' : '');
+    var f = $('ifilters'); f.innerHTML = '';
+    var counts = { all: ideas.length }; ideas.forEach(function (i) { counts[i.status] = (counts[i.status] || 0) + 1; });
+    [['all', 'All']].concat(Object.keys(STATUS).map(function (k) { return [k, STATUS[k]]; })).forEach(function (o) {
+      if (o[0] !== 'all' && !counts[o[0]] && ifilter !== o[0]) return;
+      var b = button(o[1], ifilter === o[0] ? 'on' : '', function () { ifilter = o[0]; renderIdeas(); });
+      b.appendChild(el('span', 'n', String(counts[o[0]] || 0))); f.appendChild(b);
+    });
+    var box = $('ideas'); box.innerHTML = '';
+    var list = ideas.filter(function (i) { return ifilter === 'all' || i.status === ifilter; }).sort(function (a, b) { return b.created_at - a.created_at; });
+    if (!list.length) { box.appendChild(el('div', 'empty', ideas.length ? 'No suggestions with this status.' : 'No suggestions yet. When colleagues suggest a tool, it shows up here.')); return; }
+    list.forEach(function (i) { box.appendChild(ideaRow(i)); });
+  }
+  function ideaRow(i) {
+    var row = el('div', 'idea' + (openIdea === i.id ? ' open' : '')); row.id = 'idea-' + i.id;
+    var top = el('div', 'idea-top'), main = el('div', 'idea-main');
+    var t = el('b', null, i.title); main.appendChild(t); main.appendChild(el('span', 'st ' + i.status, STATUS[i.status] || i.status));
+    if (i.body) main.appendChild(el('p', null, i.body));
+    main.appendChild(el('div', 'meta', (i.author || 'Former member') + (i.author_job ? ' · ' + i.author_job : '') + ' · ' + when(i.created_at)));
+    var a = el('div', 'actions');
+    var sel = el('select'); sel.setAttribute('aria-label', 'Status');
+    Object.keys(STATUS).forEach(function (k) { var o = el('option', null, STATUS[k]); o.value = k; o.selected = k === i.status; sel.appendChild(o); });
+    sel.addEventListener('change', async function () {
+      try { await api('/api/ideas/' + i.id + '/status', { status: sel.value }); i.status = sel.value; status('Status of "' + i.title + '" is now ' + STATUS[sel.value] + '. ' + (i.author || 'The author') + ' gets a notification.'); renderIdeas(); }
+      catch (e) { status(e.message, true); }
+    });
+    a.appendChild(sel);
+    a.appendChild(button(i.comments === 1 ? '1 reply' : i.comments ? i.comments + ' replies' : 'Reply', 'btn-utility', function () { openIdea = openIdea === i.id ? 0 : i.id; renderIdeas(); }));
+    a.appendChild(button('Delete', 'btn-utility danger', async function () {
+      if (!confirm('Delete the suggestion "' + i.title + '" with its replies?')) return;
+      try { await api('/api/ideas/' + i.id + '/delete', {}); status('Deleted "' + i.title + '".'); loadIdeas(); } catch (e) { status(e.message, true); }
+    }));
+    top.appendChild(main); top.appendChild(a); row.appendChild(top);
+    if (openIdea === i.id) row.appendChild(thread(i));
+    return row;
+  }
+  function thread(i) {
+    var box = el('div', 'thread'), list = el('div'); list.style.cssText = 'display:flex;flex-direction:column;gap:10px';
+    list.appendChild(el('div', 'faint', 'Loading replies…')); box.appendChild(list);
+    api('/api/ideas/' + i.id + '/comments').then(function (j) {
+      list.innerHTML = '';
+      if (!j.comments.length) list.appendChild(el('div', 'faint', 'No replies yet. Your reply goes to ' + (i.author || 'the author') + ' as a notification.'));
+      j.comments.forEach(function (c) {
+        var d = el('div', 'c'); d.appendChild(el('div', 'w', (c.author || 'Former member') + ' · ' + when(c.created_at))); d.appendChild(el('p', null, c.body)); list.appendChild(d);
+      });
+    }).catch(function (e) { list.innerHTML = ''; list.appendChild(el('div', 'faint', e.message)); });
+    var form = el('form'); form.noValidate = true;
+    var ta = el('textarea'); ta.maxLength = 1000; ta.placeholder = 'Write a reply'; ta.setAttribute('aria-label', 'Reply');
+    var send = el('button', 'btn-utility', 'Send'); send.type = 'submit';
+    form.appendChild(ta); form.appendChild(send);
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault(); var text = ta.value.trim(); if (!text) { ta.focus(); return; }
+      send.disabled = true;
+      try { await api('/api/ideas/' + i.id + '/comments', { body: text }); i.comments++; renderIdeas(); } catch (err) { status(err.message, true); send.disabled = false; }
+    });
+    box.appendChild(form);
+    setTimeout(function () { ta.focus(); }, 0);
+    return box;
+  }
+
   var lastData = '', seenActs = null;
   async function load(live) {
     var r = await fetch('/admin/api/users');
@@ -470,6 +581,8 @@ ${shellBody({ me, name, jobTitle, isAdmin: true })}
     // first visit: open requests if there are any, otherwise the people
     if (!tab) {
       var want = location.hash.slice(1);
+      var m = want.match(/^idea-([0-9]+)$/);
+      if (m) { openIdea = Number(m[1]); want = 'ideas'; renderIdeas(); setTimeout(function () { var e = $('idea-' + openIdea); if (e) e.scrollIntoView({ block: 'center' }); }, 300); }
       show(document.querySelector('[data-panel="' + want + '"]') ? want : (users.some(function (u) { return u.status === 'pending'; }) ? 'requests' : 'people'));
     }
   }
@@ -521,12 +634,12 @@ ${shellBody({ me, name, jobTitle, isAdmin: true })}
       row.appendChild(who); row.appendChild(acts); box.appendChild(row);
     });
   }
-  load();
+  loadIdeas().then(load);
   loadAnnouncements();
 
   // live: every 10 seconds while the page is in view, and straight away when you come back to it
   function tbFlash(e) { if (e && window.tbBump) tbBump(e); }
-  setInterval(function () { if (document.visibilityState === 'visible') load(true); }, 10000);
+  setInterval(function () { if (document.visibilityState === 'visible') { load(true); if (!openIdea) loadIdeas(true); } }, 10000);
   document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') load(true); });
 })();
 </script>

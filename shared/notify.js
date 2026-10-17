@@ -118,6 +118,8 @@
         if (n.type === 'announce') { if (n.ann_kind !== 'update' || (n.ann_link && n.ann_link !== '/')) location.href = n.ann_link || '/'; else paint(); return; }
         if (n.type === 'milestone') { location.href = '/#time-saved'; return; }
         if (n.type === 'request') { location.href = '/admin#requests'; return; }
+        // the admin reads suggestions on the admin page, everyone else on My suggestions
+        if (document.body.dataset.tbAdmin === '1') { location.href = '/admin#idea-' + n.idea_id; return; }
         const target = '/ideas/#idea-' + n.idea_id;
         if (location.pathname === '/ideas/' || location.pathname === '/ideas') { location.hash = 'idea-' + n.idea_id; paint(); }
         else location.href = target;
