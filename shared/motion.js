@@ -1,7 +1,7 @@
 // Toolbox motion helpers (see motion.css).
 //   tbIn(el, delay)          play the entry animation on something that just appeared
 //   tbStagger(list, step)    the same for several things, one after another
-//   tbCount(el, to, render)  count a number up to its value (render turns a number into the text/HTML)
+//   tbCount(el, to, render, ms, from)  count a number up to its value, from 0 or from `from` (render turns a number into the text/HTML)
 //   tbBump(el)               a small hop, e.g. when a vote is added
 // When a page opens, its header, settings and results come in one after another by themselves.
 // On its own it also fades in images once they have loaded, and fades in a
@@ -23,14 +23,15 @@
       .forEach((el, i) => window.tbIn(el, (start || 0) + Math.min(i, 12) * (step || 40)));
   };
 
-  window.tbCount = function (el, to, render, ms) {
+  window.tbCount = function (el, to, render, ms, from) {
     if (!el) return;
-    if (reduce || !to) { el.innerHTML = render(to); return; }
+    from = from || 0;
+    if (reduce || !to || from === to) { el.innerHTML = render(to); return; }
     const t0 = performance.now(), dur = ms || 900, ease = t => 1 - Math.pow(1 - t, 3);
     if (el._tbCount) cancelAnimationFrame(el._tbCount);
     const frame = now => {
       const t = Math.min(1, (now - t0) / dur);
-      el.innerHTML = render(t < 1 ? to * ease(t) : to);
+      el.innerHTML = render(t < 1 ? from + (to - from) * ease(t) : to);
       if (t < 1) el._tbCount = requestAnimationFrame(frame);
     };
     el._tbCount = requestAnimationFrame(frame);

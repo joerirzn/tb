@@ -166,6 +166,10 @@
   .l4{ background: #a78bfa; }
   .cal .c.today{ box-shadow: 0 0 0 1.5px #fff; }
 
+  .live-tag{ display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: var(--green); border: 1px solid rgba(52,211,153,0.35); border-radius: 6px; padding: 2px 8px; }
+  .live-tag i{ width: 6px; height: 6px; border-radius: 9999px; background: var(--green); animation: livepulse 2s ease-in-out infinite; }
+  @keyframes livepulse{ 50%{ opacity: .35; } }
+  @media (prefers-reduced-motion: reduce){ .live-tag i{ animation: none; } }
   .tag{ font-size: 11px; font-weight: 600; color: var(--orange); border: 1px solid rgba(249,115,22,0.4); border-radius: 6px; padding: 2px 8px; }
 
   /* ---------- responsive ---------- */
@@ -291,6 +295,7 @@
         <h1 id="timeTitle">Time saved <span>with the Creative Toolbox</span></h1>
         <div class="bar-end">
           <span class="tag" id="previewTag" hidden>Preview data</span>
+          <span class="live-tag" id="liveTag" hidden title="New exports come in by themselves"><i></i>Live</span>
         </div>
       </div>
       <div class="sheet">
@@ -388,14 +393,18 @@
     }
   }
   // the numbers count up to their value
-  function playNumbers() {
+  // the numbers count up: from 0 on a visit, from where they were when new numbers arrive live
+  function playNumbers(old) {
     if (!data.total.exports || !window.tbCount) return;
-    tbCount($('sTime'), data.total.minutes, v => fmt(v, true));
-    tbCount($('sSpent'), data.total.spent || 0, v => fmt(v, true));
-    tbCount($('sExports'), data.total.exports, v => Math.round(v).toLocaleString('en-GB'));
-    const top = Object.entries(data.byTool).sort((a, b) => b[1] - a[1])[0];
-    if (top) tbCount($('sTop'), top[1], v => fmt(v, true));
-    if (period === 'all') tbCount($('chartBig'), data.total.minutes / Math.max(1, data.months || data.series.length), v => fmt(v, true));
+    const o = old && old.total ? old : null, d = 700;
+    const topOf = x => Object.entries(x.byTool || {}).sort((a, b) => b[1] - a[1])[0];
+    const avg = x => x.total.minutes / Math.max(1, x.months || x.series.length);
+    tbCount($('sTime'), data.total.minutes, v => fmt(v, true), o && d, o && o.total.minutes);
+    tbCount($('sSpent'), data.total.spent || 0, v => fmt(v, true), o && d, o && o.total.spent);
+    tbCount($('sExports'), data.total.exports, v => Math.round(v).toLocaleString('en-GB'), o && d, o && o.total.exports);
+    const top = topOf(data), otop = o && topOf(o);
+    if (top) tbCount($('sTop'), top[1], v => fmt(v, true), o && d, otop && otop[0] === top[0] ? otop[1] : 0);
+    if (period === 'all') tbCount($('chartBig'), avg(data), v => fmt(v, true), o && d, o && avg(o));
   }
   // the line draws itself from left to right, the area under it fades in
   function drawChartIn() {
@@ -524,6 +533,7 @@
 
   function renderStats() {
     $('previewTag').hidden = !data.preview;
+    $('liveTag').hidden = !served;
     const when = period === 'all' ? (data.total.since ? 'since ' + data.total.since : '') : PERIOD_TEXT[period];
     $('chartHead').textContent = data.unit === 'hour' ? 'Per hour' : data.unit === 'day' ? 'Per day' : 'Per month';
     $('chartRange').textContent = when;
@@ -562,11 +572,31 @@
 
   // the numbers (all time); the API can also answer per period, the page uses all time
   const cache = {};
+  // live: while Time saved is open, new exports by anyone come in by themselves (checked every 15 seconds)
+  let lastStats = '';
+  async function checkLive() {
+    if (!served || $('view-time').hidden || document.visibilityState !== 'visible') return;
+    try {
+      const r = await fetch('/api/stats?period=all'); if (!r.ok) return;
+      const text = await r.text();
+      if (!lastStats) { lastStats = text; return; }
+      if (text === lastStats) return;
+      lastStats = text;
+      const old = data; data = cache.all = JSON.parse(text);
+      renderStats(); playNumbers(old);
+      renderChart(); renderCalendar(); renderMilestone(true);
+      if (window.tbBump) tbBump($('sTime'));   // a small hop for the new time saved
+    } catch (e) { }
+  }
+  setInterval(checkLive, 15000);
+  document.addEventListener('visibilitychange', checkLive);
+  addEventListener('hashchange', () => setTimeout(checkLive, 50));
+
   async function loadPeriod(p) {
     period = p;
     if (!served) data = previewStats(p);
     else if (cache[p]) data = cache[p];
-    else { try { const r = await fetch('/api/stats?period=' + p); if (r.ok) data = cache[p] = await r.json(); } catch (e) { } }
+    else { try { const r = await fetch('/api/stats?period=' + p); if (r.ok) { const text = await r.text(); data = cache[p] = JSON.parse(text); if (p === 'all') lastStats = text; } } catch (e) { } }
     if (p !== period) return;   // a newer click won
     renderStats(); renderChart(); renderMilestone(); renderCalendar();
     // the real numbers arrive while Time saved is open: they count up and draw in, like on a visit
@@ -667,7 +697,8 @@
   // 1, 2.5, 5, 10, 25, 50, 100, 250, ... hours (the same list as worker/usage.js), up to the first one still ahead
   const milestones = h => { const l = []; for (let p = 1; !l.length || l[l.length - 1] <= h; p *= 10) l.push(p, p * 2.5, p * 5); return l; };
   let milestoneFor = null;   // the total it was last drawn for, so new numbers arriving for the same total do not replay it
-  function renderMilestone() {
+  let litTicks = 0;          // how many ticks were lit, so a live update only lights the new ones
+  function renderMilestone(live) {
     const all = data.allTime ? data.allTime.minutes : 0;
     if (all === milestoneFor && $('gaugeSvg').childElementCount) return;
     milestoneFor = all;
@@ -684,7 +715,9 @@
       l.setAttribute('x1', 100 + r1 * Math.cos(a)); l.setAttribute('y1', 100 + r1 * Math.sin(a));
       l.setAttribute('x2', 100 + r2 * Math.cos(a)); l.setAttribute('y2', 100 + r2 * Math.sin(a));
       l.setAttribute('stroke', 'rgba(255,255,255,0.12)');
-      if (i < on) setTimeout(() => l.setAttribute('stroke', i === on - 1 ? '#fff' : '#8b5cf6'), 200 + i * 14);
+      const from = live ? Math.min(litTicks, on) : 0;
+      if (i < from) l.setAttribute('stroke', i === on - 1 ? '#fff' : '#8b5cf6');
+      else if (i < on) setTimeout(() => l.setAttribute('stroke', i === on - 1 ? '#fff' : '#8b5cf6'), (live ? 0 : 200) + (i - from) * 14);
       svg.appendChild(l);
     }
     // the pace of the last 30 days
@@ -700,6 +733,7 @@
       $('paceMain').textContent = h ? 'No exports in the last 30 days' : 'Every export counts';
       $('paceSub').textContent = 'Use a tool to get closer to ' + next + 'h';
     }
+    litTicks = on;
     const done = $('msDone'); done.innerHTML = '';
     list.filter(m => m <= h).slice(-4).forEach(m => {
       const c = document.createElement('span'); c.innerHTML = '<svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg>'; c.appendChild(document.createTextNode(m.toLocaleString('en-GB') + 'h')); done.appendChild(c);
