@@ -8,7 +8,7 @@
 
   // what the tour shows; `at` is the part of the page it points to (none = a card in the middle)
   const STEPS = [
-    { title: 'Welcome' + (first ? ', ' + first : '') + '!', text: 'The Creative Toolbox makes the assets you used to build by hand in Photoshop: banners, covers, thumbnails, briefings and more. Here is a quick look around; it takes half a minute.', intro: true },
+    { title: 'Welcome' + (first ? ', ' + first : '') + '!', text: 'Everything you need to create assets for our releases and artists, in one place. Let us show you around.', intro: true },
     { at: '#toolGrid', title: 'Your tools', text: 'Click a tool to open it. Use the star on a tool to keep it at the top, here and in the sidebar.', side: 'bottom' },
     { at: '#tbToolGroup', title: 'Always one click away', text: 'The sidebar is on every page, so you can jump from one tool to the next.', side: 'right', nav: true },
     { at: '#tbSearch', title: 'Search', text: 'Looking for something? Press ⌘K (Ctrl K on Windows) from anywhere and type a few letters.', side: 'right', nav: true },
