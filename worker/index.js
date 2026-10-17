@@ -67,7 +67,7 @@ const SCHEMA = [
 ];
 
 // columns added after the first release, for databases that already exist
-const ADDED_COLUMNS = { users: { job_title: "TEXT NOT NULL DEFAULT ''" } };
+const ADDED_COLUMNS = { users: { job_title: "TEXT NOT NULL DEFAULT ''", toured_at: 'INTEGER' } };   // toured_at: when the welcome tour was finished
 
 let schemaReady = null;
 function ensureSchema(env) {
@@ -121,6 +121,12 @@ export default {
     if (path === '/api/notifications' || path === '/api/notifications/read') return handleNotifications(request, env, url, user);
     if (path === '/api/usage') return handleUsage(request, env, url, user);
     if (path === '/api/favourites') return handleFavourites(request, env, url, user);
+    // the welcome tour was finished or skipped: it does not open by itself again (on any device)
+    if (path === '/api/tour' && request.method === 'POST') {
+      if (!sameOrigin(request, url)) return json({ error: 'Bad request.' }, 403);
+      await env.DB.prepare('UPDATE users SET toured_at = ? WHERE id = ?').bind(Date.now(), user.id).run();
+      return json({ ok: true });
+    }
     if (path === '/api/stats' && request.method === 'GET') return handleStats(env, url);
 
     if (path.startsWith('/admin/api/')) {
@@ -162,6 +168,7 @@ export default {
           e.setAttribute('data-tb-email', enc(user.email));
           e.setAttribute('data-tb-admin', user.is_admin ? '1' : '0');
           e.setAttribute('data-tb-favs', enc(JSON.stringify(favs)));
+          e.setAttribute('data-tb-toured', user.toured_at ? '1' : '0');
         } })
         .transform(out);
     }

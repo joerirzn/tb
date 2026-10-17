@@ -33,6 +33,7 @@
     lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
     chev: '<path d="M15 18l-6-6 6-6"/>',
     x: '<path d="M6 6l12 12M18 6L6 18"/>',
+    play: '<circle cx="12" cy="12" r="9"/><path d="M10 8.5l5 3.5-5 3.5z"/>',
     check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
     burger: '<path d="M4 7h16M4 12h16M4 17h16"/>',
     bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
@@ -90,6 +91,7 @@
         '<a href="/admin" id="tbAdmin" hidden>' + svg('shield') + 'Access</a>' +
         '<a href="' + page('ideas/') + '" id="tbMine">' + svg('idea') + '<span id="tbMineLabel">My suggestions</span><span class="tb-badge" id="tbIdeas" hidden></span></a>' +
         '<a href="/account">' + svg('user') + 'Account and password</a>' +
+        '<a href="' + page('') + '#tour">' + svg('play') + 'Take the tour</a>' +
         '<button type="button" id="tbSignOut">' + svg('out') + 'Sign out</button>' +
       '</div>' +
       '<button class="tb-me-btn" type="button" id="tbMe" aria-haspopup="true" aria-expanded="false">' +
@@ -187,6 +189,7 @@
 
   // ---------- profile menu ----------
   const menu = $('tbMenu'), meBtn = $('tbMe');
+  menu.addEventListener('click', e => { if (e.target.closest('a')) { menu.hidden = true; meBtn.setAttribute('aria-expanded', 'false'); } });
   meBtn.addEventListener('click', () => { menu.hidden = !menu.hidden; meBtn.setAttribute('aria-expanded', !menu.hidden); });
   document.addEventListener('click', e => { if (!nav.querySelector('.tb-me').contains(e.target)) { menu.hidden = true; meBtn.setAttribute('aria-expanded', 'false'); } });
   $('tbSignOut').addEventListener('click', async () => { try { await fetch('/auth/logout', { method: 'POST' }); } catch (e) { } location.href = '/login'; });
@@ -239,6 +242,7 @@
     else list.push({ label: 'My suggestions', kind: 'Page', href: page('ideas/'), icon: I.idea });
     list.push({ label: 'Suggest a tool', kind: 'Ideas', href: '#suggest', icon: I.plus });
     list.push({ label: 'Account and password', kind: 'Page', href: '/account', icon: I.user });
+    list.push({ label: 'Take the tour', kind: 'Help', href: page('') + '#tour', icon: I.play });
     if (user.isAdmin) list.push({ label: 'Access requests', kind: 'Admin', href: '/admin', icon: I.shield });
     return list;
   }
