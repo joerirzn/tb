@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>General Briefing</title>
-<meta name="tool-version" content="2026-10-16.6">
+<meta name="tool-version" content="2026-10-19.1">
 <link rel="icon" type="image/png" href="../favicon.png?v=2">
 <link rel="stylesheet" href="../shared/motion.css">
 <link rel="stylesheet" href="../shared/shell.css">
@@ -473,7 +473,6 @@
     for (let c = 1; c < g.cols; c++) P.rect(Math.round(M + c * cw), y0 + 1, 1, y1 - y0 - 1, COL.line);
     items.forEach((it, i) => {
       const cx0 = M + (i % g.cols) * cw, cy0 = y0 + Math.floor(i / g.cols) * ch, cx = cx0 + cw / 2, cy = cy0 + ch / 2;
-      smallCaps(P, String(i + 1).padStart(2, '0'), Math.round(cx0 + (i % g.cols ? 24 : 0)), Math.round(cy0 + 24), COL.grey);
       if (it.logo && it.lw) {
         // equal visual weight: every logo gets about the same area, within the cell
         const area = Math.min(cw * ch * 0.1, 26000), maxW = cw * 0.72, maxH = Math.min(ch * 0.42, 150);
@@ -517,9 +516,9 @@
     if (url) {
       P.spotify(M, iy, IS, ink, acc);
       const tx = M + IS + 18;
-      P.text('Genre playlist', tx, iy + 21, 600, 18, ink, 0);
+      P.text('Playlist', tx, iy + 21, 600, 18, ink, 0);
       P.text('Listen on Spotify', tx, iy + IS - 6, 400, 14, soft, 0);
-      P.link(M, iy, IS + 18 + textW(600, 18, 'Genre playlist'), IS, url);
+      P.link(M, iy, IS + 18 + textW(600, 18, 'Listen on Spotify'), IS, url);
     }
     // right: track rows; the artwork column only when a track on this page has artwork
     const y0 = M + RULE, PR = (H - M - y0) / TRACK_ROWS, AW = 84, AS = 24;
